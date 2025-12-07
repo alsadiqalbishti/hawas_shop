@@ -75,18 +75,17 @@ async function loadProduct() {
                 window.currentSlide = 0;
                 window.totalSlides = product.mediaUrls.length;
             }
-            mediaContainer.innerHTML = galleryHTML;
-        }
-    } else if (product.mediaUrl) {
-        // Backward compatibility for single image
-        if (product.mediaType === 'video') {
-            mediaContainer.innerHTML = `
+
+        } else if (product.mediaUrl) {
+            // Backward compatibility for single image
+            if (product.mediaType === 'video') {
+                mediaContainer.innerHTML = `
                     <video src="${product.mediaUrl}" controls class="product-video" autoplay muted loop>
                         متصفحك لا يدعم تشغيل الفيديو
                     </video>
                 `;
-        } else {
-            mediaContainer.innerHTML = `
+            } else {
+                mediaContainer.innerHTML = `
                     <img src="${product.mediaUrl}" 
                          alt="${product.name}" 
                          class="product-image"
@@ -95,52 +94,52 @@ async function loadProduct() {
                          onmouseover="this.style.transform='scale(1.02)'"
                          onmouseout="this.style.transform='scale(1)'">
                 `;
-        }
-    } else {
-        mediaContainer.innerHTML = `
+            }
+        } else {
+            mediaContainer.innerHTML = `
                 <div style="font-size: 5rem; margin-bottom: 1rem;">📦</div>
             `;
+        }
+
+        // Display product info
+        document.getElementById('productName').textContent = product.name;
+
+        // Display description with line breaks preserved
+        const descElement = document.getElementById('productDescription');
+        if (product.description) {
+            descElement.innerHTML = product.description.replace(/\n/g, '<br>');
+        } else {
+            descElement.textContent = '';
+        }
+
+        // Display price with discount
+        const priceElement = document.getElementById('productPrice');
+        const originalPriceElement = document.getElementById('originalPrice');
+        const discountBadgeElement = document.getElementById('discountBadge');
+
+        if (product.discountPrice && product.discountPrice < product.price) {
+            // Show discounted price
+            priceElement.textContent = `${product.discountPrice} د.ل`;
+            originalPriceElement.textContent = `${product.price} د.ل`;
+            originalPriceElement.classList.remove('hidden');
+
+            // Calculate and show discount percentage
+            const discountPercent = Math.round(((product.price - product.discountPrice) / product.price) * 100);
+            discountBadgeElement.textContent = `خصم ${discountPercent}%`;
+            discountBadgeElement.classList.remove('hidden');
+        } else {
+            // Show regular price
+            priceElement.textContent = `${product.price} د.ل`;
+        }
+
+        // Show product content
+        loadingSpinner.classList.add('hidden');
+        productContent.classList.remove('hidden');
+
+    } catch (error) {
+        loadingSpinner.classList.add('hidden');
+        productNotFound.classList.remove('hidden');
     }
-
-    // Display product info
-    document.getElementById('productName').textContent = product.name;
-
-    // Display description with line breaks preserved
-    const descElement = document.getElementById('productDescription');
-    if (product.description) {
-        descElement.innerHTML = product.description.replace(/\n/g, '<br>');
-    } else {
-        descElement.textContent = '';
-    }
-
-    // Display price with discount
-    const priceElement = document.getElementById('productPrice');
-    const originalPriceElement = document.getElementById('originalPrice');
-    const discountBadgeElement = document.getElementById('discountBadge');
-
-    if (product.discountPrice && product.discountPrice < product.price) {
-        // Show discounted price
-        priceElement.textContent = `${product.discountPrice} د.ل`;
-        originalPriceElement.textContent = `${product.price} د.ل`;
-        originalPriceElement.classList.remove('hidden');
-
-        // Calculate and show discount percentage
-        const discountPercent = Math.round(((product.price - product.discountPrice) / product.price) * 100);
-        discountBadgeElement.textContent = `خصم ${discountPercent}%`;
-        discountBadgeElement.classList.remove('hidden');
-    } else {
-        // Show regular price
-        priceElement.textContent = `${product.price} د.ل`;
-    }
-
-    // Show product content
-    loadingSpinner.classList.add('hidden');
-    productContent.classList.remove('hidden');
-
-} catch (error) {
-    loadingSpinner.classList.add('hidden');
-    productNotFound.classList.remove('hidden');
-}
 }
 
 // Handle order form submission

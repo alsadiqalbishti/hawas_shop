@@ -4,7 +4,12 @@ const Redis = require('ioredis');
 let redis;
 function getRedis() {
     if (!redis) {
-        redis = new Redis(process.env.REDIS_URL);
+        // Vercel auto-generates STORAGE_REDIS_URL when you connect Redis
+        const redisUrl = process.env.STORAGE_REDIS_URL || process.env.REDIS_URL;
+        if (!redisUrl) {
+            throw new Error('Redis URL not configured');
+        }
+        redis = new Redis(redisUrl);
     }
     return redis;
 }

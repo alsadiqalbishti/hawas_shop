@@ -24,7 +24,34 @@ async function loadProduct() {
 
         // Display product media with zoom
         const mediaContainer = document.getElementById('productMedia');
-        if (product.mediaUrl) {
+
+        // Check if we have multiple images
+        if (product.mediaUrls && product.mediaUrls.length > 0) {
+            if (product.mediaType === 'video') {
+                mediaContainer.innerHTML = `
+                    <video src="${product.mediaUrls[0]}" controls class="product-video" autoplay muted loop>
+                        متصفحك لا يدعم تشغيل الفيديو
+                    </video>
+                `;
+            } else {
+                // Create image gallery
+                let galleryHTML = '<div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1rem;">';
+                product.mediaUrls.forEach((url, index) => {
+                    galleryHTML += `
+                        <img src="${url}" 
+                             alt="${product.name}" 
+                             class="product-image"
+                             onclick="openImageZoom('${url}')"
+                             style="width: 100%; height: 250px; object-fit: cover; cursor: pointer; transition: transform 0.3s; border-radius: 12px;"
+                             onmouseover="this.style.transform='scale(1.05)'"
+                             onmouseout="this.style.transform='scale(1)'">
+                    `;
+                });
+                galleryHTML += '</div>';
+                mediaContainer.innerHTML = galleryHTML;
+            }
+        } else if (product.mediaUrl) {
+            // Backward compatibility for single image
             if (product.mediaType === 'video') {
                 mediaContainer.innerHTML = `
                     <video src="${product.mediaUrl}" controls class="product-video" autoplay muted loop>
@@ -50,7 +77,14 @@ async function loadProduct() {
 
         // Display product info
         document.getElementById('productName').textContent = product.name;
-        document.getElementById('productDescription').textContent = product.description || '';
+
+        // Display description with line breaks preserved
+        const descElement = document.getElementById('productDescription');
+        if (product.description) {
+            descElement.innerHTML = product.description.replace(/\n/g, '<br>');
+        } else {
+            descElement.textContent = '';
+        }
 
         // Display price with discount
         const priceElement = document.getElementById('productPrice');

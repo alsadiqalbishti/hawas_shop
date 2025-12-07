@@ -305,10 +305,12 @@ document.getElementById('productForm')?.addEventListener('submit', async (e) => 
         // Create/update product
         const productData = {
             name: document.getElementById('productName').value,
-            price: document.getElementById('productPrice').value,
-            discountPrice: document.getElementById('productDiscountPrice').value || null,
+            price: parseFloat(document.getElementById('productPrice').value),
+            discountPrice: document.getElementById('productDiscountPrice').value ?
+                parseFloat(document.getElementById('productDiscountPrice').value) : null,
             description: document.getElementById('productDescription').value,
-            mediaUrl: mediaUrl,
+            mediaUrls: mediaUrls,
+            mediaUrl: mediaUrls[0] || '', // Keep first image as main for backward compatibility
             mediaType: mediaType
         };
 

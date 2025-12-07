@@ -34,7 +34,7 @@ async function loadProduct() {
                     </video>
                 `;
             } else {
-            } else {
+
                 // Create image slider
                 let sliderHTML = `
                     <div class="slider-container">

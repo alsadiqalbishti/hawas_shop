@@ -371,7 +371,8 @@ async function deleteProduct(productId) {
 
 // Copy product link
 function copyProductLink(productId) {
-    const link = `${window.location.origin}/product.html?id=${productId}`;
+    // Always use production URL, not preview deployments
+    const link = `https://hawas-shop.vercel.app/product.html?id=${productId}`;
     navigator.clipboard.writeText(link).then(() => {
         alert('تم نسخ رابط المنتج! 🎉\n' + link);
     });

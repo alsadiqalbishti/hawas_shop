@@ -104,32 +104,31 @@ module.exports = async (req, res) => {
                 mediaType: mediaType || product.mediaType,
                 updatedAt: new Date().toISOString()
             };
-            updatedAt: new Date().toISOString()
-        };
 
-        await redisClient.set(`product:${id}`, JSON.stringify(updatedProduct));
-        return res.status(200).json(updatedProduct);
-    }
+
+            await redisClient.set(`product:${id}`, JSON.stringify(updatedProduct));
+            return res.status(200).json(updatedProduct);
+        }
 
         // DELETE - Delete product
         if (req.method === 'DELETE') {
-        const { id } = req.query;
+            const { id } = req.query;
 
-        const exists = await redisClient.exists(`product:${id}`);
-        if (!exists) {
-            return res.status(404).json({ error: 'Product not found' });
+            const exists = await redisClient.exists(`product:${id}`);
+            if (!exists) {
+                return res.status(404).json({ error: 'Product not found' });
+            }
+
+            await redisClient.del(`product:${id}`);
+            await redisClient.srem('products', id);
+
+            return res.status(200).json({ success: true });
         }
 
-        await redisClient.del(`product:${id}`);
-        await redisClient.srem('products', id);
+        return res.status(405).json({ error: 'Method not allowed' });
 
-        return res.status(200).json({ success: true });
+    } catch (error) {
+        console.error('Products API error:', error);
+        return res.status(500).json({ error: 'Server error', message: error.message });
     }
-
-    return res.status(405).json({ error: 'Method not allowed' });
-
-} catch (error) {
-    console.error('Products API error:', error);
-    return res.status(500).json({ error: 'Server error', message: error.message });
-}
 };

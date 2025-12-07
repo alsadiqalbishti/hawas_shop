@@ -1,9 +1,3 @@
 {
-    "version": 2,
-    "rewrites": [
-        {
-            "source": "/product/:id",
-            "destination": "/public/product.html"
-        }
-    ]
+    "version": 2
 }

@@ -1,0 +1,136 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>لوحة التحكم - إدارة المتجر</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="/styles.css">
+</head>
+<body>
+    <!-- Login Screen -->
+    <div id="loginScreen" class="container">
+        <div class="card" style="max-width: 400px; margin: 5rem auto;">
+            <div class="card-header text-center">
+                <h1 class="card-title">🔐 لوحة التحكم</h1>
+                <p style="color: var(--text-light);">أدخل كلمة المرور للدخول</p>
+            </div>
+            <div id="loginError" class="alert alert-error hidden"></div>
+            <form id="loginForm">
+                <div class="form-group">
+                    <label class="form-label">كلمة المرور</label>
+                    <input type="password" id="passwordInput" class="form-input" required autocomplete="current-password">
+                </div>
+                <button type="submit" class="btn btn-primary" style="width: 100%;">
+                    دخول
+                </button>
+            </form>
+        </div>
+    </div>
+
+    <!-- Admin Panel -->
+    <div id="adminPanel" class="hidden">
+        <div class="container">
+            <div class="card">
+                <div class="card-header">
+                    <div class="flex justify-between items-center">
+                        <div>
+                            <h1 class="card-title">📦 لوحة التحكم</h1>
+                            <p style="color: var(--text-light);">إدارة المنتجات والطلبات</p>
+                        </div>
+                        <button onclick="logout()" class="btn btn-danger">
+                            تسجيل الخروج
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Tabs -->
+                <div class="tabs">
+                    <button class="tab active" onclick="switchTab('products')">
+                        🛍️ المنتجات
+                    </button>
+                    <button class="tab" onclick="switchTab('orders')">
+                        📋 الطلبات
+                    </button>
+                </div>
+
+                <!-- Products Tab -->
+                <div id="productsTab" class="tab-content active">
+                    <div class="flex justify-between items-center mb-3">
+                        <h2 style="font-size: 1.5rem; font-weight: 600;">قائمة المنتجات</h2>
+                        <button onclick="openProductModal()" class="btn btn-primary">
+                            ➕ إضافة منتج جديد
+                        </button>
+                    </div>
+                    
+                    <div id="productsContainer">
+                        <div class="spinner"></div>
+                    </div>
+                </div>
+
+                <!-- Orders Tab -->
+                <div id="ordersTab" class="tab-content">
+                    <div class="flex justify-between items-center mb-3">
+                        <h2 style="font-size: 1.5rem; font-weight: 600;">قائمة الطلبات</h2>
+                        <button onclick="loadOrders()" class="btn btn-success btn-sm">
+                            🔄 تحديث
+                        </button>
+                    </div>
+                    
+                    <div id="ordersContainer">
+                        <div class="spinner"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Product Modal -->
+    <div id="productModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2 class="modal-title" id="modalTitle">إضافة منتج جديد</h2>
+                <button class="modal-close" onclick="closeProductModal()">✕</button>
+            </div>
+            
+            <form id="productForm">
+                <input type="hidden" id="productId">
+                
+                <div class="form-group">
+                    <label class="form-label">اسم المنتج</label>
+                    <input type="text" id="productName" class="form-input" required>
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label">السعر (بالجنيه)</label>
+                    <input type="number" id="productPrice" class="form-input" required min="0" step="0.01">
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label">الوصف (اختياري)</label>
+                    <textarea id="productDescription" class="form-textarea"></textarea>
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label">صورة أو فيديو المنتج</label>
+                    <input type="file" id="productMedia" class="form-input" accept="image/*,video/*">
+                    <div id="currentMedia" class="mt-2"></div>
+                </div>
+
+                <div class="flex gap-2">
+                    <button type="submit" class="btn btn-primary" style="flex: 1;">
+                        💾 حفظ
+                    </button>
+                    <button type="button" onclick="closeProductModal()" class="btn btn-danger">
+                        إلغاء
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <script src="/admin.js"></script>
+</body>
+</html>

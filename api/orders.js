@@ -1,31 +1,5 @@
-const fs = require('fs');
-const path = require('path');
-const { promisify } = require('util');
-
-const readFile = promisify(fs.readFile);
-const writeFile = promisify(fs.writeFile);
-
-const ORDERS_FILE = path.join(process.cwd(), 'data', 'orders.json');
-
-// Helper to read orders
-async function readOrders() {
-    try {
-        const data = await readFile(ORDERS_FILE, 'utf8');
-        return JSON.parse(data);
-    } catch (error) {
-        return [];
-    }
-}
-
-// Helper to write orders
-async function writeOrders(orders) {
-    await writeFile(ORDERS_FILE, JSON.stringify(orders, null, 2));
-}
-
-// Helper to generate unique ID
-function generateId() {
-    return Date.now().toString(36) + Math.random().toString(36).substr(2);
-}
+// In-memory storage (will reset on each deployment, but works for demo)
+let ordersCache = [];
 
 module.exports = async (req, res) => {
     // Enable CORS
@@ -39,18 +13,21 @@ module.exports = async (req, res) => {
         return;
     }
 
+    // Helper to generate unique ID
+    function generateId() {
+        return Date.now().toString(36) + Math.random().toString(36).substr(2);
+    }
+
     try {
         // GET - List all orders
         if (req.method === 'GET') {
-            const orders = await readOrders();
             // Sort by newest first
-            orders.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
-            return res.status(200).json(orders);
+            const sortedOrders = [...ordersCache].sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+            return res.status(200).json(sortedOrders);
         }
 
         // POST - Create new order
         if (req.method === 'POST') {
-            const orders = await readOrders();
             const { productId, customerName, customerPhone, customerAddress, quantity } = req.body;
 
             // Validation
@@ -69,47 +46,40 @@ module.exports = async (req, res) => {
                 createdAt: new Date().toISOString()
             };
 
-            orders.push(newOrder);
-            await writeOrders(orders);
-
-            // TODO: Send to Google Sheets if enabled
-            // await syncToGoogleSheets(newOrder);
+            ordersCache.push(newOrder);
 
             return res.status(201).json(newOrder);
         }
 
         // PUT - Update order (mark as completed)
         if (req.method === 'PUT') {
-            const orders = await readOrders();
             const { id, status } = req.body;
 
-            const index = orders.findIndex(o => o.id === id);
+            const index = ordersCache.findIndex(o => o.id === id);
             if (index === -1) {
                 return res.status(404).json({ error: 'Order not found' });
             }
 
-            orders[index] = {
-                ...orders[index],
-                status: status || orders[index].status,
+            ordersCache[index] = {
+                ...ordersCache[index],
+                status: status || ordersCache[index].status,
                 updatedAt: new Date().toISOString()
             };
 
-            await writeOrders(orders);
-            return res.status(200).json(orders[index]);
+            return res.status(200).json(ordersCache[index]);
         }
 
         // DELETE - Delete order
         if (req.method === 'DELETE') {
-            const orders = await readOrders();
             const { id } = req.query;
 
-            const filteredOrders = orders.filter(o => o.id !== id);
+            const initialLength = ordersCache.length;
+            ordersCache = ordersCache.filter(o => o.id !== id);
 
-            if (filteredOrders.length === orders.length) {
+            if (ordersCache.length === initialLength) {
                 return res.status(404).json({ error: 'Order not found' });
             }
 
-            await writeOrders(filteredOrders);
             return res.status(200).json({ success: true });
         }
 
@@ -117,6 +87,6 @@ module.exports = async (req, res) => {
 
     } catch (error) {
         console.error('Orders API error:', error);
-        return res.status(500).json({ error: 'Server error' });
+        return res.status(500).json({ error: 'Server error', message: error.message });
     }
 };

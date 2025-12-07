@@ -10,14 +10,25 @@
   },
   "keywords": [
     "facebook",
-    "store",
-    "ecommerce",
-    "vercel"
-  ],
-  "author": "",
-  "license": "MIT",
-  "dependencies": {
-    "googleapis": "^128.0.0",
-    "multiparty": "^4.2.3"
-  }
-}
+    {
+      "name": "facebook-store-page",
+      "version": "1.0.0",
+      "description": "Facebook Store Management System with Admin Panel",
+      "main": "index.js",
+      "scripts": {
+        "dev": "vercel dev",
+        "build": "echo 'Build complete'",
+        "deploy": "vercel --prod"
+      },
+      "keywords": [
+        "facebook",
+        "store",
+        "ecommerce",
+        "vercel"
+      ],
+      "author": "",
+      "license": "MIT",
+      "dependencies": {
+        "googleapis": "^128.0.0"
+      }
+    }

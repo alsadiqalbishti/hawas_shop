@@ -9,25 +9,214 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="/styles.css">
+    <style>
+        .product-container {
+            max-width: 1000px;
+            margin: 2rem auto;
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 2rem;
+            padding: 2rem;
+        }
+
+        @media (max-width: 768px) {
+            .product-container {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        .product-media-box {
+            background: white;
+            border-radius: 16px;
+            padding: 1.5rem;
+            box-shadow: 0 8px 24px rgba(0, 0, 0, 0.1);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .product-media-box::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 4px;
+            background: linear-gradient(90deg, var(--primary), var(--secondary));
+        }
+
+        .product-details-box {
+            background: white;
+            border-radius: 16px;
+            padding: 2rem;
+            box-shadow: 0 8px 24px rgba(0, 0, 0, 0.1);
+        }
+
+        .product-badge {
+            display: inline-block;
+            background: linear-gradient(135deg, var(--primary), var(--secondary));
+            color: white;
+            padding: 0.5rem 1rem;
+            border-radius: 20px;
+            font-size: 0.9rem;
+            font-weight: 600;
+            margin-bottom: 1rem;
+        }
+
+        .price-box {
+            background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+            padding: 1.5rem;
+            border-radius: 12px;
+            margin: 1.5rem 0;
+            text-align: center;
+        }
+
+        .price-label {
+            color: white;
+            font-size: 0.9rem;
+            opacity: 0.9;
+            margin-bottom: 0.5rem;
+        }
+
+        .current-price {
+            color: white;
+            font-size: 2.5rem;
+            font-weight: 700;
+            display: block;
+        }
+
+        .original-price {
+            color: rgba(255, 255, 255, 0.7);
+            font-size: 1.2rem;
+            text-decoration: line-through;
+            margin-top: 0.5rem;
+        }
+
+        .discount-badge {
+            background: #ff4444;
+            color: white;
+            padding: 0.3rem 0.8rem;
+            border-radius: 20px;
+            font-size: 0.85rem;
+            font-weight: 600;
+            display: inline-block;
+            margin-top: 0.5rem;
+        }
+
+        .product-description {
+            color: var(--text-light);
+            line-height: 1.8;
+            margin: 1.5rem 0;
+            padding: 1rem;
+            background: #f8f9fa;
+            border-radius: 8px;
+            border-right: 4px solid var(--primary);
+        }
+
+        .order-section {
+            background: white;
+            border-radius: 16px;
+            padding: 2rem;
+            margin-top: 2rem;
+            box-shadow: 0 8px 24px rgba(0, 0, 0, 0.1);
+        }
+
+        .section-title {
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: var(--text-dark);
+            margin-bottom: 1rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .help-text {
+            background: #e3f2fd;
+            padding: 1rem;
+            border-radius: 8px;
+            margin-bottom: 1.5rem;
+            color: #1976d2;
+            font-size: 0.95rem;
+            border-right: 4px solid #1976d2;
+        }
+
+        .features-list {
+            list-style: none;
+            padding: 0;
+            margin: 1.5rem 0;
+        }
+
+        .features-list li {
+            padding: 0.75rem;
+            margin-bottom: 0.5rem;
+            background: #f8f9fa;
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+        }
+
+        .features-list li::before {
+            content: '✓';
+            background: var(--success);
+            color: white;
+            width: 24px;
+            height: 24px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            flex-shrink: 0;
+        }
+    </style>
 </head>
 
 <body>
     <div class="container">
-        <div class="card" style="max-width: 800px; margin: 2rem auto;">
-            <div id="loadingSpinner" class="spinner"></div>
+        <div id="loadingSpinner" class="spinner"></div>
 
-            <div id="productContent" class="hidden">
+        <div id="productContent" class="hidden">
+            <div class="product-container">
                 <!-- Product Media -->
-                <div id="productMedia" class="text-center"></div>
-
-                <!-- Product Info -->
-                <div class="card-header text-center">
-                    <h1 class="card-title" id="productName"></h1>
-                    <p id="productDescription" style="color: var(--text-light); margin-top: 0.5rem;"></p>
-                    <div class="price" id="productPrice"></div>
+                <div class="product-media-box">
+                    <div id="productMedia"></div>
                 </div>
 
-                <!-- Order Form -->
+                <!-- Product Details -->
+                <div class="product-details-box">
+                    <span class="product-badge">✨ منتج مميز</span>
+                    <h1 class="card-title" id="productName" style="margin-top: 0.5rem;"></h1>
+
+                    <div class="price-box">
+                        <div class="price-label">السعر</div>
+                        <span class="current-price" id="productPrice"></span>
+                        <div id="originalPrice" class="original-price hidden"></div>
+                        <div id="discountBadge" class="discount-badge hidden"></div>
+                    </div>
+
+                    <div class="product-description" id="productDescription"></div>
+
+                    <ul class="features-list">
+                        <li>توصيل سريع لجميع المدن</li>
+                        <li>ضمان الجودة والأصالة</li>
+                        <li>الدفع عند الاستلام</li>
+                        <li>خدمة عملاء متميزة</li>
+                    </ul>
+                </div>
+            </div>
+
+            <!-- Order Form Section -->
+            <div class="order-section">
+                <h2 class="section-title">
+                    🛒 اطلب الآن
+                </h2>
+
+                <div class="help-text">
+                    💡 <strong>للطلب:</strong> املأ البيانات التالية وسنتواصل معك خلال 24 ساعة لتأكيد الطلب وترتيب
+                    التوصيل
+                </div>
+
                 <div id="orderSuccess" class="alert alert-success hidden">
                     ✅ تم إرسال طلبك بنجاح! سنتواصل معك قريباً.
                 </div>
@@ -42,8 +231,7 @@
 
                     <div class="form-group">
                         <label class="form-label">رقم الهاتف *</label>
-                        <input type="tel" id="customerPhone" class="form-input" required
-                            placeholder="مثال: 01012345678">
+                        <input type="tel" id="customerPhone" class="form-input" required placeholder="مثال: 0912345678">
                     </div>
 
                     <div class="form-group">
@@ -59,16 +247,16 @@
 
                     <button type="submit" class="btn btn-primary"
                         style="width: 100%; font-size: 1.2rem; padding: 1rem;">
-                        🛒 اطلب الآن
+                        🛒 تأكيد الطلب
                     </button>
                 </form>
             </div>
+        </div>
 
-            <div id="productNotFound" class="hidden text-center" style="padding: 3rem;">
-                <h2 style="font-size: 2rem; margin-bottom: 1rem;">❌</h2>
-                <h3 style="color: var(--text-light);">المنتج غير موجود</h3>
-                <p style="color: var(--text-light); margin-top: 1rem;">عذراً، هذا المنتج غير متوفر حالياً</p>
-            </div>
+        <div id="productNotFound" class="hidden text-center" style="padding: 3rem;">
+            <h2 style="font-size: 2rem; margin-bottom: 1rem;">❌</h2>
+            <h3 style="color: var(--text-light);">المنتج غير موجود</h3>
+            <p style="color: var(--text-light); margin-top: 1rem;">عذراً، هذا المنتج غير متوفر حالياً</p>
         </div>
     </div>
 

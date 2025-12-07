@@ -1,15 +1,9 @@
 {
     "version": 2,
-    "cleanUrls": true,
-    "trailingSlash": false,
     "rewrites": [
         {
             "source": "/product/:id",
-            "destination": "/product.html"
-        },
-        {
-            "source": "/api/(.*)",
-            "destination": "/api/$1"
+            "destination": "/public/product.html"
         }
     ]
 }

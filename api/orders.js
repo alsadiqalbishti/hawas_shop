@@ -1,5 +1,13 @@
-// In-memory storage (will reset on each deployment, but works for demo)
-let ordersCache = [];
+const Redis = require('ioredis');
+
+// Initialize Redis connection
+let redis;
+function getRedis() {
+    if (!redis) {
+        redis = new Redis(process.env.REDIS_URL);
+    }
+    return redis;
+}
 
 module.exports = async (req, res) => {
     // Enable CORS
@@ -18,12 +26,24 @@ module.exports = async (req, res) => {
         return Date.now().toString(36) + Math.random().toString(36).substr(2);
     }
 
+    const redisClient = getRedis();
+
     try {
         // GET - List all orders
         if (req.method === 'GET') {
+            const orderIds = await redisClient.smembers('orders');
+            const orders = [];
+
+            for (const orderId of orderIds) {
+                const orderData = await redisClient.get(`order:${orderId}`);
+                if (orderData) {
+                    orders.push(JSON.parse(orderData));
+                }
+            }
+
             // Sort by newest first
-            const sortedOrders = [...ordersCache].sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
-            return res.status(200).json(sortedOrders);
+            orders.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+            return res.status(200).json(orders);
         }
 
         // POST - Create new order
@@ -46,7 +66,9 @@ module.exports = async (req, res) => {
                 createdAt: new Date().toISOString()
             };
 
-            ordersCache.push(newOrder);
+            // Save order to Redis
+            await redisClient.set(`order:${newOrder.id}`, JSON.stringify(newOrder));
+            await redisClient.sadd('orders', newOrder.id);
 
             return res.status(201).json(newOrder);
         }
@@ -55,30 +77,33 @@ module.exports = async (req, res) => {
         if (req.method === 'PUT') {
             const { id, status } = req.body;
 
-            const index = ordersCache.findIndex(o => o.id === id);
-            if (index === -1) {
+            const orderData = await redisClient.get(`order:${id}`);
+            if (!orderData) {
                 return res.status(404).json({ error: 'Order not found' });
             }
 
-            ordersCache[index] = {
-                ...ordersCache[index],
-                status: status || ordersCache[index].status,
+            const order = JSON.parse(orderData);
+            const updatedOrder = {
+                ...order,
+                status: status || order.status,
                 updatedAt: new Date().toISOString()
             };
 
-            return res.status(200).json(ordersCache[index]);
+            await redisClient.set(`order:${id}`, JSON.stringify(updatedOrder));
+            return res.status(200).json(updatedOrder);
         }
 
         // DELETE - Delete order
         if (req.method === 'DELETE') {
             const { id } = req.query;
 
-            const initialLength = ordersCache.length;
-            ordersCache = ordersCache.filter(o => o.id !== id);
-
-            if (ordersCache.length === initialLength) {
+            const exists = await redisClient.exists(`order:${id}`);
+            if (!exists) {
                 return res.status(404).json({ error: 'Order not found' });
             }
+
+            await redisClient.del(`order:${id}`);
+            await redisClient.srem('orders', id);
 
             return res.status(200).json({ success: true });
         }

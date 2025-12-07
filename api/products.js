@@ -1,6 +1,13 @@
-// In-memory storage (will reset on each deployment, but works for demo)
-// For production, use Vercel KV, PostgreSQL, or MongoDB
-let productsCache = [];
+const Redis = require('ioredis');
+
+// Initialize Redis connection
+let redis;
+function getRedis() {
+    if (!redis) {
+        redis = new Redis(process.env.REDIS_URL);
+    }
+    return redis;
+}
 
 module.exports = async (req, res) => {
     // Enable CORS
@@ -19,20 +26,33 @@ module.exports = async (req, res) => {
         return Date.now().toString(36) + Math.random().toString(36).substr(2);
     }
 
+    const redisClient = getRedis();
+
     try {
         // GET - List all products or get single product
         if (req.method === 'GET') {
             const { id } = req.query;
 
             if (id) {
-                const product = productsCache.find(p => p.id === id);
-                if (!product) {
+                const productData = await redisClient.get(`product:${id}`);
+                if (!productData) {
                     return res.status(404).json({ error: 'Product not found' });
                 }
-                return res.status(200).json(product);
+                return res.status(200).json(JSON.parse(productData));
             }
 
-            return res.status(200).json(productsCache);
+            // Get all product IDs
+            const productIds = await redisClient.smembers('products');
+            const products = [];
+
+            for (const productId of productIds) {
+                const productData = await redisClient.get(`product:${productId}`);
+                if (productData) {
+                    products.push(JSON.parse(productData));
+                }
+            }
+
+            return res.status(200).json(products);
         }
 
         // POST - Create new product
@@ -49,7 +69,9 @@ module.exports = async (req, res) => {
                 createdAt: new Date().toISOString()
             };
 
-            productsCache.push(newProduct);
+            // Save product to Redis
+            await redisClient.set(`product:${newProduct.id}`, JSON.stringify(newProduct));
+            await redisClient.sadd('products', newProduct.id);
 
             return res.status(201).json(newProduct);
         }
@@ -58,34 +80,37 @@ module.exports = async (req, res) => {
         if (req.method === 'PUT') {
             const { id, name, price, description, mediaUrl, mediaType } = req.body;
 
-            const index = productsCache.findIndex(p => p.id === id);
-            if (index === -1) {
+            const productData = await redisClient.get(`product:${id}`);
+            if (!productData) {
                 return res.status(404).json({ error: 'Product not found' });
             }
 
-            productsCache[index] = {
-                ...productsCache[index],
-                name: name || productsCache[index].name,
-                price: price ? parseFloat(price) : productsCache[index].price,
-                description: description !== undefined ? description : productsCache[index].description,
-                mediaUrl: mediaUrl !== undefined ? mediaUrl : productsCache[index].mediaUrl,
-                mediaType: mediaType || productsCache[index].mediaType,
+            const product = JSON.parse(productData);
+            const updatedProduct = {
+                ...product,
+                name: name || product.name,
+                price: price ? parseFloat(price) : product.price,
+                description: description !== undefined ? description : product.description,
+                mediaUrl: mediaUrl !== undefined ? mediaUrl : product.mediaUrl,
+                mediaType: mediaType || product.mediaType,
                 updatedAt: new Date().toISOString()
             };
 
-            return res.status(200).json(productsCache[index]);
+            await redisClient.set(`product:${id}`, JSON.stringify(updatedProduct));
+            return res.status(200).json(updatedProduct);
         }
 
         // DELETE - Delete product
         if (req.method === 'DELETE') {
             const { id } = req.query;
 
-            const initialLength = productsCache.length;
-            productsCache = productsCache.filter(p => p.id !== id);
-
-            if (productsCache.length === initialLength) {
+            const exists = await redisClient.exists(`product:${id}`);
+            if (!exists) {
                 return res.status(404).json({ error: 'Product not found' });
             }
+
+            await redisClient.del(`product:${id}`);
+            await redisClient.srem('products', id);
 
             return res.status(200).json({ success: true });
         }

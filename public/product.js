@@ -1,6 +1,6 @@
-// Get product ID from URL
+// Get product ID from URL query parameter
 const urlParams = new URLSearchParams(window.location.search);
-const productId = window.location.pathname.split('/').pop() || urlParams.get('id');
+const productId = urlParams.get('id');
 
 // Load product on page load
 window.addEventListener('DOMContentLoaded', loadProduct);

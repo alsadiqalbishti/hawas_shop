@@ -34,32 +34,59 @@ async function loadProduct() {
                     </video>
                 `;
             } else {
-                // Create image gallery
-                let galleryHTML = '<div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1rem;">';
+            } else {
+                // Create image slider
+                let sliderHTML = `
+                    <div class="slider-container">
+                        <div class="slider-track" id="sliderTrack">
+                `;
+
                 product.mediaUrls.forEach((url, index) => {
-                    galleryHTML += `
-                        <img src="${url}" 
-                             alt="${product.name}" 
-                             class="product-image"
-                             onclick="openImageZoom('${url}')"
-                             style="width: 100%; height: 250px; object-fit: cover; cursor: pointer; transition: transform 0.3s; border-radius: 12px;"
-                             onmouseover="this.style.transform='scale(1.05)'"
-                             onmouseout="this.style.transform='scale(1)'">
+                    sliderHTML += `
+                        <div class="slider-slide">
+                            <img src="${url}" 
+                                 alt="${product.name}" 
+                                 onclick="openImageZoom('${url}')"
+                                 style="cursor: pointer;">
+                        </div>
                     `;
                 });
-                galleryHTML += '</div>';
-                mediaContainer.innerHTML = galleryHTML;
+
+                sliderHTML += `
+                        </div>
+                        <button class="slider-btn prev-btn" onclick="moveSlider(-1)">❮</button>
+                        <button class="slider-btn next-btn" onclick="moveSlider(1)">❯</button>
+                        <div class="slider-dots">
+                `;
+
+                // Add dots
+                product.mediaUrls.forEach((_, index) => {
+                    sliderHTML += `<div class="dot ${index === 0 ? 'active' : ''}" onclick="goToSlide(${index})"></div>`;
+                });
+
+                sliderHTML += `
+                        </div>
+                    </div>
+                `;
+
+                mediaContainer.innerHTML = sliderHTML;
+
+                // Initialize slider state
+                window.currentSlide = 0;
+                window.totalSlides = product.mediaUrls.length;
             }
-        } else if (product.mediaUrl) {
-            // Backward compatibility for single image
-            if (product.mediaType === 'video') {
-                mediaContainer.innerHTML = `
+            mediaContainer.innerHTML = galleryHTML;
+        }
+    } else if (product.mediaUrl) {
+        // Backward compatibility for single image
+        if (product.mediaType === 'video') {
+            mediaContainer.innerHTML = `
                     <video src="${product.mediaUrl}" controls class="product-video" autoplay muted loop>
                         متصفحك لا يدعم تشغيل الفيديو
                     </video>
                 `;
-            } else {
-                mediaContainer.innerHTML = `
+        } else {
+            mediaContainer.innerHTML = `
                     <img src="${product.mediaUrl}" 
                          alt="${product.name}" 
                          class="product-image"
@@ -68,52 +95,52 @@ async function loadProduct() {
                          onmouseover="this.style.transform='scale(1.02)'"
                          onmouseout="this.style.transform='scale(1)'">
                 `;
-            }
-        } else {
-            mediaContainer.innerHTML = `
+        }
+    } else {
+        mediaContainer.innerHTML = `
                 <div style="font-size: 5rem; margin-bottom: 1rem;">📦</div>
             `;
-        }
-
-        // Display product info
-        document.getElementById('productName').textContent = product.name;
-
-        // Display description with line breaks preserved
-        const descElement = document.getElementById('productDescription');
-        if (product.description) {
-            descElement.innerHTML = product.description.replace(/\n/g, '<br>');
-        } else {
-            descElement.textContent = '';
-        }
-
-        // Display price with discount
-        const priceElement = document.getElementById('productPrice');
-        const originalPriceElement = document.getElementById('originalPrice');
-        const discountBadgeElement = document.getElementById('discountBadge');
-
-        if (product.discountPrice && product.discountPrice < product.price) {
-            // Show discounted price
-            priceElement.textContent = `${product.discountPrice} د.ل`;
-            originalPriceElement.textContent = `${product.price} د.ل`;
-            originalPriceElement.classList.remove('hidden');
-
-            // Calculate and show discount percentage
-            const discountPercent = Math.round(((product.price - product.discountPrice) / product.price) * 100);
-            discountBadgeElement.textContent = `خصم ${discountPercent}%`;
-            discountBadgeElement.classList.remove('hidden');
-        } else {
-            // Show regular price
-            priceElement.textContent = `${product.price} د.ل`;
-        }
-
-        // Show product content
-        loadingSpinner.classList.add('hidden');
-        productContent.classList.remove('hidden');
-
-    } catch (error) {
-        loadingSpinner.classList.add('hidden');
-        productNotFound.classList.remove('hidden');
     }
+
+    // Display product info
+    document.getElementById('productName').textContent = product.name;
+
+    // Display description with line breaks preserved
+    const descElement = document.getElementById('productDescription');
+    if (product.description) {
+        descElement.innerHTML = product.description.replace(/\n/g, '<br>');
+    } else {
+        descElement.textContent = '';
+    }
+
+    // Display price with discount
+    const priceElement = document.getElementById('productPrice');
+    const originalPriceElement = document.getElementById('originalPrice');
+    const discountBadgeElement = document.getElementById('discountBadge');
+
+    if (product.discountPrice && product.discountPrice < product.price) {
+        // Show discounted price
+        priceElement.textContent = `${product.discountPrice} د.ل`;
+        originalPriceElement.textContent = `${product.price} د.ل`;
+        originalPriceElement.classList.remove('hidden');
+
+        // Calculate and show discount percentage
+        const discountPercent = Math.round(((product.price - product.discountPrice) / product.price) * 100);
+        discountBadgeElement.textContent = `خصم ${discountPercent}%`;
+        discountBadgeElement.classList.remove('hidden');
+    } else {
+        // Show regular price
+        priceElement.textContent = `${product.price} د.ل`;
+    }
+
+    // Show product content
+    loadingSpinner.classList.add('hidden');
+    productContent.classList.remove('hidden');
+
+} catch (error) {
+    loadingSpinner.classList.add('hidden');
+    productNotFound.classList.remove('hidden');
+}
 }
 
 // Handle order form submission
@@ -203,4 +230,32 @@ function openImageZoom(imageUrl) {
     modal.onclick = () => document.body.removeChild(modal);
     modal.appendChild(img);
     document.body.appendChild(modal);
+}
+
+// Slider functions
+function updateSlider() {
+    const track = document.getElementById('sliderTrack');
+    const dots = document.querySelectorAll('.dot');
+
+    if (track) {
+        track.style.transform = `translateX(${window.currentSlide * 100}%)`; // RTL: positive value moves right
+    }
+
+    dots.forEach((dot, index) => {
+        if (index === window.currentSlide) {
+            dot.classList.add('active');
+        } else {
+            dot.classList.remove('active');
+        }
+    });
+}
+
+function moveSlider(direction) {
+    window.currentSlide = (window.currentSlide + direction + window.totalSlides) % window.totalSlides;
+    updateSlider();
+}
+
+function goToSlide(index) {
+    window.currentSlide = index;
+    updateSlider();
 }

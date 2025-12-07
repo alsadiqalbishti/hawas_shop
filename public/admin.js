@@ -103,7 +103,7 @@ async function loadProducts() {
                 : '📦'}
                                 </td>
                                 <td><strong>${product.name}</strong></td>
-                                <td><span class="price" style="font-size: 1.2rem;">${product.price} ج.م</span></td>
+                                <td><span class="price" style="font-size: 1.2rem;">${product.price} د.ل</span></td>
                                 <td>
                                     <button onclick="copyProductLink('${product.id}')" class="btn btn-success btn-sm">
                                         📋 نسخ الرابط

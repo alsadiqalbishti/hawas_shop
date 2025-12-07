@@ -45,7 +45,7 @@ async function loadProduct() {
         // Display product info
         document.getElementById('productName').textContent = product.name;
         document.getElementById('productDescription').textContent = product.description || '';
-        document.getElementById('productPrice').textContent = `${product.price} ج.م`;
+        document.getElementById('productPrice').textContent = `${product.price} د.ل`;
 
         // Show product content
         loadingSpinner.classList.add('hidden');

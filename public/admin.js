@@ -306,6 +306,7 @@ document.getElementById('productForm')?.addEventListener('submit', async (e) => 
         const productData = {
             name: document.getElementById('productName').value,
             price: document.getElementById('productPrice').value,
+            discountPrice: document.getElementById('productDiscountPrice').value || null,
             description: document.getElementById('productDescription').value,
             mediaUrl: mediaUrl,
             mediaType: mediaType

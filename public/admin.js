@@ -250,54 +250,57 @@ document.getElementById('productForm')?.addEventListener('submit', async (e) => 
     submitButton.textContent = 'جاري الحفظ...';
 
     try {
-        let mediaUrl = '';
+        let mediaUrls = [];
         let mediaType = 'image';
 
-        // Upload media file if selected
-        const mediaFile = document.getElementById('productMedia').files[0];
-        if (mediaFile) {
-            // Convert file to base64
-            const reader = new FileReader();
-            const base64Promise = new Promise((resolve, reject) => {
-                reader.onload = () => resolve(reader.result);
-                reader.onerror = reject;
-                reader.readAsDataURL(mediaFile);
-            });
+        // Upload media files if selected (handle multiple files)
+        const mediaFiles = document.getElementById('productMedia').files;
+        if (mediaFiles && mediaFiles.length > 0) {
+            for (let i = 0; i < mediaFiles.length; i++) {
+                const mediaFile = mediaFiles[i];
 
-            try {
-                const base64Data = await base64Promise;
-                mediaType = mediaFile.type.startsWith('video/') ? 'video' : 'image';
-
-                const uploadResponse = await fetch('/api/upload', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({
-                        mediaData: base64Data,
-                        mediaType: mediaType
-                    })
+                // Convert file to base64
+                const reader = new FileReader();
+                const base64Promise = new Promise((resolve, reject) => {
+                    reader.onload = () => resolve(reader.result);
+                    reader.onerror = reject;
+                    reader.readAsDataURL(mediaFile);
                 });
 
-                if (uploadResponse.ok) {
-                    const uploadData = await uploadResponse.json();
-                    mediaUrl = uploadData.mediaUrl;
-                    mediaType = uploadData.mediaType;
-                } else {
-                    alert('حدث خطأ في رفع الملف');
+                try {
+                    const base64Data = await base64Promise;
+                    mediaType = mediaFile.type.startsWith('video/') ? 'video' : 'image';
+
+                    const uploadResponse = await fetch('/api/upload', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                            mediaData: base64Data,
+                            mediaType: mediaType
+                        })
+                    });
+
+                    if (uploadResponse.ok) {
+                        const uploadData = await uploadResponse.json();
+                        mediaUrls.push(uploadData.mediaUrl);
+                    } else {
+                        alert('حدث خطأ في رفع الملف');
+                        submitButton.disabled = false;
+                        submitButton.textContent = '💾 حفظ';
+                        return;
+                    }
+                } catch (error) {
+                    alert('حدث خطأ في قراءة الملف');
                     submitButton.disabled = false;
                     submitButton.textContent = '💾 حفظ';
                     return;
                 }
-            } catch (error) {
-                alert('حدث خطأ في قراءة الملف');
-                submitButton.disabled = false;
-                submitButton.textContent = '💾 حفظ';
-                return;
             }
         } else if (editingProductId) {
             // Keep existing media if no new file uploaded
             const product = currentProducts.find(p => p.id === editingProductId);
             if (product) {
-                mediaUrl = product.mediaUrl;
+                mediaUrls = product.mediaUrls || (product.mediaUrl ? [product.mediaUrl] : []);
                 mediaType = product.mediaType;
             }
         }

@@ -1,3 +1,15 @@
+// Utility: Escape HTML to prevent XSS
+function escapeHtml(text) {
+    const div = document.createElement('div');
+    div.textContent = text;
+    return div.innerHTML;
+}
+
+// Utility: Format price with thousand separators
+function formatPrice(price) {
+    return price.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ',');
+}
+
 // Get product ID from URL query parameter
 const urlParams = new URLSearchParams(window.location.search);
 const productId = urlParams.get('id');
@@ -10,8 +22,15 @@ async function loadProduct() {
     const productContent = document.getElementById('productContent');
     const productNotFound = document.getElementById('productNotFound');
 
+    // Validate productId
+    if (!productId || productId.trim() === '') {
+        loadingSpinner.classList.add('hidden');
+        productNotFound.classList.remove('hidden');
+        return;
+    }
+
     try {
-        const response = await fetch(`/api/products?id=${productId}`);
+        const response = await fetch(`/api/products?id=${encodeURIComponent(productId)}`);
 
         if (!response.ok) {
             throw new Error('Product not found');
@@ -25,51 +44,75 @@ async function loadProduct() {
         // Display product media with zoom
         const mediaContainer = document.getElementById('productMedia');
 
+        // Clear container
+        mediaContainer.innerHTML = '';
+
         // Check if we have multiple images
         if (product.mediaUrls && product.mediaUrls.length > 0) {
             if (product.mediaType === 'video') {
-                mediaContainer.innerHTML = `
-                    <video src="${product.mediaUrls[0]}" controls class="product-video" autoplay muted loop>
-                        متصفحك لا يدعم تشغيل الفيديو
-                    </video>
-                `;
+                const video = document.createElement('video');
+                video.src = product.mediaUrls[0];
+                video.controls = true;
+                video.className = 'product-video';
+                video.muted = true;
+                video.loop = true;
+                video.textContent = 'متصفحك لا يدعم تشغيل الفيديو';
+                mediaContainer.appendChild(video);
             } else {
+                // Create image slider using DOM methods
+                const sliderContainer = document.createElement('div');
+                sliderContainer.className = 'slider-container';
 
-                // Create image slider
-                let sliderHTML = `
-                    <div class="slider-container">
-                        <div class="slider-track" id="sliderTrack">
-                `;
+                const sliderTrack = document.createElement('div');
+                sliderTrack.className = 'slider-track';
+                sliderTrack.id = 'sliderTrack';
 
                 product.mediaUrls.forEach((url, index) => {
-                    sliderHTML += `
-                        <div class="slider-slide">
-                            <img src="${url}" 
-                                 alt="${product.name}" 
-                                 onclick="openImageZoom('${url}')"
-                                 style="cursor: pointer;">
-                        </div>
-                    `;
+                    const slide = document.createElement('div');
+                    slide.className = 'slider-slide';
+
+                    const img = document.createElement('img');
+                    img.src = url;
+                    img.alt = escapeHtml(product.name);
+                    img.style.cursor = 'pointer';
+                    img.loading = 'lazy';
+                    img.onerror = function() {
+                        this.src = 'data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" width="400" height="300"%3E%3Crect fill="%23ddd" width="400" height="300"/%3E%3Ctext fill="%23999" font-family="sans-serif" font-size="18" x="50%25" y="50%25" text-anchor="middle" dy=".3em"%3Eفشل تحميل الصورة%3C/text%3E%3C/svg%3E';
+                    };
+                    img.onclick = () => openImageZoom(url);
+
+                    slide.appendChild(img);
+                    sliderTrack.appendChild(slide);
                 });
 
-                sliderHTML += `
-                        </div>
-                        <button class="slider-btn prev-btn" onclick="moveSlider(-1)">❮</button>
-                        <button class="slider-btn next-btn" onclick="moveSlider(1)">❯</button>
-                        <div class="slider-dots">
-                `;
+                const prevBtn = document.createElement('button');
+                prevBtn.className = 'slider-btn prev-btn';
+                prevBtn.textContent = '❮';
+                prevBtn.onclick = () => moveSlider(-1);
+                prevBtn.setAttribute('aria-label', 'الصورة السابقة');
 
-                // Add dots
+                const nextBtn = document.createElement('button');
+                nextBtn.className = 'slider-btn next-btn';
+                nextBtn.textContent = '❯';
+                nextBtn.onclick = () => moveSlider(1);
+                nextBtn.setAttribute('aria-label', 'الصورة التالية');
+
+                const dotsContainer = document.createElement('div');
+                dotsContainer.className = 'slider-dots';
+
                 product.mediaUrls.forEach((_, index) => {
-                    sliderHTML += `<div class="dot ${index === 0 ? 'active' : ''}" onclick="goToSlide(${index})"></div>`;
+                    const dot = document.createElement('div');
+                    dot.className = `dot ${index === 0 ? 'active' : ''}`;
+                    dot.onclick = () => goToSlide(index);
+                    dot.setAttribute('aria-label', `انتقل إلى الصورة ${index + 1}`);
+                    dotsContainer.appendChild(dot);
                 });
 
-                sliderHTML += `
-                        </div>
-                    </div>
-                `;
-
-                mediaContainer.innerHTML = sliderHTML;
+                sliderContainer.appendChild(sliderTrack);
+                sliderContainer.appendChild(prevBtn);
+                sliderContainer.appendChild(nextBtn);
+                sliderContainer.appendChild(dotsContainer);
+                mediaContainer.appendChild(sliderContainer);
 
                 // Initialize slider state
                 window.currentSlide = 0;
@@ -79,26 +122,35 @@ async function loadProduct() {
         } else if (product.mediaUrl) {
             // Backward compatibility for single image
             if (product.mediaType === 'video') {
-                mediaContainer.innerHTML = `
-                    <video src="${product.mediaUrl}" controls class="product-video" autoplay muted loop>
-                        متصفحك لا يدعم تشغيل الفيديو
-                    </video>
-                `;
+                const video = document.createElement('video');
+                video.src = product.mediaUrl;
+                video.controls = true;
+                video.className = 'product-video';
+                video.muted = true;
+                video.loop = true;
+                video.textContent = 'متصفحك لا يدعم تشغيل الفيديو';
+                mediaContainer.appendChild(video);
             } else {
-                mediaContainer.innerHTML = `
-                    <img src="${product.mediaUrl}" 
-                         alt="${product.name}" 
-                         class="product-image"
-                         onclick="openImageZoom('${product.mediaUrl}')"
-                         style="cursor: pointer; transition: transform 0.3s;"
-                         onmouseover="this.style.transform='scale(1.02)'"
-                         onmouseout="this.style.transform='scale(1)'">
-                `;
+                const img = document.createElement('img');
+                img.src = product.mediaUrl;
+                img.alt = escapeHtml(product.name);
+                img.className = 'product-image';
+                img.style.cursor = 'pointer';
+                img.style.transition = 'transform 0.3s';
+                img.loading = 'lazy';
+                img.onerror = function() {
+                    this.src = 'data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" width="400" height="300"%3E%3Crect fill="%23ddd" width="400" height="300"/%3E%3Ctext fill="%23999" font-family="sans-serif" font-size="18" x="50%25" y="50%25" text-anchor="middle" dy=".3em"%3Eفشل تحميل الصورة%3C/text%3E%3C/svg%3E';
+                };
+                img.onclick = () => openImageZoom(product.mediaUrl);
+                img.onmouseover = () => img.style.transform = 'scale(1.02)';
+                img.onmouseout = () => img.style.transform = 'scale(1)';
+                mediaContainer.appendChild(img);
             }
         } else {
-            mediaContainer.innerHTML = `
-                <div style="font-size: 5rem; margin-bottom: 1rem;">📦</div>
-            `;
+            const placeholder = document.createElement('div');
+            placeholder.style.cssText = 'font-size: 5rem; margin-bottom: 1rem; text-align: center;';
+            placeholder.textContent = '📦';
+            mediaContainer.appendChild(placeholder);
         }
 
         // Display product info (safe - already sanitized by backend)
@@ -121,8 +173,8 @@ async function loadProduct() {
 
         if (product.discountPrice && product.discountPrice < product.price) {
             // Show discounted price
-            priceElement.textContent = `${product.discountPrice} د.ل`;
-            originalPriceElement.textContent = `${product.price} د.ل`;
+            priceElement.textContent = `${formatPrice(product.discountPrice)} د.ل`;
+            originalPriceElement.textContent = `${formatPrice(product.price)} د.ل`;
             originalPriceElement.classList.remove('hidden');
 
             // Calculate and show discount percentage
@@ -131,7 +183,7 @@ async function loadProduct() {
             discountBadgeElement.classList.remove('hidden');
         } else {
             // Show regular price
-            priceElement.textContent = `${product.price} د.ل`;
+            priceElement.textContent = `${formatPrice(product.price)} د.ل`;
         }
 
         // Show product content
@@ -139,8 +191,17 @@ async function loadProduct() {
         productContent.classList.remove('hidden');
 
     } catch (error) {
+        console.error('Error loading product:', error);
         loadingSpinner.classList.add('hidden');
         productNotFound.classList.remove('hidden');
+        
+        // Show error message if it's a network error
+        if (error.message && error.message.includes('fetch')) {
+            const errorMsg = document.createElement('p');
+            errorMsg.style.cssText = 'color: var(--danger); margin-top: 1rem;';
+            errorMsg.textContent = 'حدث خطأ في الاتصال. يرجى المحاولة مرة أخرى.';
+            productNotFound.appendChild(errorMsg);
+        }
     }
 }
 
@@ -160,12 +221,51 @@ document.getElementById('orderForm')?.addEventListener('submit', async (e) => {
     submitButton.disabled = true;
     submitButton.textContent = 'جاري الإرسال...';
 
+    // Validate form data
+    const customerName = document.getElementById('customerName').value.trim();
+    const customerPhone = document.getElementById('customerPhone').value.trim();
+    const customerAddress = document.getElementById('customerAddress').value.trim();
+    const quantity = parseInt(document.getElementById('quantity').value);
+
+    // Client-side validation
+    if (!customerName) {
+        errorDiv.textContent = 'الرجاء إدخال الاسم الكامل';
+        errorDiv.classList.remove('hidden');
+        submitButton.disabled = false;
+        submitButton.textContent = '🛒 تأكيد الطلب';
+        return;
+    }
+
+    if (!customerPhone || customerPhone.length < 8) {
+        errorDiv.textContent = 'الرجاء إدخال رقم هاتف صحيح';
+        errorDiv.classList.remove('hidden');
+        submitButton.disabled = false;
+        submitButton.textContent = '🛒 تأكيد الطلب';
+        return;
+    }
+
+    if (!customerAddress || customerAddress.length < 10) {
+        errorDiv.textContent = 'الرجاء إدخال عنوان كامل';
+        errorDiv.classList.remove('hidden');
+        submitButton.disabled = false;
+        submitButton.textContent = '🛒 تأكيد الطلب';
+        return;
+    }
+
+    if (isNaN(quantity) || quantity < 1 || quantity > 1000) {
+        errorDiv.textContent = 'الكمية يجب أن تكون بين 1 و 1000';
+        errorDiv.classList.remove('hidden');
+        submitButton.disabled = false;
+        submitButton.textContent = '🛒 تأكيد الطلب';
+        return;
+    }
+
     const orderData = {
         productId: productId,
-        customerName: document.getElementById('customerName').value,
-        customerPhone: document.getElementById('customerPhone').value,
-        customerAddress: document.getElementById('customerAddress').value,
-        quantity: parseInt(document.getElementById('quantity').value)
+        customerName: customerName,
+        customerPhone: customerPhone,
+        customerAddress: customerAddress,
+        quantity: quantity
     };
 
     try {
@@ -204,6 +304,7 @@ document.getElementById('orderForm')?.addEventListener('submit', async (e) => {
 // Image zoom modal
 function openImageZoom(imageUrl) {
     const modal = document.createElement('div');
+    modal.className = 'image-zoom-modal';
     modal.style.cssText = `
         position: fixed;
         top: 0;
@@ -216,20 +317,90 @@ function openImageZoom(imageUrl) {
         justify-content: center;
         z-index: 10000;
         cursor: pointer;
-        animation: fadeIn 0.3s;
+        animation: fadeIn 0.3s ease;
+    `;
+    modal.setAttribute('role', 'dialog');
+    modal.setAttribute('aria-label', 'تكبير الصورة');
+
+    const imgContainer = document.createElement('div');
+    imgContainer.style.cssText = `
+        position: relative;
+        max-width: 95%;
+        max-height: 95%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
     `;
 
     const img = document.createElement('img');
     img.src = imageUrl;
     img.style.cssText = `
-        max-width: 95%;
-        max-height: 95%;
+        max-width: 100%;
+        max-height: 95vh;
         border-radius: 8px;
         box-shadow: 0 0 50px rgba(255, 255, 255, 0.3);
+        object-fit: contain;
     `;
+    img.alt = 'صورة المنتج';
+    img.onerror = function() {
+        imgContainer.innerHTML = '<p style="color: white;">فشل تحميل الصورة</p>';
+    };
 
-    modal.onclick = () => document.body.removeChild(modal);
-    modal.appendChild(img);
+    const closeBtn = document.createElement('button');
+    closeBtn.textContent = '✕';
+    closeBtn.style.cssText = `
+        position: absolute;
+        top: 20px;
+        right: 20px;
+        background: rgba(255, 255, 255, 0.2);
+        border: 2px solid white;
+        color: white;
+        width: 40px;
+        height: 40px;
+        border-radius: 50%;
+        font-size: 24px;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        transition: all 0.3s;
+        z-index: 10001;
+    `;
+    closeBtn.setAttribute('aria-label', 'إغلاق');
+    closeBtn.onmouseover = () => closeBtn.style.background = 'rgba(255, 255, 255, 0.4)';
+    closeBtn.onmouseout = () => closeBtn.style.background = 'rgba(255, 255, 255, 0.2)';
+
+    const closeModal = () => {
+        document.body.removeChild(modal);
+        document.body.style.overflow = '';
+    };
+
+    closeBtn.onclick = (e) => {
+        e.stopPropagation();
+        closeModal();
+    };
+
+    modal.onclick = (e) => {
+        if (e.target === modal) {
+            closeModal();
+        }
+    };
+
+    // Keyboard support
+    const handleKeyDown = (e) => {
+        if (e.key === 'Escape') {
+            closeModal();
+            document.removeEventListener('keydown', handleKeyDown);
+        }
+    };
+    document.addEventListener('keydown', handleKeyDown);
+
+    // Prevent body scroll
+    document.body.style.overflow = 'hidden';
+
+    imgContainer.appendChild(img);
+    imgContainer.appendChild(closeBtn);
+    modal.appendChild(imgContainer);
     document.body.appendChild(modal);
 }
 
@@ -239,7 +410,11 @@ function updateSlider() {
     const dots = document.querySelectorAll('.dot');
 
     if (track) {
-        track.style.transform = `translateX(${window.currentSlide * 100}%)`; // RTL: positive value moves right
+        // For RTL: negative value moves right (next), positive moves left (prev)
+        // So we invert the direction
+        const translateValue = -window.currentSlide * 100;
+        track.style.transform = `translateX(${translateValue}%)`;
+        track.style.transition = 'transform 0.3s ease';
     }
 
     dots.forEach((dot, index) => {

@@ -79,7 +79,7 @@ async function loadProduct() {
                     const img = document.createElement('img');
                     img.src = url;
                     img.alt = escapeHtml(product.name) + ` - صورة ${index + 1}`;
-                    img.style.cssText = 'width: 100%; height: auto; max-height: 500px; object-fit: contain; border-radius: 12px; cursor: pointer;';
+                    img.style.cssText = 'width: 100%; height: 100%; object-fit: contain; border-radius: 12px; cursor: pointer; display: block;';
                     img.loading = index === 0 ? 'eager' : 'lazy';
                     img.onerror = function() {
                         this.src = 'data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" width="400" height="300"%3E%3Crect fill="%23ddd" width="400" height="300"/%3E%3Ctext fill="%23999" font-family="sans-serif" font-size="18" x="50%25" y="50%25" text-anchor="middle" dy=".3em"%3Eفشل تحميل الصورة%3C/text%3E%3C/svg%3E';

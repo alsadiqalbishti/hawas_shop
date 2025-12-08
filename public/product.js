@@ -49,7 +49,14 @@ async function loadProduct() {
 
         // Filter out empty URLs and get valid media URLs
         const validMediaUrls = (product.mediaUrls || [])
-            .filter(url => url && url.trim() !== '' && url !== 'null' && url !== 'undefined');
+            .filter(url => {
+                if (!url) return false;
+                const urlStr = typeof url === 'string' ? url.trim() : String(url);
+                return urlStr !== '' && urlStr !== 'null' && urlStr !== 'undefined' && urlStr.length > 10;
+            })
+            .map(url => typeof url === 'string' ? url.trim() : String(url));
+        
+        console.log('Loading product with media URLs:', validMediaUrls.length, validMediaUrls);
         
         // Check if we have multiple images
         if (validMediaUrls.length > 0) {

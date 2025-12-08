@@ -46,7 +46,17 @@ module.exports = async (req, res) => {
     try {
         // GET - List all products or get single product (public, no auth required)
         if (req.method === 'GET') {
-            const redisClient = getRedis();
+            let redisClient;
+            try {
+                redisClient = getRedis();
+            } catch (redisError) {
+                console.error('Redis connection failed:', redisError);
+                return res.status(503).json({ 
+                    error: 'Service temporarily unavailable',
+                    message: 'Database connection failed'
+                });
+            }
+            
             const { id } = req.query;
 
             if (id) {
@@ -58,13 +68,25 @@ module.exports = async (req, res) => {
             }
 
             // Get all product IDs
-            const productIds = await redisClient.smembers('products');
+            let productIds;
+            try {
+                productIds = await redisClient.smembers('products');
+            } catch (error) {
+                console.error('Error fetching product IDs:', error);
+                return res.status(500).json({ error: 'Failed to fetch products' });
+            }
+            
             const products = [];
 
             for (const productId of productIds) {
-                const productData = await redisClient.get(`product:${productId}`);
-                if (productData) {
-                    products.push(JSON.parse(productData));
+                try {
+                    const productData = await redisClient.get(`product:${productId}`);
+                    if (productData) {
+                        products.push(JSON.parse(productData));
+                    }
+                } catch (error) {
+                    console.error(`Error fetching product ${productId}:`, error);
+                    // Continue with other products
                 }
             }
 

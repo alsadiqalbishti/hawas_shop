@@ -136,8 +136,28 @@ async function loadProducts() {
     const container = document.getElementById('productsContainer');
 
     try {
-        const response = await fetch('/api/products');
+        const response = await fetch('/api/products', {
+            headers: {
+                'Authorization': `Bearer ${authToken}`
+            }
+        });
+
+        if (!response.ok) {
+            // If unauthorized, redirect to login
+            if (response.status === 401) {
+                logout();
+                return;
+            }
+            throw new Error(`HTTP error! status: ${response.status}`);
+        }
+
         const products = await response.json();
+        
+        // Check if response is an array
+        if (!Array.isArray(products)) {
+            throw new Error('Invalid response format');
+        }
+
         currentProducts = products;
 
         if (products.length === 0) {
@@ -248,7 +268,7 @@ async function loadProducts() {
         console.error('Error loading products:', error);
         const errorDiv = document.createElement('div');
         errorDiv.className = 'alert alert-error';
-        errorDiv.textContent = 'حدث خطأ في تحميل المنتجات';
+        errorDiv.textContent = `حدث خطأ في تحميل المنتجات: ${error.message}`;
         container.innerHTML = '';
         container.appendChild(errorDiv);
     }
@@ -259,8 +279,28 @@ async function loadOrders() {
     const container = document.getElementById('ordersContainer');
 
     try {
-        const response = await fetch('/api/orders');
+        const response = await fetch('/api/orders', {
+            headers: {
+                'Authorization': `Bearer ${authToken}`
+            }
+        });
+
+        if (!response.ok) {
+            // If unauthorized, redirect to login
+            if (response.status === 401) {
+                logout();
+                return;
+            }
+            throw new Error(`HTTP error! status: ${response.status}`);
+        }
+
         const orders = await response.json();
+        
+        // Check if response is an array
+        if (!Array.isArray(orders)) {
+            throw new Error('Invalid response format');
+        }
+
         currentOrders = orders;
 
         if (orders.length === 0) {
@@ -379,7 +419,7 @@ async function loadOrders() {
         console.error('Error loading orders:', error);
         const errorDiv = document.createElement('div');
         errorDiv.className = 'alert alert-error';
-        errorDiv.textContent = 'حدث خطأ في تحميل الطلبات';
+        errorDiv.textContent = `حدث خطأ في تحميل الطلبات: ${error.message}`;
         container.innerHTML = '';
         container.appendChild(errorDiv);
     }

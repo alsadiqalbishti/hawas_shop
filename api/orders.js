@@ -48,14 +48,35 @@ module.exports = async (req, res) => {
         if (req.method === 'GET') {
             if (!requireAuth(req, res)) return;
             
-            const redisClient = getRedis();
-            const orderIds = await redisClient.smembers('orders');
+            let redisClient;
+            try {
+                redisClient = getRedis();
+            } catch (redisError) {
+                console.error('Redis connection failed:', redisError);
+                return res.status(503).json({ 
+                    error: 'Service temporarily unavailable',
+                    message: 'Database connection failed'
+                });
+            }
+            let orderIds;
+            try {
+                orderIds = await redisClient.smembers('orders');
+            } catch (error) {
+                console.error('Error fetching order IDs:', error);
+                return res.status(500).json({ error: 'Failed to fetch orders' });
+            }
+            
             const orders = [];
 
             for (const orderId of orderIds) {
-                const orderData = await redisClient.get(`order:${orderId}`);
-                if (orderData) {
-                    orders.push(JSON.parse(orderData));
+                try {
+                    const orderData = await redisClient.get(`order:${orderId}`);
+                    if (orderData) {
+                        orders.push(JSON.parse(orderData));
+                    }
+                } catch (error) {
+                    console.error(`Error fetching order ${orderId}:`, error);
+                    // Continue with other orders
                 }
             }
 

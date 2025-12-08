@@ -127,24 +127,32 @@ async function loadProduct() {
                 setTimeout(() => updateSlider(), 100);
             }
 
-        } else if (product.mediaUrl) {
+        } else if (product.mediaUrl && product.mediaUrl.trim() !== '') {
             // Backward compatibility for single image
             if (product.mediaType === 'video') {
+                const videoWrapper = document.createElement('div');
+                videoWrapper.style.cssText = 'width: 100%; height: 500px; display: flex; align-items: center; justify-content: center;';
+                
                 const video = document.createElement('video');
                 video.src = product.mediaUrl;
                 video.controls = true;
                 video.className = 'product-video';
+                video.style.cssText = 'max-width: 100%; max-height: 100%; width: auto; height: auto; object-fit: contain;';
                 video.muted = true;
                 video.loop = true;
                 video.textContent = 'متصفحك لا يدعم تشغيل الفيديو';
-                mediaContainer.appendChild(video);
+                
+                videoWrapper.appendChild(video);
+                mediaContainer.appendChild(videoWrapper);
             } else {
+                const imgWrapper = document.createElement('div');
+                imgWrapper.style.cssText = 'width: 100%; height: 500px; display: flex; align-items: center; justify-content: center;';
+                
                 const img = document.createElement('img');
                 img.src = product.mediaUrl;
                 img.alt = escapeHtml(product.name);
                 img.className = 'product-image';
-                img.style.cursor = 'pointer';
-                img.style.transition = 'transform 0.3s';
+                img.style.cssText = 'max-width: 100%; max-height: 100%; width: auto; height: auto; object-fit: contain; border-radius: 12px; cursor: pointer; transition: transform 0.3s;';
                 img.loading = 'lazy';
                 img.onerror = function() {
                     this.src = 'data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" width="400" height="300"%3E%3Crect fill="%23ddd" width="400" height="300"/%3E%3Ctext fill="%23999" font-family="sans-serif" font-size="18" x="50%25" y="50%25" text-anchor="middle" dy=".3em"%3Eفشل تحميل الصورة%3C/text%3E%3C/svg%3E';
@@ -152,7 +160,9 @@ async function loadProduct() {
                 img.onclick = () => openImageZoom(product.mediaUrl);
                 img.onmouseover = () => img.style.transform = 'scale(1.02)';
                 img.onmouseout = () => img.style.transform = 'scale(1)';
-                mediaContainer.appendChild(img);
+                
+                imgWrapper.appendChild(img);
+                mediaContainer.appendChild(imgWrapper);
             }
         } else {
             const placeholder = document.createElement('div');

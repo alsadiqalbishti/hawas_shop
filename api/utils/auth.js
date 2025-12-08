@@ -103,12 +103,36 @@ function validateProduct(data) {
         errors.push('Description is too long (max 5000 characters)');
     }
     
-    if (data.mediaUrl && data.mediaUrl.length > 10000) {
-        errors.push('Media URL is too long');
+    // Base64 images can be very long, so we check size differently
+    // Max 5MB for images, 10MB for videos (base64 is ~33% larger)
+    if (data.mediaUrl) {
+        const isBase64 = data.mediaUrl.startsWith('data:');
+        if (isBase64) {
+            const estimatedSize = (data.mediaUrl.length * 3) / 4; // Approximate binary size
+            const maxSize = data.mediaType === 'video' ? 10 * 1024 * 1024 : 5 * 1024 * 1024;
+            if (estimatedSize > maxSize) {
+                errors.push(`Media file too large. Max ${maxSize / (1024 * 1024)}MB`);
+            }
+        } else if (data.mediaUrl.length > 2000) {
+            // Regular URL shouldn't be that long
+            errors.push('Media URL is too long');
+        }
     }
     
-    if (data.mediaUrls && Array.isArray(data.mediaUrls) && data.mediaUrls.length > 10) {
-        errors.push('Maximum 10 media files allowed');
+    if (data.mediaUrls && Array.isArray(data.mediaUrls)) {
+        if (data.mediaUrls.length > 10) {
+            errors.push('Maximum 10 media files allowed');
+        }
+        // Check each media URL size
+        data.mediaUrls.forEach((url, index) => {
+            if (url && url.startsWith('data:')) {
+                const estimatedSize = (url.length * 3) / 4;
+                const maxSize = data.mediaType === 'video' ? 10 * 1024 * 1024 : 5 * 1024 * 1024;
+                if (estimatedSize > maxSize) {
+                    errors.push(`Media file ${index + 1} too large. Max ${maxSize / (1024 * 1024)}MB`);
+                }
+            }
+        });
     }
     
     return {

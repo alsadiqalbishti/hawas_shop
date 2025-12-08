@@ -656,6 +656,15 @@ document.getElementById('productForm')?.addEventListener('submit', async (e) => 
         const url = '/api/products';
         const method = editingProductId ? 'PUT' : 'POST';
 
+        // Check if auth token exists
+        if (!authToken) {
+            showNotification('يجب تسجيل الدخول أولاً', 'error');
+            submitButton.disabled = false;
+            submitButton.textContent = '💾 حفظ';
+            logout();
+            return;
+        }
+
         const response = await fetch(url, {
             method,
             headers: {
@@ -671,7 +680,23 @@ document.getElementById('productForm')?.addEventListener('submit', async (e) => 
             showNotification(editingProductId ? 'تم تحديث المنتج بنجاح!' : 'تم إضافة المنتج بنجاح!', 'success');
         } else {
             const errorData = await response.json().catch(() => ({}));
-            showNotification(errorData.error || 'حدث خطأ في حفظ المنتج', 'error');
+            
+            // Show detailed error message
+            let errorMessage = 'حدث خطأ في حفظ المنتج';
+            if (response.status === 401) {
+                errorMessage = 'انتهت صلاحية الجلسة. يرجى تسجيل الدخول مرة أخرى';
+                logout();
+            } else if (response.status === 400) {
+                if (errorData.errors && Array.isArray(errorData.errors)) {
+                    errorMessage = `خطأ في التحقق: ${errorData.errors.join(', ')}`;
+                } else if (errorData.error) {
+                    errorMessage = errorData.error;
+                }
+            } else if (errorData.error) {
+                errorMessage = errorData.error;
+            }
+            
+            showNotification(errorMessage, 'error');
         }
     } catch (error) {
         console.error('Error:', error);

@@ -218,13 +218,39 @@ async function loadProducts() {
             nameCell.appendChild(nameStrong);
             row.appendChild(nameCell);
             
-            // Price cell
+            // Price cell - show discount if available
             const priceCell = document.createElement('td');
-            const priceSpan = document.createElement('span');
-            priceSpan.className = 'price';
-            priceSpan.style.fontSize = '1.2rem';
-            priceSpan.textContent = `${product.price} د.ل`;
-            priceCell.appendChild(priceSpan);
+            const priceContainer = document.createElement('div');
+            priceContainer.style.cssText = 'display: flex; flex-direction: column; gap: 0.25rem;';
+            
+            if (product.discountPrice && product.discountPrice < product.price) {
+                // Show discounted price
+                const discountPriceSpan = document.createElement('span');
+                discountPriceSpan.className = 'price';
+                discountPriceSpan.style.cssText = 'font-size: 1.2rem; color: var(--success); font-weight: 700;';
+                discountPriceSpan.textContent = `${product.discountPrice} د.ل`;
+                priceContainer.appendChild(discountPriceSpan);
+                
+                const originalPriceSpan = document.createElement('span');
+                originalPriceSpan.style.cssText = 'font-size: 0.9rem; color: var(--text-light); text-decoration: line-through;';
+                originalPriceSpan.textContent = `${product.price} د.ل`;
+                priceContainer.appendChild(originalPriceSpan);
+                
+                const discountPercent = Math.round(((product.price - product.discountPrice) / product.price) * 100);
+                const discountBadge = document.createElement('span');
+                discountBadge.style.cssText = 'font-size: 0.75rem; background: var(--danger); color: white; padding: 0.2rem 0.5rem; border-radius: 4px; display: inline-block; margin-top: 0.25rem;';
+                discountBadge.textContent = `خصم ${discountPercent}%`;
+                priceContainer.appendChild(discountBadge);
+            } else {
+                // Show regular price
+                const priceSpan = document.createElement('span');
+                priceSpan.className = 'price';
+                priceSpan.style.fontSize = '1.2rem';
+                priceSpan.textContent = `${product.price} د.ل`;
+                priceContainer.appendChild(priceSpan);
+            }
+            
+            priceCell.appendChild(priceContainer);
             row.appendChild(priceCell);
             
             // Link cell
@@ -442,16 +468,48 @@ function openProductModal(productId = null) {
             document.getElementById('productId').value = product.id;
             document.getElementById('productName').value = product.name;
             document.getElementById('productPrice').value = product.price;
+            document.getElementById('productDiscountPrice').value = product.discountPrice || '';
             document.getElementById('productDescription').value = product.description || '';
 
-            if (product.mediaUrl) {
-                const mediaPreview = product.mediaType === 'video' ?
-                    `<video src="${product.mediaUrl}" controls style="max-width: 200px; border-radius: 8px;"></video>` :
-                    `<img src="${product.mediaUrl}" style="max-width: 200px; border-radius: 8px;">`;
-                document.getElementById('currentMedia').innerHTML = `
-                    <p style="color: var(--text-light); margin-bottom: 0.5rem;">الصورة الحالية:</p>
-                    ${mediaPreview}
-                `;
+            // Show current media (handle multiple images)
+            const currentMediaDiv = document.getElementById('currentMedia');
+            currentMediaDiv.innerHTML = '';
+            
+            const mediaUrls = product.mediaUrls && product.mediaUrls.length > 0 
+                ? product.mediaUrls 
+                : (product.mediaUrl ? [product.mediaUrl] : []);
+            
+            if (mediaUrls.length > 0) {
+                const label = document.createElement('p');
+                label.style.cssText = 'color: var(--text-light); margin-bottom: 0.5rem; font-weight: 600;';
+                label.textContent = `الصور الحالية (${mediaUrls.length}):`;
+                currentMediaDiv.appendChild(label);
+                
+                const mediaContainer = document.createElement('div');
+                mediaContainer.style.cssText = 'display: flex; gap: 0.5rem; flex-wrap: wrap; margin-top: 0.5rem;';
+                
+                mediaUrls.forEach((url, index) => {
+                    const mediaWrapper = document.createElement('div');
+                    mediaWrapper.style.cssText = 'position: relative;';
+                    
+                    if (product.mediaType === 'video' || url.includes('data:video')) {
+                        const video = document.createElement('video');
+                        video.src = url;
+                        video.controls = true;
+                        video.style.cssText = 'max-width: 150px; max-height: 150px; border-radius: 8px; object-fit: cover;';
+                        mediaWrapper.appendChild(video);
+                    } else {
+                        const img = document.createElement('img');
+                        img.src = url;
+                        img.alt = `صورة ${index + 1}`;
+                        img.style.cssText = 'max-width: 150px; max-height: 150px; border-radius: 8px; object-fit: cover; border: 2px solid var(--border);';
+                        mediaWrapper.appendChild(img);
+                    }
+                    
+                    mediaContainer.appendChild(mediaWrapper);
+                });
+                
+                currentMediaDiv.appendChild(mediaContainer);
             }
         }
     } else {

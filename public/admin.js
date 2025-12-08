@@ -575,7 +575,10 @@ document.getElementById('productForm')?.addEventListener('submit', async (e) => 
 
                     const uploadResponse = await fetch('/api/upload', {
                         method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'Authorization': `Bearer ${authToken}`
+                        },
                         body: JSON.stringify({
                             mediaData: base64Data,
                             mediaType: mediaType

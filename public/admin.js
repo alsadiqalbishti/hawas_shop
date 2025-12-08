@@ -638,8 +638,16 @@ document.getElementById('productForm')?.addEventListener('submit', async (e) => 
             return;
         }
 
-        // Filter out empty media URLs
-        const validMediaUrls = mediaUrls.filter(url => url && url.trim() !== '' && url !== 'null' && url !== 'undefined');
+        // Filter out empty media URLs and ensure all are valid
+        const validMediaUrls = mediaUrls
+            .filter(url => {
+                if (!url) return false;
+                const urlStr = typeof url === 'string' ? url.trim() : String(url);
+                return urlStr !== '' && urlStr !== 'null' && urlStr !== 'undefined' && urlStr.length > 10;
+            })
+            .map(url => typeof url === 'string' ? url.trim() : String(url));
+        
+        console.log('Saving product with media URLs:', validMediaUrls.length, validMediaUrls);
         
         // Create/update product
         const productData = {

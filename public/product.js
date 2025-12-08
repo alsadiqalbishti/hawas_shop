@@ -90,16 +90,17 @@ async function loadProduct() {
                     sliderTrack.appendChild(slide);
                 });
 
+                // For RTL: prev (right side) goes to previous (moves right), next (left side) goes to next (moves left)
                 const prevBtn = document.createElement('button');
                 prevBtn.className = 'slider-btn prev-btn';
                 prevBtn.textContent = '❮';
-                prevBtn.onclick = () => moveSlider(-1);
+                prevBtn.onclick = () => moveSlider(1); // In RTL, prev moves right (positive)
                 prevBtn.setAttribute('aria-label', 'الصورة السابقة');
 
                 const nextBtn = document.createElement('button');
                 nextBtn.className = 'slider-btn next-btn';
                 nextBtn.textContent = '❯';
-                nextBtn.onclick = () => moveSlider(1);
+                nextBtn.onclick = () => moveSlider(-1); // In RTL, next moves left (negative)
                 nextBtn.setAttribute('aria-label', 'الصورة التالية');
 
                 const dotsContainer = document.createElement('div');

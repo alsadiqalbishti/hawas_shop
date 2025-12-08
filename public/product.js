@@ -97,16 +97,18 @@ async function loadProduct() {
                     sliderTrack.appendChild(slide);
                 });
 
-                // For RTL: prev (right side) goes to previous (moves right), next (left side) goes to next (moves left)
+                // For RTL: 
+                // - Right button (prev) should point right (❯) and go to previous slide (moves right)
+                // - Left button (next) should point left (❮) and go to next slide (moves left)
                 const prevBtn = document.createElement('button');
                 prevBtn.className = 'slider-btn prev-btn';
-                prevBtn.textContent = '❮';
+                prevBtn.textContent = '❯'; // Right arrow for right button (goes right/previous)
                 prevBtn.onclick = () => moveSlider(1); // In RTL, prev moves right (positive)
                 prevBtn.setAttribute('aria-label', 'الصورة السابقة');
 
                 const nextBtn = document.createElement('button');
                 nextBtn.className = 'slider-btn next-btn';
-                nextBtn.textContent = '❯';
+                nextBtn.textContent = '❮'; // Left arrow for left button (goes left/next)
                 nextBtn.onclick = () => moveSlider(-1); // In RTL, next moves left (negative)
                 nextBtn.setAttribute('aria-label', 'الصورة التالية');
 

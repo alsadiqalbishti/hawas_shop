@@ -117,6 +117,9 @@ async function loadProduct() {
                 // Initialize slider state
                 window.currentSlide = 0;
                 window.totalSlides = product.mediaUrls.length;
+                
+                // Update slider to show first slide
+                updateSlider();
             }
 
         } else if (product.mediaUrl) {
@@ -409,7 +412,7 @@ function updateSlider() {
     const track = document.getElementById('sliderTrack');
     const dots = document.querySelectorAll('.dot');
 
-    if (track) {
+    if (track && window.totalSlides) {
         // For RTL: negative value moves right (next), positive moves left (prev)
         // So we invert the direction
         const translateValue = -window.currentSlide * 100;
@@ -417,13 +420,15 @@ function updateSlider() {
         track.style.transition = 'transform 0.3s ease';
     }
 
-    dots.forEach((dot, index) => {
-        if (index === window.currentSlide) {
-            dot.classList.add('active');
-        } else {
-            dot.classList.remove('active');
-        }
-    });
+    if (dots && dots.length > 0) {
+        dots.forEach((dot, index) => {
+            if (index === window.currentSlide) {
+                dot.classList.add('active');
+            } else {
+                dot.classList.remove('active');
+            }
+        });
+    }
 }
 
 function moveSlider(direction) {

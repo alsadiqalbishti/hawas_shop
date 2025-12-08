@@ -160,8 +160,8 @@ async function loadProduct() {
         const descElement = document.getElementById('productDescription');
         if (product.description) {
             // Use textContent and preserve line breaks with CSS
-            descElement.textContent = product.description;
-            descElement.style.whiteSpace = 'pre-wrap';
+            descElement.textContent = product.description.trim();
+            // CSS already handles white-space: pre-wrap
         } else {
             descElement.textContent = '';
         }

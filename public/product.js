@@ -429,9 +429,8 @@ function updateSlider() {
     const dots = document.querySelectorAll('.dot');
 
     if (track && window.totalSlides) {
-        // For RTL: negative value moves right (next), positive moves left (prev)
-        // So we invert the direction
-        const translateValue = -window.currentSlide * 100;
+        // For RTL: positive value moves right (to previous slide), negative moves left (to next slide)
+        const translateValue = window.currentSlide * 100;
         track.style.transform = `translateX(${translateValue}%)`;
         track.style.transition = 'transform 0.3s ease';
     }
@@ -448,7 +447,8 @@ function updateSlider() {
 }
 
 function moveSlider(direction) {
-    window.currentSlide = (window.currentSlide + direction + window.totalSlides) % window.totalSlides;
+    // In RTL: direction 1 = move right (previous), direction -1 = move left (next)
+    window.currentSlide = (window.currentSlide - direction + window.totalSlides) % window.totalSlides;
     updateSlider();
 }
 

@@ -47,11 +47,15 @@ async function loadProduct() {
         // Clear container
         mediaContainer.innerHTML = '';
 
+        // Filter out empty URLs and get valid media URLs
+        const validMediaUrls = (product.mediaUrls || [])
+            .filter(url => url && url.trim() !== '' && url !== 'null' && url !== 'undefined');
+        
         // Check if we have multiple images
-        if (product.mediaUrls && product.mediaUrls.length > 0) {
+        if (validMediaUrls.length > 0) {
             if (product.mediaType === 'video') {
                 const video = document.createElement('video');
-                video.src = product.mediaUrls[0];
+                video.src = validMediaUrls[0];
                 video.controls = true;
                 video.className = 'product-video';
                 video.muted = true;
@@ -67,15 +71,16 @@ async function loadProduct() {
                 sliderTrack.className = 'slider-track';
                 sliderTrack.id = 'sliderTrack';
 
-                product.mediaUrls.forEach((url, index) => {
+                validMediaUrls.forEach((url, index) => {
                     const slide = document.createElement('div');
                     slide.className = 'slider-slide';
+                    slide.style.cssText = 'min-width: 100%; width: 100%; flex-shrink: 0;';
 
                     const img = document.createElement('img');
                     img.src = url;
-                    img.alt = escapeHtml(product.name);
-                    img.style.cursor = 'pointer';
-                    img.loading = 'lazy';
+                    img.alt = escapeHtml(product.name) + ` - صورة ${index + 1}`;
+                    img.style.cssText = 'width: 100%; height: auto; max-height: 500px; object-fit: contain; border-radius: 12px; cursor: pointer;';
+                    img.loading = index === 0 ? 'eager' : 'lazy';
                     img.onerror = function() {
                         this.src = 'data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" width="400" height="300"%3E%3Crect fill="%23ddd" width="400" height="300"/%3E%3Ctext fill="%23999" font-family="sans-serif" font-size="18" x="50%25" y="50%25" text-anchor="middle" dy=".3em"%3Eفشل تحميل الصورة%3C/text%3E%3C/svg%3E';
                     };
@@ -100,7 +105,7 @@ async function loadProduct() {
                 const dotsContainer = document.createElement('div');
                 dotsContainer.className = 'slider-dots';
 
-                product.mediaUrls.forEach((_, index) => {
+                validMediaUrls.forEach((_, index) => {
                     const dot = document.createElement('div');
                     dot.className = `dot ${index === 0 ? 'active' : ''}`;
                     dot.onclick = () => goToSlide(index);
@@ -116,10 +121,10 @@ async function loadProduct() {
 
                 // Initialize slider state
                 window.currentSlide = 0;
-                window.totalSlides = product.mediaUrls.length;
+                window.totalSlides = validMediaUrls.length;
                 
                 // Update slider to show first slide
-                updateSlider();
+                setTimeout(() => updateSlider(), 100);
             }
 
         } else if (product.mediaUrl) {

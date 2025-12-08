@@ -638,14 +638,17 @@ document.getElementById('productForm')?.addEventListener('submit', async (e) => 
             return;
         }
 
+        // Filter out empty media URLs
+        const validMediaUrls = mediaUrls.filter(url => url && url.trim() !== '' && url !== 'null' && url !== 'undefined');
+        
         // Create/update product
         const productData = {
             name: name,
             price: price,
             discountPrice: discountPrice,
             description: document.getElementById('productDescription').value.trim(),
-            mediaUrls: mediaUrls,
-            mediaUrl: mediaUrls[0] || '', // Keep first image as main for backward compatibility
+            mediaUrls: validMediaUrls,
+            mediaUrl: validMediaUrls[0] || '', // Keep first image as main for backward compatibility
             mediaType: mediaType
         };
 

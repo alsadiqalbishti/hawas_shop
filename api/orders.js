@@ -202,20 +202,20 @@ module.exports = async (req, res) => {
                         throw new Error('Order not found');
                     }
 
-                    const order = JSON.parse(orderData);
-                    
-                    // Validate status
-                    const validStatuses = ['pending', 'completed', 'cancelled'];
-                    const newStatus = status || order.status;
-                    if (!validStatuses.includes(newStatus)) {
-                        throw new Error(`Invalid status. Valid statuses: ${validStatuses.join(', ')}`);
-                    }
+            const order = JSON.parse(orderData);
+            
+            // Validate status
+            const validStatuses = ['pending', 'assigned', 'in_transit', 'delivered', 'completed', 'cancelled'];
+            const newStatus = status || order.status;
+            if (!validStatuses.includes(newStatus)) {
+                throw new Error(`Invalid status. Valid statuses: ${validStatuses.join(', ')}`);
+            }
 
-                    const updated = {
-                        ...order,
-                        status: newStatus,
-                        updatedAt: new Date().toISOString()
-                    };
+            const updated = {
+                ...order,
+                status: newStatus,
+                updatedAt: new Date().toISOString()
+            };
 
                     await client.set(`order:${id}`, JSON.stringify(updated));
                     return updated;

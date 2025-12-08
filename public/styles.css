@@ -463,10 +463,12 @@ tr:hover {
 
 .slider-btn.prev-btn {
   right: 10px;
+  left: auto;
 }
 
 .slider-btn.next-btn {
   left: 10px;
+  right: auto;
 }
 
 .slider-dots {
@@ -503,15 +505,7 @@ tr:hover {
 }
 
 /* RTL Support for Slider */
-[dir="rtl"] .slider-btn.prev-btn {
-  left: 10px;
-  right: auto;
-}
-
-[dir="rtl"] .slider-btn.next-btn {
-  right: 10px;
-  left: auto;
-}
+/* In RTL, the base styles already work correctly - no override needed */
 
 @keyframes slideUp {
   from {

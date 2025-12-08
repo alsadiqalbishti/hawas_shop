@@ -4,6 +4,66 @@ let currentProducts = [];
 let currentOrders = [];
 let editingProductId = null;
 
+// Utility: Escape HTML to prevent XSS
+function escapeHtml(text) {
+    const div = document.createElement('div');
+    div.textContent = text;
+    return div.innerHTML;
+}
+
+// Utility: Show notification (replaces alert)
+function showNotification(message, type = 'info') {
+    const notification = document.createElement('div');
+    notification.className = `notification notification-${type}`;
+    notification.style.cssText = `
+        position: fixed;
+        top: 20px;
+        right: 20px;
+        background: ${type === 'success' ? 'var(--success)' : type === 'error' ? 'var(--danger)' : 'var(--primary)'};
+        color: white;
+        padding: 1rem 1.5rem;
+        border-radius: 8px;
+        box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+        z-index: 10000;
+        animation: slideIn 0.3s ease-out;
+        max-width: 400px;
+    `;
+    notification.textContent = message;
+    
+    document.body.appendChild(notification);
+    
+    setTimeout(() => {
+        notification.style.animation = 'slideOut 0.3s ease-out';
+        setTimeout(() => notification.remove(), 300);
+    }, 3000);
+}
+
+// Add CSS for notifications
+const style = document.createElement('style');
+style.textContent = `
+    @keyframes slideIn {
+        from {
+            transform: translateX(400px);
+            opacity: 0;
+        }
+        to {
+            transform: translateX(0);
+            opacity: 1;
+        }
+    }
+    @keyframes slideOut {
+        from {
+            transform: translateX(0);
+            opacity: 1;
+        }
+        to {
+            transform: translateX(400px);
+            opacity: 0;
+        }
+    }
+`;
+document.head.appendChild(style);
+
 // Check authentication on load
 window.addEventListener('DOMContentLoaded', () => {
     if (authToken) {
@@ -56,14 +116,19 @@ function logout() {
 }
 
 // Switch tabs
-function switchTab(tab) {
+function switchTab(tab, eventElement) {
     // Update tab buttons
     document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
-    event.target.classList.add('active');
+    if (eventElement) {
+        eventElement.classList.add('active');
+    }
 
     // Update tab content
     document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
-    document.getElementById(tab + 'Tab').classList.add('active');
+    const tabContent = document.getElementById(tab + 'Tab');
+    if (tabContent) {
+        tabContent.classList.add('active');
+    }
 }
 
 // Load products
@@ -76,57 +141,116 @@ async function loadProducts() {
         currentProducts = products;
 
         if (products.length === 0) {
-            container.innerHTML = '<p class="text-center" style="color: var(--text-light); padding: 2rem;">لا توجد منتجات بعد. قم بإضافة منتج جديد!</p>';
+            const emptyMsg = document.createElement('p');
+            emptyMsg.className = 'text-center';
+            emptyMsg.style.cssText = 'color: var(--text-light); padding: 2rem;';
+            emptyMsg.textContent = 'لا توجد منتجات بعد. قم بإضافة منتج جديد!';
+            container.innerHTML = '';
+            container.appendChild(emptyMsg);
             return;
         }
 
-        container.innerHTML = `
-            <div class="table-container">
-                <table>
-                    <thead>
-                        <tr>
-                            <th>الصورة</th>
-                            <th>اسم المنتج</th>
-                            <th>السعر</th>
-                            <th>رابط المنتج</th>
-                            <th>الإجراءات</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        ${products.map(product => `
-                            <tr>
-                                <td>
-                                    ${product.mediaUrl ?
-                (product.mediaType === 'video' ?
-                    `<video src="${product.mediaUrl}" style="width: 60px; height: 60px; object-fit: cover; border-radius: 8px;"></video>` :
-                    `<img src="${product.mediaUrl}" alt="${product.name}" style="width: 60px; height: 60px; object-fit: cover; border-radius: 8px;">`)
-                : '📦'}
-                                </td>
-                                <td><strong>${product.name}</strong></td>
-                                <td><span class="price" style="font-size: 1.2rem;">${product.price} د.ل</span></td>
-                                <td>
-                                    <button onclick="copyProductLink('${product.id}')" class="btn btn-success btn-sm">
-                                        📋 نسخ الرابط
-                                    </button>
-                                </td>
-                                <td>
-                                    <div class="flex gap-1">
-                                        <button onclick="editProduct('${product.id}')" class="btn btn-warning btn-sm">
-                                            ✏️ تعديل
-                                        </button>
-                                        <button onclick="deleteProduct('${product.id}')" class="btn btn-danger btn-sm">
-                                            🗑️ حذف
-                                        </button>
-                                    </div>
-                                </td>
-                            </tr>
-                        `).join('')}
-                    </tbody>
-                </table>
-            </div>
-        `;
+        // Create table using DOM methods to prevent XSS
+        const tableContainer = document.createElement('div');
+        tableContainer.className = 'table-container';
+        
+        const table = document.createElement('table');
+        const thead = document.createElement('thead');
+        const tbody = document.createElement('tbody');
+        
+        // Header
+        const headerRow = document.createElement('tr');
+        ['الصورة', 'اسم المنتج', 'السعر', 'رابط المنتج', 'الإجراءات'].forEach(text => {
+            const th = document.createElement('th');
+            th.textContent = text;
+            headerRow.appendChild(th);
+        });
+        thead.appendChild(headerRow);
+        
+        // Rows
+        products.forEach(product => {
+            const row = document.createElement('tr');
+            
+            // Image cell
+            const imgCell = document.createElement('td');
+            if (product.mediaUrl) {
+                if (product.mediaType === 'video') {
+                    const video = document.createElement('video');
+                    video.src = product.mediaUrl;
+                    video.style.cssText = 'width: 60px; height: 60px; object-fit: cover; border-radius: 8px;';
+                    imgCell.appendChild(video);
+                } else {
+                    const img = document.createElement('img');
+                    img.src = product.mediaUrl;
+                    img.alt = escapeHtml(product.name);
+                    img.style.cssText = 'width: 60px; height: 60px; object-fit: cover; border-radius: 8px;';
+                    imgCell.appendChild(img);
+                }
+            } else {
+                imgCell.textContent = '📦';
+            }
+            row.appendChild(imgCell);
+            
+            // Name cell
+            const nameCell = document.createElement('td');
+            const nameStrong = document.createElement('strong');
+            nameStrong.textContent = product.name;
+            nameCell.appendChild(nameStrong);
+            row.appendChild(nameCell);
+            
+            // Price cell
+            const priceCell = document.createElement('td');
+            const priceSpan = document.createElement('span');
+            priceSpan.className = 'price';
+            priceSpan.style.fontSize = '1.2rem';
+            priceSpan.textContent = `${product.price} د.ل`;
+            priceCell.appendChild(priceSpan);
+            row.appendChild(priceCell);
+            
+            // Link cell
+            const linkCell = document.createElement('td');
+            const copyBtn = document.createElement('button');
+            copyBtn.className = 'btn btn-success btn-sm';
+            copyBtn.textContent = '📋 نسخ الرابط';
+            copyBtn.onclick = () => copyProductLink(product.id);
+            linkCell.appendChild(copyBtn);
+            row.appendChild(linkCell);
+            
+            // Actions cell
+            const actionsCell = document.createElement('td');
+            const actionsDiv = document.createElement('div');
+            actionsDiv.className = 'flex gap-1';
+            
+            const editBtn = document.createElement('button');
+            editBtn.className = 'btn btn-warning btn-sm';
+            editBtn.textContent = '✏️ تعديل';
+            editBtn.onclick = () => editProduct(product.id);
+            actionsDiv.appendChild(editBtn);
+            
+            const deleteBtn = document.createElement('button');
+            deleteBtn.className = 'btn btn-danger btn-sm';
+            deleteBtn.textContent = '🗑️ حذف';
+            deleteBtn.onclick = () => deleteProduct(product.id);
+            actionsDiv.appendChild(deleteBtn);
+            
+            actionsCell.appendChild(actionsDiv);
+            row.appendChild(actionsCell);
+            
+            tbody.appendChild(row);
+        });
+        
+        table.appendChild(thead);
+        table.appendChild(tbody);
+        tableContainer.appendChild(table);
+        container.innerHTML = '';
+        container.appendChild(tableContainer);
     } catch (error) {
-        container.innerHTML = '<div class="alert alert-error">حدث خطأ في تحميل المنتجات</div>';
+        console.error('Error loading products:', error);
+        const errorDiv = document.createElement('div');
+        errorDiv.className = 'alert alert-error';
+        errorDiv.textContent = 'حدث خطأ في تحميل المنتجات';
+        container.innerHTML = '';
+        container.appendChild(errorDiv);
     }
 }
 
@@ -140,62 +264,124 @@ async function loadOrders() {
         currentOrders = orders;
 
         if (orders.length === 0) {
-            container.innerHTML = '<p class="text-center" style="color: var(--text-light); padding: 2rem;">لا توجد طلبات بعد</p>';
+            const emptyMsg = document.createElement('p');
+            emptyMsg.className = 'text-center';
+            emptyMsg.style.cssText = 'color: var(--text-light); padding: 2rem;';
+            emptyMsg.textContent = 'لا توجد طلبات بعد';
+            container.innerHTML = '';
+            container.appendChild(emptyMsg);
             return;
         }
 
-        container.innerHTML = `
-            <div class="table-container">
-                <table>
-                    <thead>
-                        <tr>
-                            <th>رقم الطلب</th>
-                            <th>المنتج</th>
-                            <th>اسم العميل</th>
-                            <th>رقم الهاتف</th>
-                            <th>العنوان</th>
-                            <th>الكمية</th>
-                            <th>التاريخ</th>
-                            <th>الحالة</th>
-                            <th>الإجراءات</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        ${orders.map(order => {
+        // Create table using DOM methods to prevent XSS
+        const tableContainer = document.createElement('div');
+        tableContainer.className = 'table-container';
+        
+        const table = document.createElement('table');
+        const thead = document.createElement('thead');
+        const tbody = document.createElement('tbody');
+        
+        // Header
+        const headerRow = document.createElement('tr');
+        ['رقم الطلب', 'المنتج', 'اسم العميل', 'رقم الهاتف', 'العنوان', 'الكمية', 'التاريخ', 'الحالة', 'الإجراءات'].forEach(text => {
+            const th = document.createElement('th');
+            th.textContent = text;
+            headerRow.appendChild(th);
+        });
+        thead.appendChild(headerRow);
+        
+        // Rows
+        orders.forEach(order => {
             const product = currentProducts.find(p => p.id === order.productId);
-            return `
-                            <tr>
-                                <td><strong>#${order.id.substring(0, 8)}</strong></td>
-                                <td>${product ? product.name : 'غير معروف'}</td>
-                                <td>${order.customerName}</td>
-                                <td><a href="tel:${order.customerPhone}">${order.customerPhone}</a></td>
-                                <td>${order.customerAddress}</td>
-                                <td><strong>${order.quantity}</strong></td>
-                                <td>${new Date(order.createdAt).toLocaleDateString('ar-EG')}</td>
-                                <td>
-                                    <span class="badge ${order.status === 'completed' ? 'badge-success' : 'badge-warning'}">
-                                        ${order.status === 'completed' ? 'مكتمل' : 'قيد المعالجة'}
-                                    </span>
-                                </td>
-                                <td>
-                                    <div class="flex gap-1">
-                                        ${order.status !== 'completed' ?
-                    `<button onclick="markOrderComplete('${order.id}')" class="btn btn-success btn-sm">
-                                                ✅ اكتمل
-                                            </button>` : ''}
-                                        <button onclick="deleteOrder('${order.id}')" class="btn btn-danger btn-sm">
-                                            🗑️ حذف
-                                        </button>
-                                    </div>
-                                </td>
-                            </tr>
-                        `}).join('')}
-                    </tbody>
-                </table>
-            </div>
-        `;
+            const row = document.createElement('tr');
+            
+            // Order ID
+            const idCell = document.createElement('td');
+            const idStrong = document.createElement('strong');
+            idStrong.textContent = `#${order.id.substring(0, 8)}`;
+            idCell.appendChild(idStrong);
+            row.appendChild(idCell);
+            
+            // Product name
+            const productCell = document.createElement('td');
+            productCell.textContent = product ? product.name : 'غير معروف';
+            row.appendChild(productCell);
+            
+            // Customer name
+            const nameCell = document.createElement('td');
+            nameCell.textContent = order.customerName;
+            row.appendChild(nameCell);
+            
+            // Phone
+            const phoneCell = document.createElement('td');
+            const phoneLink = document.createElement('a');
+            phoneLink.href = `tel:${order.customerPhone}`;
+            phoneLink.textContent = order.customerPhone;
+            phoneCell.appendChild(phoneLink);
+            row.appendChild(phoneCell);
+            
+            // Address
+            const addressCell = document.createElement('td');
+            addressCell.textContent = order.customerAddress;
+            row.appendChild(addressCell);
+            
+            // Quantity
+            const qtyCell = document.createElement('td');
+            const qtyStrong = document.createElement('strong');
+            qtyStrong.textContent = order.quantity;
+            qtyCell.appendChild(qtyStrong);
+            row.appendChild(qtyCell);
+            
+            // Date
+            const dateCell = document.createElement('td');
+            dateCell.textContent = new Date(order.createdAt).toLocaleDateString('ar-EG');
+            row.appendChild(dateCell);
+            
+            // Status
+            const statusCell = document.createElement('td');
+            const statusBadge = document.createElement('span');
+            statusBadge.className = order.status === 'completed' ? 'badge badge-success' : 'badge badge-warning';
+            statusBadge.textContent = order.status === 'completed' ? 'مكتمل' : 'قيد المعالجة';
+            statusCell.appendChild(statusBadge);
+            row.appendChild(statusCell);
+            
+            // Actions
+            const actionsCell = document.createElement('td');
+            const actionsDiv = document.createElement('div');
+            actionsDiv.className = 'flex gap-1';
+            
+            if (order.status !== 'completed') {
+                const completeBtn = document.createElement('button');
+                completeBtn.className = 'btn btn-success btn-sm';
+                completeBtn.textContent = '✅ اكتمل';
+                completeBtn.onclick = () => markOrderComplete(order.id);
+                actionsDiv.appendChild(completeBtn);
+            }
+            
+            const deleteBtn = document.createElement('button');
+            deleteBtn.className = 'btn btn-danger btn-sm';
+            deleteBtn.textContent = '🗑️ حذف';
+            deleteBtn.onclick = () => deleteOrder(order.id);
+            actionsDiv.appendChild(deleteBtn);
+            
+            actionsCell.appendChild(actionsDiv);
+            row.appendChild(actionsCell);
+            
+            tbody.appendChild(row);
+        });
+        
+        table.appendChild(thead);
+        table.appendChild(tbody);
+        tableContainer.appendChild(table);
+        container.innerHTML = '';
+        container.appendChild(tableContainer);
     } catch (error) {
-        container.innerHTML = '<div class="alert alert-error">حدث خطأ في تحميل الطلبات</div>';
+        console.error('Error loading orders:', error);
+        const errorDiv = document.createElement('div');
+        errorDiv.className = 'alert alert-error';
+        errorDiv.textContent = 'حدث خطأ في تحميل الطلبات';
+        container.innerHTML = '';
+        container.appendChild(errorDiv);
     }
 }
 
@@ -284,13 +470,14 @@ document.getElementById('productForm')?.addEventListener('submit', async (e) => 
                         const uploadData = await uploadResponse.json();
                         mediaUrls.push(uploadData.mediaUrl);
                     } else {
-                        alert('حدث خطأ في رفع الملف');
+                        const errorData = await uploadResponse.json().catch(() => ({}));
+                        showNotification(errorData.error || 'حدث خطأ في رفع الملف', 'error');
                         submitButton.disabled = false;
                         submitButton.textContent = '💾 حفظ';
                         return;
                     }
                 } catch (error) {
-                    alert('حدث خطأ في قراءة الملف');
+                    showNotification('حدث خطأ في قراءة الملف', 'error');
                     submitButton.disabled = false;
                     submitButton.textContent = '💾 حفظ';
                     return;
@@ -305,13 +492,39 @@ document.getElementById('productForm')?.addEventListener('submit', async (e) => 
             }
         }
 
+        // Validate form data
+        const name = document.getElementById('productName').value.trim();
+        const price = parseFloat(document.getElementById('productPrice').value);
+        const discountPrice = document.getElementById('productDiscountPrice').value ?
+            parseFloat(document.getElementById('productDiscountPrice').value) : null;
+
+        if (!name || name.length === 0) {
+            showNotification('اسم المنتج مطلوب', 'error');
+            submitButton.disabled = false;
+            submitButton.textContent = '💾 حفظ';
+            return;
+        }
+
+        if (isNaN(price) || price < 0) {
+            showNotification('السعر غير صحيح', 'error');
+            submitButton.disabled = false;
+            submitButton.textContent = '💾 حفظ';
+            return;
+        }
+
+        if (discountPrice !== null && (isNaN(discountPrice) || discountPrice < 0 || discountPrice >= price)) {
+            showNotification('سعر الخصم غير صحيح', 'error');
+            submitButton.disabled = false;
+            submitButton.textContent = '💾 حفظ';
+            return;
+        }
+
         // Create/update product
         const productData = {
-            name: document.getElementById('productName').value,
-            price: parseFloat(document.getElementById('productPrice').value),
-            discountPrice: document.getElementById('productDiscountPrice').value ?
-                parseFloat(document.getElementById('productDiscountPrice').value) : null,
-            description: document.getElementById('productDescription').value,
+            name: name,
+            price: price,
+            discountPrice: discountPrice,
+            description: document.getElementById('productDescription').value.trim(),
             mediaUrls: mediaUrls,
             mediaUrl: mediaUrls[0] || '', // Keep first image as main for backward compatibility
             mediaType: mediaType
@@ -336,13 +549,14 @@ document.getElementById('productForm')?.addEventListener('submit', async (e) => 
         if (response.ok) {
             closeProductModal();
             await loadProducts();
-            alert(editingProductId ? 'تم تحديث المنتج بنجاح!' : 'تم إضافة المنتج بنجاح!');
+            showNotification(editingProductId ? 'تم تحديث المنتج بنجاح!' : 'تم إضافة المنتج بنجاح!', 'success');
         } else {
-            alert('حدث خطأ في حفظ المنتج');
+            const errorData = await response.json().catch(() => ({}));
+            showNotification(errorData.error || 'حدث خطأ في حفظ المنتج', 'error');
         }
     } catch (error) {
         console.error('Error:', error);
-        alert('حدث خطأ في الاتصال');
+        showNotification('حدث خطأ في الاتصال', 'error');
     } finally {
         submitButton.disabled = false;
         submitButton.textContent = '💾 حفظ';
@@ -366,21 +580,25 @@ async function deleteProduct(productId) {
 
         if (response.ok) {
             await loadProducts();
-            alert('تم حذف المنتج بنجاح');
+            showNotification('تم حذف المنتج بنجاح', 'success');
         } else {
-            alert('حدث خطأ في حذف المنتج');
+            const errorData = await response.json().catch(() => ({}));
+            showNotification(errorData.error || errorData.message || 'حدث خطأ في حذف المنتج', 'error');
         }
     } catch (error) {
-        alert('حدث خطأ في الاتصال');
+        showNotification('حدث خطأ في الاتصال', 'error');
     }
 }
 
 // Copy product link
 function copyProductLink(productId) {
-    // Always use production URL, not preview deployments
-    const link = `https://hawas-shop.vercel.app/product.html?id=${productId}`;
+    // Use dynamic base URL (works in all environments)
+    const baseUrl = window.location.origin;
+    const link = `${baseUrl}/product.html?id=${productId}`;
     navigator.clipboard.writeText(link).then(() => {
-        alert('تم نسخ رابط المنتج! 🎉\n' + link);
+        showNotification('تم نسخ رابط المنتج! 🎉', 'success');
+    }).catch(() => {
+        showNotification('فشل نسخ الرابط', 'error');
     });
 }
 
@@ -398,12 +616,13 @@ async function markOrderComplete(orderId) {
 
         if (response.ok) {
             await loadOrders();
-            alert('تم تحديث حالة الطلب');
+            showNotification('تم تحديث حالة الطلب', 'success');
         } else {
-            alert('حدث خطأ في تحديث الطلب');
+            const errorData = await response.json().catch(() => ({}));
+            showNotification(errorData.error || 'حدث خطأ في تحديث الطلب', 'error');
         }
     } catch (error) {
-        alert('حدث خطأ في الاتصال');
+        showNotification('حدث خطأ في الاتصال', 'error');
     }
 }
 
@@ -419,11 +638,12 @@ async function deleteOrder(orderId) {
 
         if (response.ok) {
             await loadOrders();
-            alert('تم حذف الطلب بنجاح');
+            showNotification('تم حذف الطلب بنجاح', 'success');
         } else {
-            alert('حدث خطأ في حذف الطلب');
+            const errorData = await response.json().catch(() => ({}));
+            showNotification(errorData.error || 'حدث خطأ في حذف الطلب', 'error');
         }
     } catch (error) {
-        alert('حدث خطأ في الاتصال');
+        showNotification('حدث خطأ في الاتصال', 'error');
     }
 }

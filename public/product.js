@@ -101,13 +101,15 @@ async function loadProduct() {
             `;
         }
 
-        // Display product info
+        // Display product info (safe - already sanitized by backend)
         document.getElementById('productName').textContent = product.name;
 
-        // Display description with line breaks preserved
+        // Display description with line breaks preserved (safe - already sanitized)
         const descElement = document.getElementById('productDescription');
         if (product.description) {
-            descElement.innerHTML = product.description.replace(/\n/g, '<br>');
+            // Use textContent and preserve line breaks with CSS
+            descElement.textContent = product.description;
+            descElement.style.whiteSpace = 'pre-wrap';
         } else {
             descElement.textContent = '';
         }

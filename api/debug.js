@@ -13,8 +13,13 @@ function getRedis() {
     return redis;
 }
 
+const { requireAuth } = require('./utils/auth');
+
 module.exports = async (req, res) => {
-    // Enable CORS
+    // Require authentication for debug endpoint
+    if (!requireAuth(req, res)) return;
+    
+    // Enable CORS (restricted to authenticated requests)
     res.setHeader('Access-Control-Allow-Credentials', 'true');
     res.setHeader('Access-Control-Allow-Origin', '*');
     res.setHeader('Access-Control-Allow-Methods', 'GET');

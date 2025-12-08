@@ -1,4 +1,5 @@
 const Redis = require('ioredis');
+const { requireAuth, validateProduct } = require('./utils/auth');
 
 // Initialize Redis connection
 let redis;
@@ -9,7 +10,18 @@ function getRedis() {
         if (!redisUrl) {
             throw new Error('Redis URL not configured');
         }
-        redis = new Redis(redisUrl);
+        redis = new Redis(redisUrl, {
+            retryStrategy: (times) => {
+                const delay = Math.min(times * 50, 2000);
+                return delay;
+            },
+            maxRetriesPerRequest: 3,
+            enableOfflineQueue: false
+        });
+        
+        redis.on('error', (err) => {
+            console.error('Redis connection error:', err);
+        });
     }
     return redis;
 }
@@ -31,11 +43,10 @@ module.exports = async (req, res) => {
         return Date.now().toString(36) + Math.random().toString(36).substr(2);
     }
 
-    const redisClient = getRedis();
-
     try {
-        // GET - List all products or get single product
+        // GET - List all products or get single product (public, no auth required)
         if (req.method === 'GET') {
+            const redisClient = getRedis();
             const { id } = req.query;
 
             if (id) {
@@ -60,19 +71,21 @@ module.exports = async (req, res) => {
             return res.status(200).json(products);
         }
 
-        // POST - Create new product
+        // POST - Create new product (requires auth)
         if (req.method === 'POST') {
-            const { name, price, discountPrice, description, mediaUrl, mediaUrls, mediaType } = req.body;
+            if (!requireAuth(req, res)) return;
+            
+            const redisClient = getRedis();
+            
+            // Validate and sanitize input
+            const validation = validateProduct(req.body);
+            if (!validation.valid) {
+                return res.status(400).json({ error: 'Validation failed', errors: validation.errors });
+            }
 
             const newProduct = {
                 id: generateId(),
-                name,
-                price: parseFloat(price),
-                discountPrice: discountPrice ? parseFloat(discountPrice) : null,
-                description: description || '',
-                mediaUrl: mediaUrl || '',
-                mediaUrls: mediaUrls || [],
-                mediaType: mediaType || 'image',
+                ...validation.sanitized,
                 createdAt: new Date().toISOString()
             };
 
@@ -83,9 +96,16 @@ module.exports = async (req, res) => {
             return res.status(201).json(newProduct);
         }
 
-        // PUT - Update product
+        // PUT - Update product (requires auth)
         if (req.method === 'PUT') {
-            const { id, name, price, discountPrice, description, mediaUrl, mediaUrls, mediaType } = req.body;
+            if (!requireAuth(req, res)) return;
+            
+            const redisClient = getRedis();
+            
+            const { id } = req.body;
+            if (!id) {
+                return res.status(400).json({ error: 'Product ID is required' });
+            }
 
             const productData = await redisClient.get(`product:${id}`);
             if (!productData) {
@@ -93,30 +113,63 @@ module.exports = async (req, res) => {
             }
 
             const product = JSON.parse(productData);
+            
+            // Merge existing product with new data for validation
+            const mergedData = {
+                name: req.body.name !== undefined ? req.body.name : product.name,
+                price: req.body.price !== undefined ? req.body.price : product.price,
+                discountPrice: req.body.discountPrice !== undefined ? req.body.discountPrice : product.discountPrice,
+                description: req.body.description !== undefined ? req.body.description : product.description,
+                mediaUrl: req.body.mediaUrl !== undefined ? req.body.mediaUrl : product.mediaUrl,
+                mediaUrls: req.body.mediaUrls !== undefined ? req.body.mediaUrls : product.mediaUrls,
+                mediaType: req.body.mediaType !== undefined ? req.body.mediaType : product.mediaType
+            };
+            
+            // Validate and sanitize
+            const validation = validateProduct(mergedData);
+            if (!validation.valid) {
+                return res.status(400).json({ error: 'Validation failed', errors: validation.errors });
+            }
+
             const updatedProduct = {
                 ...product,
-                name: name || product.name,
-                price: price ? parseFloat(price) : product.price,
-                discountPrice: discountPrice !== undefined ? (discountPrice ? parseFloat(discountPrice) : null) : product.discountPrice,
-                description: description !== undefined ? description : product.description,
-                mediaUrl: mediaUrl !== undefined ? mediaUrl : product.mediaUrl,
-                mediaUrls: mediaUrls !== undefined ? mediaUrls : product.mediaUrls,
-                mediaType: mediaType || product.mediaType,
+                ...validation.sanitized,
                 updatedAt: new Date().toISOString()
             };
-
 
             await redisClient.set(`product:${id}`, JSON.stringify(updatedProduct));
             return res.status(200).json(updatedProduct);
         }
 
-        // DELETE - Delete product
+        // DELETE - Delete product (requires auth)
         if (req.method === 'DELETE') {
+            if (!requireAuth(req, res)) return;
+            
+            const redisClient = getRedis();
+            
             const { id } = req.query;
+            if (!id) {
+                return res.status(400).json({ error: 'Product ID is required' });
+            }
 
             const exists = await redisClient.exists(`product:${id}`);
             if (!exists) {
                 return res.status(404).json({ error: 'Product not found' });
+            }
+
+            // Check if product has orders (referential integrity)
+            const orderIds = await redisClient.smembers('orders');
+            for (const orderId of orderIds) {
+                const orderData = await redisClient.get(`order:${orderId}`);
+                if (orderData) {
+                    const order = JSON.parse(orderData);
+                    if (order.productId === id) {
+                        return res.status(400).json({ 
+                            error: 'Cannot delete product with existing orders',
+                            message: 'Please delete or complete all orders for this product first'
+                        });
+                    }
+                }
             }
 
             await redisClient.del(`product:${id}`);
@@ -129,6 +182,15 @@ module.exports = async (req, res) => {
 
     } catch (error) {
         console.error('Products API error:', error);
+        
+        // Handle Redis connection errors gracefully
+        if (error.message && error.message.includes('Redis')) {
+            return res.status(503).json({ 
+                error: 'Service temporarily unavailable', 
+                message: 'Database connection failed. Please try again later.' 
+            });
+        }
+        
         return res.status(500).json({ error: 'Server error', message: error.message });
     }
 };

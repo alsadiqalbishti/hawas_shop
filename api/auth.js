@@ -25,12 +25,14 @@ module.exports = async (req, res) => {
         const adminPassword = process.env.ADMIN_PASSWORD || 'admin123';
 
         if (password === adminPassword) {
-            // Generate simple token (in production, use JWT)
-            const token = Buffer.from(`${password}:${Date.now()}`).toString('base64');
+            // Generate token with expiration (24 hours)
+            const timestamp = Date.now();
+            const token = Buffer.from(`${password}:${timestamp}`).toString('base64');
 
             return res.status(200).json({
                 success: true,
-                token: token
+                token: token,
+                expiresIn: 24 * 60 * 60 * 1000 // 24 hours in milliseconds
             });
         } else {
             return res.status(401).json({

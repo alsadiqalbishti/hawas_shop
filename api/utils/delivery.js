@@ -74,17 +74,14 @@ function requireDeliveryAuth(req, res) {
 async function getDeliveryManById(deliveryManId) {
     try {
         const redisClient = getRedis();
-        const deliveryManIds = await redisClient.smembers('delivery-men');
+        const deliveryMen = await redisClient.keys('delivery:*');
         
-        for (const id of deliveryManIds) {
-            const deliveryMen = await redisClient.keys('delivery:*');
-            for (const key of deliveryMen) {
-                const data = await redisClient.get(key);
-                if (data) {
-                    const man = JSON.parse(data);
-                    if (man.id === deliveryManId) {
-                        return man;
-                    }
+        for (const key of deliveryMen) {
+            const data = await redisClient.get(key);
+            if (data) {
+                const man = JSON.parse(data);
+                if (man.id === deliveryManId) {
+                    return man;
                 }
             }
         }

@@ -318,6 +318,41 @@ async function loadProducts() {
     }
 }
 
+// Get status info
+function getStatusInfo(status) {
+    const statusMap = {
+        'pending': { label: 'قيد الانتظار', class: 'badge badge-warning' },
+        'assigned': { label: 'مُسند', class: 'badge badge-info' },
+        'in_transit': { label: 'قيد التوصيل', class: 'badge badge-primary' },
+        'delivered': { label: 'تم التوصيل', class: 'badge badge-success' },
+        'completed': { label: 'مكتمل', class: 'badge badge-success' },
+        'cancelled': { label: 'ملغي', class: 'badge badge-danger' }
+    };
+    return statusMap[status] || { label: status, class: 'badge badge-secondary' };
+}
+
+// Load delivery man info
+async function loadDeliveryManInfo(deliveryManId, cell) {
+    try {
+        const response = await fetch(`/api/delivery/info?id=${deliveryManId}`, {
+            headers: {
+                'Authorization': `Bearer ${authToken}`
+            }
+        });
+        
+        if (response.ok) {
+            const deliveryMan = await response.json();
+            cell.innerHTML = `<div><strong>${escapeHtml(deliveryMan.name)}</strong><br><small>${escapeHtml(deliveryMan.phone)}</small></div>`;
+        } else {
+            cell.textContent = 'غير متوفر';
+            cell.style.color = '#999';
+        }
+    } catch (error) {
+        cell.textContent = 'خطأ في التحميل';
+        cell.style.color = '#f44336';
+    }
+}
+
 // Load orders
 async function loadOrders() {
     const container = document.getElementById('ordersContainer');

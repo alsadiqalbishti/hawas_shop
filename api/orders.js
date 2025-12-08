@@ -16,14 +16,33 @@ function getRedis() {
                 return delay;
             },
             maxRetriesPerRequest: 3,
-            enableOfflineQueue: false
+            enableOfflineQueue: false,
+            connectTimeout: 10000,
+            lazyConnect: false
         });
         
         redis.on('error', (err) => {
             console.error('Redis connection error:', err);
+            // Reset redis on error so it can reconnect
+            redis = null;
+        });
+        
+        redis.on('connect', () => {
+            console.log('Redis connected successfully');
         });
     }
     return redis;
+}
+
+// Helper to safely execute Redis operations
+async function safeRedisOperation(operation, errorMessage = 'Redis operation failed') {
+    try {
+        const client = getRedis();
+        return await operation(client);
+    } catch (error) {
+        console.error('Redis operation error:', error);
+        throw new Error(`${errorMessage}: ${error.message}`);
+    }
 }
 
 module.exports = async (req, res) => {
@@ -48,142 +67,169 @@ module.exports = async (req, res) => {
         if (req.method === 'GET') {
             if (!requireAuth(req, res)) return;
             
-            let redisClient;
             try {
-                redisClient = getRedis();
-            } catch (redisError) {
-                console.error('Redis connection failed:', redisError);
+                const orders = await safeRedisOperation(async (client) => {
+                    const orderIds = await client.smembers('orders');
+                    const ordersList = [];
+
+                    for (const orderId of orderIds) {
+                        try {
+                            const orderData = await client.get(`order:${orderId}`);
+                            if (orderData) {
+                                ordersList.push(JSON.parse(orderData));
+                            }
+                        } catch (error) {
+                            console.error(`Error fetching order ${orderId}:`, error);
+                            // Continue with other orders
+                        }
+                    }
+
+                    // Sort by newest first
+                    ordersList.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+                    return ordersList;
+                });
+                
+                return res.status(200).json(orders);
+            } catch (error) {
+                console.error('Error fetching orders:', error);
                 return res.status(503).json({ 
                     error: 'Service temporarily unavailable',
-                    message: 'Database connection failed'
+                    message: error.message
                 });
             }
-            let orderIds;
-            try {
-                orderIds = await redisClient.smembers('orders');
-            } catch (error) {
-                console.error('Error fetching order IDs:', error);
-                return res.status(500).json({ error: 'Failed to fetch orders' });
-            }
-            
-            const orders = [];
-
-            for (const orderId of orderIds) {
-                try {
-                    const orderData = await redisClient.get(`order:${orderId}`);
-                    if (orderData) {
-                        orders.push(JSON.parse(orderData));
-                    }
-                } catch (error) {
-                    console.error(`Error fetching order ${orderId}:`, error);
-                    // Continue with other orders
-                }
-            }
-
-            // Sort by newest first
-            orders.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
-            return res.status(200).json(orders);
         }
 
         // POST - Create new order (public, but validate product exists)
         if (req.method === 'POST') {
-            const redisClient = getRedis();
-            
             // Validate and sanitize input
             const validation = validateOrder(req.body);
             if (!validation.valid) {
                 return res.status(400).json({ error: 'Validation failed', errors: validation.errors });
             }
 
-            // Verify product exists
-            const productData = await redisClient.get(`product:${validation.sanitized.productId}`);
-            if (!productData) {
-                return res.status(404).json({ error: 'Product not found' });
+            try {
+                const newOrder = await safeRedisOperation(async (client) => {
+                    // Verify product exists
+                    const productData = await client.get(`product:${validation.sanitized.productId}`);
+                    if (!productData) {
+                        throw new Error('Product not found');
+                    }
+
+                    const order = {
+                        id: generateId(),
+                        ...validation.sanitized,
+                        status: 'pending',
+                        createdAt: new Date().toISOString()
+                    };
+
+                    // Save order to Redis
+                    await client.set(`order:${order.id}`, JSON.stringify(order));
+                    await client.sadd('orders', order.id);
+                    
+                    return order;
+                });
+                
+                return res.status(201).json(newOrder);
+            } catch (error) {
+                if (error.message === 'Product not found') {
+                    return res.status(404).json({ error: 'Product not found' });
+                }
+                console.error('Error creating order:', error);
+                return res.status(503).json({ 
+                    error: 'Service temporarily unavailable',
+                    message: error.message
+                });
             }
-
-            const newOrder = {
-                id: generateId(),
-                ...validation.sanitized,
-                status: 'pending',
-                createdAt: new Date().toISOString()
-            };
-
-            // Save order to Redis
-            await redisClient.set(`order:${newOrder.id}`, JSON.stringify(newOrder));
-            await redisClient.sadd('orders', newOrder.id);
-
-            return res.status(201).json(newOrder);
         }
 
         // PUT - Update order (mark as completed) (requires auth)
         if (req.method === 'PUT') {
             if (!requireAuth(req, res)) return;
             
-            const redisClient = getRedis();
-            
             const { id, status } = req.body;
             if (!id) {
                 return res.status(400).json({ error: 'Order ID is required' });
             }
 
-            const orderData = await redisClient.get(`order:${id}`);
-            if (!orderData) {
-                return res.status(404).json({ error: 'Order not found' });
+            try {
+                const updatedOrder = await safeRedisOperation(async (client) => {
+                    const orderData = await client.get(`order:${id}`);
+                    if (!orderData) {
+                        throw new Error('Order not found');
+                    }
+
+                    const order = JSON.parse(orderData);
+                    
+                    // Validate status
+                    const validStatuses = ['pending', 'completed', 'cancelled'];
+                    const newStatus = status || order.status;
+                    if (!validStatuses.includes(newStatus)) {
+                        throw new Error(`Invalid status. Valid statuses: ${validStatuses.join(', ')}`);
+                    }
+
+                    const updated = {
+                        ...order,
+                        status: newStatus,
+                        updatedAt: new Date().toISOString()
+                    };
+
+                    await client.set(`order:${id}`, JSON.stringify(updated));
+                    return updated;
+                });
+                
+                return res.status(200).json(updatedOrder);
+            } catch (error) {
+                if (error.message === 'Order not found') {
+                    return res.status(404).json({ error: 'Order not found' });
+                }
+                if (error.message.includes('Invalid status')) {
+                    return res.status(400).json({ error: error.message });
+                }
+                console.error('Error updating order:', error);
+                return res.status(503).json({ 
+                    error: 'Service temporarily unavailable',
+                    message: error.message
+                });
             }
-
-            // Validate status
-            const validStatuses = ['pending', 'completed', 'cancelled'];
-            const newStatus = status || JSON.parse(orderData).status;
-            if (!validStatuses.includes(newStatus)) {
-                return res.status(400).json({ error: 'Invalid status', validStatuses });
-            }
-
-            const order = JSON.parse(orderData);
-            const updatedOrder = {
-                ...order,
-                status: newStatus,
-                updatedAt: new Date().toISOString()
-            };
-
-            await redisClient.set(`order:${id}`, JSON.stringify(updatedOrder));
-            return res.status(200).json(updatedOrder);
         }
 
         // DELETE - Delete order (requires auth)
         if (req.method === 'DELETE') {
             if (!requireAuth(req, res)) return;
             
-            const redisClient = getRedis();
-            
             const { id } = req.query;
             if (!id) {
                 return res.status(400).json({ error: 'Order ID is required' });
             }
 
-            const exists = await redisClient.exists(`order:${id}`);
-            if (!exists) {
-                return res.status(404).json({ error: 'Order not found' });
+            try {
+                await safeRedisOperation(async (client) => {
+                    const exists = await client.exists(`order:${id}`);
+                    if (!exists) {
+                        throw new Error('Order not found');
+                    }
+
+                    await client.del(`order:${id}`);
+                    await client.srem('orders', id);
+                });
+                
+                return res.status(200).json({ success: true });
+            } catch (error) {
+                if (error.message === 'Order not found') {
+                    return res.status(404).json({ error: 'Order not found' });
+                }
+                console.error('Error deleting order:', error);
+                return res.status(503).json({ 
+                    error: 'Service temporarily unavailable',
+                    message: error.message
+                });
             }
-
-            await redisClient.del(`order:${id}`);
-            await redisClient.srem('orders', id);
-
-            return res.status(200).json({ success: true });
         }
 
         return res.status(405).json({ error: 'Method not allowed' });
 
     } catch (error) {
         console.error('Orders API error:', error);
-        
-        // Handle Redis connection errors gracefully
-        if (error.message && error.message.includes('Redis')) {
-            return res.status(503).json({ 
-                error: 'Service temporarily unavailable', 
-                message: 'Database connection failed. Please try again later.' 
-            });
-        }
-        
         return res.status(500).json({ error: 'Server error', message: error.message });
     }
 };

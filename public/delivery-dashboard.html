@@ -1,0 +1,129 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>لوحة تحكم مندوب التوصيل</title>
+    <link rel="stylesheet" href="styles.css">
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: #f0f2f5;
+            margin: 0;
+            padding: 20px;
+        }
+        .header {
+            background: white;
+            padding: 20px;
+            border-radius: 10px;
+            margin-bottom: 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .header h1 {
+            margin: 0;
+            color: #1877f2;
+        }
+        .btn-logout {
+            padding: 10px 20px;
+            background: #f44336;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+        .orders-container {
+            background: white;
+            padding: 20px;
+            border-radius: 10px;
+        }
+        .order-card {
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            padding: 20px;
+            margin-bottom: 20px;
+            background: #f9f9f9;
+        }
+        .order-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 15px;
+        }
+        .order-id {
+            font-weight: bold;
+            color: #1877f2;
+        }
+        .order-status {
+            padding: 5px 15px;
+            border-radius: 20px;
+            font-size: 14px;
+            font-weight: bold;
+        }
+        .status-pending { background: #ff9800; color: white; }
+        .status-assigned { background: #2196f3; color: white; }
+        .status-in_transit { background: #9c27b0; color: white; }
+        .status-delivered { background: #4caf50; color: white; }
+        .status-completed { background: #4caf50; color: white; }
+        .status-cancelled { background: #f44336; color: white; }
+        .order-info {
+            margin-bottom: 15px;
+        }
+        .order-info p {
+            margin: 5px 0;
+        }
+        .order-form {
+            margin-top: 15px;
+            padding-top: 15px;
+            border-top: 1px solid #ddd;
+        }
+        .form-group {
+            margin-bottom: 15px;
+        }
+        .form-group label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: bold;
+        }
+        .form-group input, .form-group select {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            font-size: 14px;
+            box-sizing: border-box;
+        }
+        .btn-update {
+            padding: 10px 20px;
+            background: #1877f2;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            margin-top: 10px;
+        }
+        .btn-update:hover {
+            background: #166fe5;
+        }
+        .empty-state {
+            text-align: center;
+            padding: 40px;
+            color: #999;
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>لوحة تحكم مندوب التوصيل</h1>
+        <button class="btn-logout" onclick="logout()">تسجيل الخروج</button>
+    </div>
+    <div class="orders-container">
+        <div id="ordersList">
+            <div class="empty-state">جاري التحميل...</div>
+        </div>
+    </div>
+    <script src="delivery-dashboard.js"></script>
+</body>
+</html>
+

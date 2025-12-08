@@ -367,7 +367,7 @@ async function loadOrders() {
         
         // Header
         const headerRow = document.createElement('tr');
-        ['رقم الطلب', 'المنتج', 'اسم العميل', 'رقم الهاتف', 'العنوان', 'الكمية', 'التاريخ', 'الحالة', 'الإجراءات'].forEach(text => {
+        ['رقم الطلب', 'المنتج', 'اسم العميل', 'رقم الهاتف', 'العنوان', 'الكمية', 'مندوب التوصيل', 'سعر التوصيل', 'المبلغ المستلم', 'التاريخ', 'الحالة', 'الإجراءات'].forEach(text => {
             const th = document.createElement('th');
             th.textContent = text;
             headerRow.appendChild(th);
@@ -416,6 +416,27 @@ async function loadOrders() {
             qtyCell.appendChild(qtyStrong);
             row.appendChild(qtyCell);
             
+            // Delivery Man
+            const deliveryManCell = document.createElement('td');
+            if (order.deliveryManId) {
+                deliveryManCell.innerHTML = '<span class="text-muted">جاري التحميل...</span>';
+                loadDeliveryManInfo(order.deliveryManId, deliveryManCell);
+            } else {
+                deliveryManCell.textContent = 'غير مُسند';
+                deliveryManCell.style.color = '#999';
+            }
+            row.appendChild(deliveryManCell);
+            
+            // Shipping Price
+            const shippingCell = document.createElement('td');
+            shippingCell.textContent = order.shippingPrice ? `${parseFloat(order.shippingPrice).toFixed(2)} د.ع` : '-';
+            row.appendChild(shippingCell);
+            
+            // Payment Received
+            const paymentCell = document.createElement('td');
+            paymentCell.textContent = order.paymentReceived ? `${parseFloat(order.paymentReceived).toFixed(2)} د.ع` : '-';
+            row.appendChild(paymentCell);
+            
             // Date
             const dateCell = document.createElement('td');
             dateCell.textContent = new Date(order.createdAt).toLocaleDateString('ar-EG');
@@ -424,8 +445,9 @@ async function loadOrders() {
             // Status
             const statusCell = document.createElement('td');
             const statusBadge = document.createElement('span');
-            statusBadge.className = order.status === 'completed' ? 'badge badge-success' : 'badge badge-warning';
-            statusBadge.textContent = order.status === 'completed' ? 'مكتمل' : 'قيد المعالجة';
+            const statusInfo = getStatusInfo(order.status);
+            statusBadge.className = statusInfo.class;
+            statusBadge.textContent = statusInfo.label;
             statusCell.appendChild(statusBadge);
             row.appendChild(statusCell);
             
@@ -434,7 +456,7 @@ async function loadOrders() {
             const actionsDiv = document.createElement('div');
             actionsDiv.className = 'flex gap-1';
             
-            if (order.status !== 'completed') {
+            if (order.status !== 'completed' && order.status !== 'cancelled') {
                 const completeBtn = document.createElement('button');
                 completeBtn.className = 'btn btn-success btn-sm';
                 completeBtn.textContent = '✅ اكتمل';

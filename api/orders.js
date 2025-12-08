@@ -163,6 +163,10 @@ module.exports = async (req, res) => {
                         id: generateId(),
                         ...validation.sanitized,
                         status: 'pending',
+                        deliveryManId: null,
+                        shippingPrice: null,
+                        paymentReceived: null,
+                        updatedBy: null,
                         createdAt: new Date().toISOString()
                     };
 

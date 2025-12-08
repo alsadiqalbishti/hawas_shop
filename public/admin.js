@@ -191,24 +191,42 @@ async function loadProducts() {
         products.forEach(product => {
             const row = document.createElement('tr');
             
-            // Image cell
+            // Image cell - show first image or multiple indicator
             const imgCell = document.createElement('td');
-            if (product.mediaUrl) {
-                if (product.mediaType === 'video') {
+            const imgContainer = document.createElement('div');
+            imgContainer.style.cssText = 'display: flex; align-items: center; gap: 0.25rem;';
+            
+            const mediaUrls = product.mediaUrls && product.mediaUrls.length > 0 
+                ? product.mediaUrls 
+                : (product.mediaUrl ? [product.mediaUrl] : []);
+            
+            if (mediaUrls.length > 0) {
+                const firstMedia = mediaUrls[0];
+                if (product.mediaType === 'video' || firstMedia.includes('data:video')) {
                     const video = document.createElement('video');
-                    video.src = product.mediaUrl;
+                    video.src = firstMedia;
                     video.style.cssText = 'width: 60px; height: 60px; object-fit: cover; border-radius: 8px;';
-                    imgCell.appendChild(video);
+                    imgContainer.appendChild(video);
                 } else {
                     const img = document.createElement('img');
-                    img.src = product.mediaUrl;
+                    img.src = firstMedia;
                     img.alt = escapeHtml(product.name);
                     img.style.cssText = 'width: 60px; height: 60px; object-fit: cover; border-radius: 8px;';
-                    imgCell.appendChild(img);
+                    imgContainer.appendChild(img);
+                }
+                
+                // Show count if multiple images
+                if (mediaUrls.length > 1) {
+                    const countBadge = document.createElement('span');
+                    countBadge.style.cssText = 'background: var(--primary); color: white; font-size: 0.7rem; padding: 0.2rem 0.4rem; border-radius: 10px; font-weight: 600;';
+                    countBadge.textContent = `+${mediaUrls.length - 1}`;
+                    imgContainer.appendChild(countBadge);
                 }
             } else {
-                imgCell.textContent = '📦';
+                imgContainer.textContent = '📦';
             }
+            
+            imgCell.appendChild(imgContainer);
             row.appendChild(imgCell);
             
             // Name cell

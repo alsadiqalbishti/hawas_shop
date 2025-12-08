@@ -3,44 +3,90 @@ const { requireAuth, validateOrder } = require('./utils/auth');
 
 // Initialize Redis connection
 let redis;
+let redisReady = false;
+
 function getRedis() {
     if (!redis) {
         // Vercel auto-generates STORAGE_REDIS_URL when you connect Redis
         const redisUrl = process.env.STORAGE_REDIS_URL || process.env.REDIS_URL;
         if (!redisUrl) {
+            console.error('Redis URL not configured');
             throw new Error('Redis URL not configured');
         }
+        
+        console.log('Initializing Redis connection...');
         redis = new Redis(redisUrl, {
             retryStrategy: (times) => {
                 const delay = Math.min(times * 50, 2000);
+                console.log(`Redis retry attempt ${times}, delay: ${delay}ms`);
                 return delay;
             },
             maxRetriesPerRequest: 3,
-            enableOfflineQueue: false,
-            connectTimeout: 10000,
-            lazyConnect: false
+            enableOfflineQueue: true, // Changed to true to queue commands
+            connectTimeout: 15000,
+            lazyConnect: false,
+            showFriendlyErrorStack: true
         });
         
         redis.on('error', (err) => {
-            console.error('Redis connection error:', err);
-            // Reset redis on error so it can reconnect
-            redis = null;
+            console.error('Redis connection error:', err.message);
+            redisReady = false;
+            // Don't reset redis on error - let it try to reconnect
         });
         
         redis.on('connect', () => {
-            console.log('Redis connected successfully');
+            console.log('Redis connecting...');
+            redisReady = false;
+        });
+        
+        redis.on('ready', () => {
+            console.log('Redis connected and ready');
+            redisReady = true;
+        });
+        
+        redis.on('close', () => {
+            console.log('Redis connection closed');
+            redisReady = false;
+        });
+        
+        redis.on('reconnecting', () => {
+            console.log('Redis reconnecting...');
+            redisReady = false;
         });
     }
     return redis;
 }
 
+// Helper to wait for Redis to be ready
+async function waitForRedis(maxWait = 5000) {
+    const startTime = Date.now();
+    while (!redisReady && (Date.now() - startTime) < maxWait) {
+        await new Promise(resolve => setTimeout(resolve, 100));
+    }
+    return redisReady;
+}
+
 // Helper to safely execute Redis operations
-async function safeRedisOperation(operation, errorMessage = 'Redis operation failed') {
+async function safeRedisOperation(operation, errorMessage = 'Redis operation failed', allowEmpty = false) {
     try {
         const client = getRedis();
+        
+        // Wait for connection to be ready (with timeout)
+        const isReady = await waitForRedis(3000);
+        if (!isReady && !allowEmpty) {
+            console.warn('Redis not ready, but proceeding with operation');
+        }
+        
         return await operation(client);
     } catch (error) {
-        console.error('Redis operation error:', error);
+        console.error('Redis operation error:', error.message);
+        
+        // For GET operations, return empty array instead of throwing
+        if (allowEmpty) {
+            console.log('Returning empty result due to Redis error');
+            return [];
+        }
+        
         throw new Error(`${errorMessage}: ${error.message}`);
     }
 }
@@ -87,15 +133,13 @@ module.exports = async (req, res) => {
                     // Sort by newest first
                     ordersList.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
                     return ordersList;
-                });
+                }, 'Failed to fetch orders', true); // allowEmpty = true for GET
                 
-                return res.status(200).json(orders);
+                return res.status(200).json(orders || []);
             } catch (error) {
                 console.error('Error fetching orders:', error);
-                return res.status(503).json({ 
-                    error: 'Service temporarily unavailable',
-                    message: error.message
-                });
+                // Return empty array instead of error for GET requests
+                return res.status(200).json([]);
             }
         }
 

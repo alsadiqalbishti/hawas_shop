@@ -137,39 +137,35 @@ module.exports = async (req, res) => {
         }
     }
     
+    // Extract endpoint and subEndpoint from pathParts
     let endpoint = (pathParts[0] || '').toLowerCase().trim();
     let subEndpoint = (pathParts[1] || '').toLowerCase().trim();
     
-    // DIRECT URL MATCHING (Fallback for delivery endpoints)
-    // Sometimes Vercel's path parsing doesn't work as expected
-    // So we also check the URL directly for delivery endpoints
-    // This is a more aggressive fallback that always checks the URL
+    // DIRECT URL MATCHING (Primary method for delivery endpoints)
+    // Vercel's path parsing can be inconsistent, so we check the URL directly first
     const urlLower = (req.url || '').toLowerCase();
     const urlPath = urlLower.split('?')[0]; // Remove query string
     
-    // If endpoint is not 'delivery' but URL contains delivery, try to parse from URL
-    if (endpoint !== 'delivery' && urlPath.includes('/delivery/')) {
-        // Extract delivery sub-endpoint from URL
-        const deliveryMatch = urlPath.match(/\/delivery\/([^\/\?]+)/);
-        if (deliveryMatch) {
-            endpoint = 'delivery';
-            subEndpoint = deliveryMatch[1].toLowerCase().trim();
-        }
-    }
-    
-    // Also do explicit checks for known endpoints
-    if (urlPath.includes('/delivery/auth') && req.method === 'POST') {
-        endpoint = 'delivery';
-        subEndpoint = 'auth';
-    } else if (urlPath.includes('/delivery/list') && req.method === 'GET') {
+    // Explicit checks for delivery endpoints (check these FIRST before pathParts)
+    if (urlPath.includes('/delivery/list') && req.method === 'GET') {
         endpoint = 'delivery';
         subEndpoint = 'list';
+    } else if (urlPath.includes('/delivery/auth') && req.method === 'POST') {
+        endpoint = 'delivery';
+        subEndpoint = 'auth';
     } else if (urlPath.includes('/delivery/orders')) {
         endpoint = 'delivery';
         subEndpoint = 'orders';
     } else if (urlPath.includes('/delivery/info') && req.method === 'GET') {
         endpoint = 'delivery';
         subEndpoint = 'info';
+    } else if (urlPath.includes('/delivery/')) {
+        // Generic delivery endpoint extraction
+        const deliveryMatch = urlPath.match(/\/delivery\/([^\/\?]+)/);
+        if (deliveryMatch) {
+            endpoint = 'delivery';
+            subEndpoint = deliveryMatch[1].toLowerCase().trim();
+        }
     }
     
     // Debug logging

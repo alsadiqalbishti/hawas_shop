@@ -244,7 +244,9 @@ async function updateOrder(e, orderId) {
             showNotification('تم تحديث الطلب بنجاح', 'success');
             loadOrders();
         } else {
-            showNotification(result.error || 'حدث خطأ في تحديث الطلب');
+            console.error('Update order error:', result);
+            const errorMsg = result.error || result.message || 'حدث خطأ في تحديث الطلب';
+            showNotification(errorMsg, 'error');
         }
     } catch (error) {
         showNotification('حدث خطأ في الاتصال بالخادم');

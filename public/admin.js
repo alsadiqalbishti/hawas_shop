@@ -1575,6 +1575,31 @@ function copyProductLink(productId) {
     });
 }
 
+// Copy delivery login URL
+function copyDeliveryUrl() {
+    // Use dynamic base URL (works in all environments)
+    const baseUrl = window.location.origin;
+    const deliveryUrl = `${baseUrl}/delivery-login.html`;
+    navigator.clipboard.writeText(deliveryUrl).then(() => {
+        showNotification('تم نسخ رابط صفحة التوصيل! 🚚', 'success');
+    }).catch(() => {
+        // Fallback for older browsers
+        const textArea = document.createElement('textarea');
+        textArea.value = deliveryUrl;
+        textArea.style.position = 'fixed';
+        textArea.style.opacity = '0';
+        document.body.appendChild(textArea);
+        textArea.select();
+        try {
+            document.execCommand('copy');
+            showNotification('تم نسخ رابط صفحة التوصيل! 🚚', 'success');
+        } catch (err) {
+            showNotification('فشل نسخ الرابط', 'error');
+        }
+        document.body.removeChild(textArea);
+    });
+}
+
 // Global delivery men list
 let deliveryMenList = [];
 

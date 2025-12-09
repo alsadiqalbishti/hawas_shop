@@ -61,6 +61,9 @@
                     <button class="tab" onclick="switchTab('analytics', this)">
                         📊 الإحصائيات
                     </button>
+                    <button class="tab" onclick="switchTab('delivery-men', this)">
+                        🚚 مندوبو التوصيل
+                    </button>
                 </div>
 
                 <!-- Products Tab -->
@@ -177,6 +180,20 @@
                     </div>
 
                     <div id="analyticsContainer">
+                        <div class="spinner"></div>
+                    </div>
+                </div>
+
+                <!-- Delivery Men Tab -->
+                <div id="delivery-menTab" class="tab-content">
+                    <div class="flex justify-between items-center mb-3">
+                        <h2 style="font-size: 1.5rem; font-weight: 600;">إدارة مندوبي التوصيل</h2>
+                        <button onclick="loadDeliveryMenList()" class="btn btn-success btn-sm">
+                            🔄 تحديث
+                        </button>
+                    </div>
+
+                    <div id="deliveryMenContainer">
                         <div class="spinner"></div>
                     </div>
                 </div>

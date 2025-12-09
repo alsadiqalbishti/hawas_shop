@@ -1311,8 +1311,36 @@ function copyProductLink(productId) {
     });
 }
 
+// Global delivery men list
+let deliveryMenList = [];
+
+// Load delivery men list
+async function loadDeliveryMen() {
+    try {
+        const response = await fetch('/api/delivery/list', {
+            headers: {
+                'Authorization': `Bearer ${authToken}`
+            }
+        });
+
+        if (response.ok) {
+            deliveryMenList = await response.json();
+            return deliveryMenList;
+        }
+        return [];
+    } catch (error) {
+        console.error('Error loading delivery men:', error);
+        return [];
+    }
+}
+
 // Open order status update modal
-function openOrderStatusModal(order) {
+async function openOrderStatusModal(order) {
+    // Load delivery men if not loaded
+    if (deliveryMenList.length === 0) {
+        await loadDeliveryMen();
+    }
+
     // Create modal if it doesn't exist
     let modal = document.getElementById('orderStatusModal');
     if (!modal) {
@@ -1328,6 +1356,12 @@ function openOrderStatusModal(order) {
                 <div class="modal-body">
                     <p><strong>رقم الطلب:</strong> <span id="modalOrderNumber"></span></p>
                     <p><strong>الحالة الحالية:</strong> <span id="modalCurrentStatus"></span></p>
+                    <div class="form-group">
+                        <label for="orderDeliveryManSelect">مندوب التوصيل:</label>
+                        <select id="orderDeliveryManSelect" class="form-control">
+                            <option value="">غير مُسند</option>
+                        </select>
+                    </div>
                     <div class="form-group">
                         <label for="orderStatusSelect">الحالة الجديدة:</label>
                         <select id="orderStatusSelect" class="form-control">
@@ -1362,12 +1396,23 @@ function openOrderStatusModal(order) {
         document.body.appendChild(modal);
     }
 
+    // Populate delivery men dropdown
+    const deliveryManSelect = document.getElementById('orderDeliveryManSelect');
+    deliveryManSelect.innerHTML = '<option value="">غير مُسند</option>';
+    deliveryMenList.forEach(dm => {
+        const option = document.createElement('option');
+        option.value = dm.id;
+        option.textContent = `${dm.name} - ${dm.phone}`;
+        deliveryManSelect.appendChild(option);
+    });
+
     // Populate modal with order data
     const orderNumber = order.orderNumber || order.id;
     document.getElementById('modalOrderNumber').textContent = orderNumber;
     const currentStatusInfo = getStatusInfo(order.status);
     document.getElementById('modalCurrentStatus').innerHTML = `<span class="${currentStatusInfo.class}">${currentStatusInfo.label}</span>`;
     document.getElementById('orderStatusSelect').value = order.status;
+    document.getElementById('orderDeliveryManSelect').value = order.deliveryManId || '';
     document.getElementById('orderShippingPrice').value = order.shippingPrice || '';
     document.getElementById('orderPaymentReceived').value = order.paymentReceived || '';
     document.getElementById('orderNotes').value = '';
@@ -1393,6 +1438,7 @@ async function updateOrderStatus() {
 
     const orderId = modal.dataset.orderId;
     const status = document.getElementById('orderStatusSelect').value;
+    const deliveryManId = document.getElementById('orderDeliveryManSelect').value;
     const shippingPrice = document.getElementById('orderShippingPrice').value;
     const paymentReceived = document.getElementById('orderPaymentReceived').value;
     const notes = document.getElementById('orderNotes').value;
@@ -1407,6 +1453,7 @@ async function updateOrderStatus() {
             body: JSON.stringify({
                 id: orderId,
                 status: status,
+                deliveryManId: deliveryManId || null,
                 shippingPrice: shippingPrice || null,
                 paymentReceived: paymentReceived || null,
                 notes: notes

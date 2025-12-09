@@ -356,6 +356,8 @@ function switchTab(tab, eventElement) {
         loadOrders();
     } else if (tab === 'products') {
         loadProducts();
+    } else if (tab === 'delivery-men') {
+        loadDeliveryMenList();
     }
 }
 

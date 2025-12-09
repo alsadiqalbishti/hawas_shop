@@ -1133,46 +1133,69 @@ module.exports = async (req, res) => {
                 if (!requireAuth(req, res)) return;
 
                 try {
-                    const redisClient = getRedis();
-                    const deliveryManIds = await redisClient.smembers('delivery-men');
-                    const deliveryMen = [];
+                    const deliveryMen = await safeRedisOperation(async (client) => {
+                        const deliveryManIds = await client.smembers('delivery-men') || [];
+                        const deliveryMenList = [];
 
-                    for (const id of deliveryManIds) {
-                        const keys = await redisClient.keys('delivery:*');
-                        for (const key of keys) {
-                            const data = await redisClient.get(key);
-                            if (data) {
-                                const deliveryMan = JSON.parse(data);
-                                if (deliveryMan.id === id) {
-                                    const { password, ...safeInfo } = deliveryMan;
-                                    deliveryMen.push(safeInfo);
-                                    break;
+                        // Get delivery men by ID
+                        for (const id of deliveryManIds) {
+                            try {
+                                if (!id) continue;
+                                const keys = await client.keys('delivery:*');
+                                for (const key of keys) {
+                                    try {
+                                        const data = await client.get(key);
+                                        if (data) {
+                                            const deliveryMan = JSON.parse(data);
+                                            if (deliveryMan.id === id) {
+                                                const { password, ...safeInfo } = deliveryMan;
+                                                deliveryMenList.push(safeInfo);
+                                                break;
+                                            }
+                                        }
+                                    } catch (error) {
+                                        console.error(`Error parsing delivery man from key ${key}:`, error);
+                                    }
                                 }
+                            } catch (error) {
+                                console.error(`Error processing delivery man ID ${id}:`, error);
                             }
                         }
-                    }
 
-                    const phoneKeys = await redisClient.keys('delivery:*');
-                    for (const key of phoneKeys) {
-                        if (key.startsWith('delivery:') && !key.includes(':')) {
-                            const data = await redisClient.get(key);
-                            if (data) {
-                                const deliveryMan = JSON.parse(data);
-                                if (!deliveryMen.find(dm => dm.id === deliveryMan.id)) {
-                                    const { password, ...safeInfo } = deliveryMan;
-                                    deliveryMen.push(safeInfo);
+                        // Also get delivery men by phone keys
+                        try {
+                            const phoneKeys = await client.keys('delivery:*');
+                            for (const key of phoneKeys) {
+                                try {
+                                    if (key.startsWith('delivery:') && key.split(':').length === 2) {
+                                        const data = await client.get(key);
+                                        if (data) {
+                                            const deliveryMan = JSON.parse(data);
+                                            if (!deliveryMenList.find(dm => dm.id === deliveryMan.id)) {
+                                                const { password, ...safeInfo } = deliveryMan;
+                                                deliveryMenList.push(safeInfo);
+                                            }
+                                        }
+                                    }
+                                } catch (error) {
+                                    console.error(`Error processing delivery key ${key}:`, error);
                                 }
                             }
+                        } catch (error) {
+                            console.error('Error getting delivery phone keys:', error);
                         }
-                    }
 
-                    const uniqueDeliveryMen = deliveryMen.filter((dm, index, self) =>
-                        index === self.findIndex(d => d.id === dm.id)
-                    );
+                        // Remove duplicates
+                        return deliveryMenList.filter((dm, index, self) =>
+                            index === self.findIndex(d => d.id === dm.id)
+                        );
+                    }, 'Failed to fetch delivery men', true);
 
-                    return res.status(200).json(uniqueDeliveryMen);
+                    return res.status(200).json(deliveryMen || []);
                 } catch (error) {
-                    return res.status(500).json({ error: 'Server error', message: error.message });
+                    console.error('Error in GET /api/delivery/list:', error);
+                    // Return empty array instead of 500
+                    return res.status(200).json([]);
                 }
             }
 
@@ -1238,7 +1261,29 @@ module.exports = async (req, res) => {
                         });
                     }
                 } catch (error) {
-                    return res.status(503).json({ error: 'Service temporarily unavailable' });
+                    console.error('Error in GET /api/settings:', error);
+                    // Return default settings instead of 503
+                    return res.status(200).json({
+                        shippingTime: 'من 24 إلى 48 ساعة داخل المدينة',
+                        showShippingTime: true,
+                        shippingCost: 'مجاني للطلبات فوق 50 دينار | 5 دينار للطلبات الأخرى',
+                        showShippingCost: true,
+                        shippingAreas: 'جميع المدن الرئيسية',
+                        showShippingAreas: true,
+                        shippingMethods: 'توصيل مباشر | نقاط الاستلام',
+                        showShippingMethods: true,
+                        returnPeriod: '7 أيام من تاريخ الاستلام',
+                        showReturnPeriod: true,
+                        returnConditions: 'المنتج يجب أن يكون بحالته الأصلية مع جميع الملحقات',
+                        showReturnConditions: true,
+                        refundTime: 'يتم استرداد المبلغ خلال 3-5 أيام عمل',
+                        showRefundTime: true,
+                        returnContact: 'اتصل بنا على واتساب أو الهاتف',
+                        showReturnContact: true,
+                        enableSharing: false,
+                        whatsappNumber: '',
+                        phoneNumber: ''
+                    });
                 }
             }
 

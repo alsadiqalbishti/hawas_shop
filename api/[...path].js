@@ -143,21 +143,33 @@ module.exports = async (req, res) => {
     // DIRECT URL MATCHING (Fallback for delivery endpoints)
     // Sometimes Vercel's path parsing doesn't work as expected
     // So we also check the URL directly for delivery endpoints
-    if (!endpoint || (endpoint !== 'delivery' && pathParts.length === 0)) {
-        const urlLower = (req.url || '').toLowerCase();
-        if (urlLower.includes('/delivery/auth') && req.method === 'POST') {
+    // This is a more aggressive fallback that always checks the URL
+    const urlLower = (req.url || '').toLowerCase();
+    const urlPath = urlLower.split('?')[0]; // Remove query string
+    
+    // If endpoint is not 'delivery' but URL contains delivery, try to parse from URL
+    if (endpoint !== 'delivery' && urlPath.includes('/delivery/')) {
+        // Extract delivery sub-endpoint from URL
+        const deliveryMatch = urlPath.match(/\/delivery\/([^\/\?]+)/);
+        if (deliveryMatch) {
             endpoint = 'delivery';
-            subEndpoint = 'auth';
-        } else if (urlLower.includes('/delivery/list') && req.method === 'GET') {
-            endpoint = 'delivery';
-            subEndpoint = 'list';
-        } else if (urlLower.includes('/delivery/orders')) {
-            endpoint = 'delivery';
-            subEndpoint = 'orders';
-        } else if (urlLower.includes('/delivery/info') && req.method === 'GET') {
-            endpoint = 'delivery';
-            subEndpoint = 'info';
+            subEndpoint = deliveryMatch[1].toLowerCase().trim();
         }
+    }
+    
+    // Also do explicit checks for known endpoints
+    if (urlPath.includes('/delivery/auth') && req.method === 'POST') {
+        endpoint = 'delivery';
+        subEndpoint = 'auth';
+    } else if (urlPath.includes('/delivery/list') && req.method === 'GET') {
+        endpoint = 'delivery';
+        subEndpoint = 'list';
+    } else if (urlPath.includes('/delivery/orders')) {
+        endpoint = 'delivery';
+        subEndpoint = 'orders';
+    } else if (urlPath.includes('/delivery/info') && req.method === 'GET') {
+        endpoint = 'delivery';
+        subEndpoint = 'info';
     }
     
     // Debug logging
@@ -168,7 +180,8 @@ module.exports = async (req, res) => {
         queryPath: req.query?.path,
         pathParts: pathParts,
         endpoint: endpoint,
-        subEndpoint: subEndpoint
+        subEndpoint: subEndpoint,
+        urlLower: (req.url || '').toLowerCase()
     });
 
     try {

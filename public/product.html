@@ -1216,17 +1216,6 @@
                     <div class="product-header">
                         <div class="product-header-top">
                             <span class="product-badge">✨ منتج مميز</span>
-                            <div class="share-buttons">
-                                <button onclick="shareToFacebook()" class="share-btn" title="مشاركة على فيسبوك">
-                                    📘
-                                </button>
-                                <button onclick="shareToWhatsApp()" class="share-btn" title="مشاركة على واتساب">
-                                    💬
-                                </button>
-                                <button onclick="copyProductLink()" class="share-btn" title="نسخ الرابط">
-                                    🔗
-                                </button>
-                            </div>
                         </div>
                         <h1 class="product-title" id="productName"></h1>
                         <div class="product-meta">
@@ -1286,17 +1275,6 @@
                         </div>
                     </div>
 
-                    <!-- Quick Contact Buttons -->
-                    <div class="contact-buttons">
-                        <a href="#" id="whatsappBtn" class="contact-btn whatsapp-btn" onclick="openWhatsApp(); return false;">
-                            <span>💬</span>
-                            <span>واتساب</span>
-                        </a>
-                        <a href="#" id="phoneBtn" class="contact-btn phone-btn" onclick="callPhone(); return false;">
-                            <span>📞</span>
-                            <span>اتصل بنا</span>
-                        </a>
-                    </div>
 
                     <!-- Trust Badges -->
                     <div class="trust-badges">
@@ -1339,53 +1317,53 @@
             <!-- Information Sections -->
             <div class="info-sections">
                 <!-- Shipping Information -->
-                <div class="info-card">
+                <div class="info-card" id="shippingInfoCard">
                     <h3 class="info-card-title">
                         <span class="info-icon">🚚</span>
                         معلومات التوصيل
                     </h3>
-                    <div class="info-content">
+                    <div class="info-content" id="shippingInfoContent">
                         <div class="info-item">
                             <strong>⏱️ وقت التوصيل:</strong>
-                            <span>من 24 إلى 48 ساعة داخل المدينة</span>
+                            <span id="shippingTime">من 24 إلى 48 ساعة داخل المدينة</span>
                         </div>
                         <div class="info-item">
                             <strong>💰 تكلفة التوصيل:</strong>
-                            <span>مجاني للطلبات فوق 50 دينار | 5 دينار للطلبات الأخرى</span>
+                            <span id="shippingCost">مجاني للطلبات فوق 50 دينار | 5 دينار للطلبات الأخرى</span>
                         </div>
                         <div class="info-item">
                             <strong>📍 مناطق التوصيل:</strong>
-                            <span>جميع المدن الرئيسية</span>
+                            <span id="shippingAreas">جميع المدن الرئيسية</span>
                         </div>
                         <div class="info-item">
                             <strong>📦 طرق التوصيل:</strong>
-                            <span>توصيل مباشر | نقاط الاستلام</span>
+                            <span id="shippingMethods">توصيل مباشر | نقاط الاستلام</span>
                         </div>
                     </div>
                 </div>
 
                 <!-- Return/Refund Policy -->
-                <div class="info-card">
+                <div class="info-card" id="returnPolicyCard">
                     <h3 class="info-card-title">
                         <span class="info-icon">↩️</span>
                         سياسة الإرجاع والاسترداد
                     </h3>
-                    <div class="info-content">
+                    <div class="info-content" id="returnPolicyContent">
                         <div class="info-item">
                             <strong>⏰ فترة الإرجاع:</strong>
-                            <span>7 أيام من تاريخ الاستلام</span>
+                            <span id="returnPeriod">7 أيام من تاريخ الاستلام</span>
                         </div>
                         <div class="info-item">
                             <strong>✅ شروط الإرجاع:</strong>
-                            <span>المنتج يجب أن يكون بحالته الأصلية مع جميع الملحقات</span>
+                            <span id="returnConditions">المنتج يجب أن يكون بحالته الأصلية مع جميع الملحقات</span>
                         </div>
                         <div class="info-item">
                             <strong>💰 الاسترداد:</strong>
-                            <span>يتم استرداد المبلغ خلال 3-5 أيام عمل</span>
+                            <span id="refundTime">يتم استرداد المبلغ خلال 3-5 أيام عمل</span>
                         </div>
                         <div class="info-item">
                             <strong>📞 للاستفسار:</strong>
-                            <span>اتصل بنا على واتساب أو الهاتف</span>
+                            <span id="returnContact">اتصل بنا على واتساب أو الهاتف</span>
                         </div>
                     </div>
                 </div>

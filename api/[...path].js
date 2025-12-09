@@ -1119,6 +1119,72 @@ module.exports = async (req, res) => {
         }
 
         // ============================================
+        // SETTINGS ENDPOINT
+        // ============================================
+        if (endpoint === 'settings') {
+            // GET - Load settings
+            if (req.method === 'GET') {
+                // No auth required for public GET (product page needs it)
+                try {
+                    const settingsData = await safeRedisOperation(async (client) => {
+                        return await client.get('store:settings');
+                    }, 'Failed to fetch settings', true);
+                    
+                    if (settingsData) {
+                        return res.status(200).json(JSON.parse(settingsData));
+                    } else {
+                        // Return default settings
+                        return res.status(200).json({
+                            shippingTime: 'من 24 إلى 48 ساعة داخل المدينة',
+                            shippingCost: 'مجاني للطلبات فوق 50 دينار | 5 دينار للطلبات الأخرى',
+                            shippingAreas: 'جميع المدن الرئيسية',
+                            shippingMethods: 'توصيل مباشر | نقاط الاستلام',
+                            returnPeriod: '7 أيام من تاريخ الاستلام',
+                            returnConditions: 'المنتج يجب أن يكون بحالته الأصلية مع جميع الملحقات',
+                            refundTime: 'يتم استرداد المبلغ خلال 3-5 أيام عمل',
+                            returnContact: 'اتصل بنا على واتساب أو الهاتف',
+                            enableSharing: false,
+                            whatsappNumber: '',
+                            phoneNumber: ''
+                        });
+                    }
+                } catch (error) {
+                    return res.status(503).json({ error: 'Service temporarily unavailable' });
+                }
+            }
+
+            // POST - Save settings
+            if (req.method === 'POST') {
+                if (!requireAuth(req, res)) return;
+
+                try {
+                    const settings = {
+                        whatsappNumber: req.body.whatsappNumber || '',
+                        phoneNumber: req.body.phoneNumber || '',
+                        enableSharing: req.body.enableSharing !== false,
+                        shippingTime: req.body.shippingTime || 'من 24 إلى 48 ساعة داخل المدينة',
+                        shippingCost: req.body.shippingCost || 'مجاني للطلبات فوق 50 دينار | 5 دينار للطلبات الأخرى',
+                        shippingAreas: req.body.shippingAreas || 'جميع المدن الرئيسية',
+                        shippingMethods: req.body.shippingMethods || 'توصيل مباشر | نقاط الاستلام',
+                        returnPeriod: req.body.returnPeriod || '7 أيام من تاريخ الاستلام',
+                        returnConditions: req.body.returnConditions || 'المنتج يجب أن يكون بحالته الأصلية مع جميع الملحقات',
+                        refundTime: req.body.refundTime || 'يتم استرداد المبلغ خلال 3-5 أيام عمل',
+                        returnContact: req.body.returnContact || 'اتصل بنا على واتساب أو الهاتف',
+                        updatedAt: new Date().toISOString()
+                    };
+
+                    await safeRedisOperation(async (client) => {
+                        await client.set('store:settings', JSON.stringify(settings));
+                    });
+
+                    return res.status(200).json(settings);
+                } catch (error) {
+                    return res.status(503).json({ error: 'Service temporarily unavailable' });
+                }
+            }
+        }
+
+        // ============================================
         // 404 - Endpoint not found
         // ============================================
         console.log('404 - Endpoint not found:', {

@@ -175,6 +175,10 @@
                         <span class="nav-item-icon">🚚</span>
                         <span>مندوبو التوصيل</span>
                     </a>
+                    <a href="#" class="nav-item" onclick="switchTab('settings', this); return false;">
+                        <span class="nav-item-icon">⚙️</span>
+                        <span>الإعدادات</span>
+                    </a>
                 </nav>
             </aside>
 
@@ -374,6 +378,86 @@
                                 <div id="deliveryMenContainer">
                                     <div class="spinner"></div>
                                 </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Settings Tab -->
+                    <div id="settingsTab" class="tab-content">
+                        <div class="card">
+                            <div class="card-header">
+                                <h2 class="card-title">⚙️ إعدادات المتجر</h2>
+                                <button onclick="saveSettings()" class="btn btn-primary btn-sm">
+                                    💾 حفظ الإعدادات
+                                </button>
+                            </div>
+                            <div class="card-body">
+                                <form id="settingsForm">
+                                    <!-- Contact Information -->
+                                    <div class="form-section">
+                                        <h3 class="form-section-title">📞 معلومات الاتصال</h3>
+                                        <div class="form-grid">
+                                            <div class="form-group">
+                                                <label class="form-label">رقم الواتساب</label>
+                                                <input type="text" id="whatsappNumber" class="form-input" placeholder="مثال: 0912345678">
+                                                <small class="form-help">سيتم استخدام هذا الرقم في أزرار الواتساب (اختياري)</small>
+                                            </div>
+                                            <div class="form-group">
+                                                <label class="form-label">رقم الهاتف</label>
+                                                <input type="text" id="phoneNumber" class="form-input" placeholder="مثال: 0912345678">
+                                                <small class="form-help">سيتم استخدام هذا الرقم في أزرار الاتصال (اختياري)</small>
+                                            </div>
+                                        </div>
+                                        <div class="form-group">
+                                            <label class="form-label">
+                                                <input type="checkbox" id="enableSharing" class="form-checkbox">
+                                                تفعيل أزرار المشاركة (فيسبوك، واتساب، نسخ الرابط)
+                                            </label>
+                                        </div>
+                                    </div>
+
+                                    <!-- Shipping Information -->
+                                    <div class="form-section">
+                                        <h3 class="form-section-title">🚚 معلومات التوصيل</h3>
+                                        <div class="form-group">
+                                            <label class="form-label">⏱️ وقت التوصيل</label>
+                                            <input type="text" id="shippingTime" class="form-input" value="من 24 إلى 48 ساعة داخل المدينة" placeholder="مثال: من 24 إلى 48 ساعة داخل المدينة">
+                                        </div>
+                                        <div class="form-group">
+                                            <label class="form-label">💰 تكلفة التوصيل</label>
+                                            <input type="text" id="shippingCost" class="form-input" value="مجاني للطلبات فوق 50 دينار | 5 دينار للطلبات الأخرى" placeholder="مثال: مجاني للطلبات فوق 50 دينار | 5 دينار للطلبات الأخرى">
+                                        </div>
+                                        <div class="form-group">
+                                            <label class="form-label">📍 مناطق التوصيل</label>
+                                            <input type="text" id="shippingAreas" class="form-input" value="جميع المدن الرئيسية" placeholder="مثال: جميع المدن الرئيسية">
+                                        </div>
+                                        <div class="form-group">
+                                            <label class="form-label">📦 طرق التوصيل</label>
+                                            <input type="text" id="shippingMethods" class="form-input" value="توصيل مباشر | نقاط الاستلام" placeholder="مثال: توصيل مباشر | نقاط الاستلام">
+                                        </div>
+                                    </div>
+
+                                    <!-- Return Policy -->
+                                    <div class="form-section">
+                                        <h3 class="form-section-title">↩️ سياسة الإرجاع والاسترداد</h3>
+                                        <div class="form-group">
+                                            <label class="form-label">⏰ فترة الإرجاع</label>
+                                            <input type="text" id="returnPeriod" class="form-input" value="7 أيام من تاريخ الاستلام" placeholder="مثال: 7 أيام من تاريخ الاستلام">
+                                        </div>
+                                        <div class="form-group">
+                                            <label class="form-label">✅ شروط الإرجاع</label>
+                                            <textarea id="returnConditions" class="form-textarea" rows="3" placeholder="مثال: المنتج يجب أن يكون بحالته الأصلية مع جميع الملحقات">المنتج يجب أن يكون بحالته الأصلية مع جميع الملحقات</textarea>
+                                        </div>
+                                        <div class="form-group">
+                                            <label class="form-label">💰 الاسترداد</label>
+                                            <input type="text" id="refundTime" class="form-input" value="يتم استرداد المبلغ خلال 3-5 أيام عمل" placeholder="مثال: يتم استرداد المبلغ خلال 3-5 أيام عمل">
+                                        </div>
+                                        <div class="form-group">
+                                            <label class="form-label">📞 للاستفسار</label>
+                                            <input type="text" id="returnContact" class="form-input" value="اتصل بنا على واتساب أو الهاتف" placeholder="مثال: اتصل بنا على واتساب أو الهاتف">
+                                        </div>
+                                    </div>
+                                </form>
                             </div>
                         </div>
                     </div>

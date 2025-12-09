@@ -437,7 +437,8 @@ function switchTab(tab, eventElement) {
         'products': 'المنتجات',
         'orders': 'الطلبات',
         'analytics': 'الإحصائيات',
-        'delivery-men': 'مندوبو التوصيل'
+        'delivery-men': 'مندوبو التوصيل',
+        'settings': 'الإعدادات'
     };
     if (pageTitle && tabTitles[tab]) {
         pageTitle.textContent = tabTitles[tab];
@@ -452,6 +453,8 @@ function switchTab(tab, eventElement) {
         loadProducts();
     } else if (tab === 'delivery-men') {
         loadDeliveryMenList();
+    } else if (tab === 'settings') {
+        loadSettings();
     }
 }
 
@@ -1937,5 +1940,112 @@ async function loadDeliveryMenList() {
     } catch (error) {
         console.error('Error loading delivery men:', error);
         container.innerHTML = `<div class="alert alert-error">حدث خطأ في تحميل مندوبي التوصيل: ${error.message}</div>`;
+    }
+}
+
+// Load Settings
+async function loadSettings() {
+    try {
+        const response = await fetch('/api/settings', {
+            headers: {
+                'Authorization': `Bearer ${authToken}`
+            }
+        });
+
+        if (!response.ok) {
+            if (response.status === 401) {
+                logout();
+                return;
+            }
+            // If settings don't exist, use defaults
+            return;
+        }
+
+        const settings = await response.json();
+        
+        // Populate form fields
+        if (settings.whatsappNumber) {
+            document.getElementById('whatsappNumber').value = settings.whatsappNumber;
+        }
+        if (settings.phoneNumber) {
+            document.getElementById('phoneNumber').value = settings.phoneNumber;
+        }
+        document.getElementById('enableSharing').checked = settings.enableSharing !== false;
+        
+        if (settings.shippingTime) {
+            document.getElementById('shippingTime').value = settings.shippingTime;
+        }
+        if (settings.shippingCost) {
+            document.getElementById('shippingCost').value = settings.shippingCost;
+        }
+        if (settings.shippingAreas) {
+            document.getElementById('shippingAreas').value = settings.shippingAreas;
+        }
+        if (settings.shippingMethods) {
+            document.getElementById('shippingMethods').value = settings.shippingMethods;
+        }
+        
+        if (settings.returnPeriod) {
+            document.getElementById('returnPeriod').value = settings.returnPeriod;
+        }
+        if (settings.returnConditions) {
+            document.getElementById('returnConditions').value = settings.returnConditions;
+        }
+        if (settings.refundTime) {
+            document.getElementById('refundTime').value = settings.refundTime;
+        }
+        if (settings.returnContact) {
+            document.getElementById('returnContact').value = settings.returnContact;
+        }
+    } catch (error) {
+        console.error('Error loading settings:', error);
+    }
+}
+
+// Save Settings
+async function saveSettings() {
+    const submitButton = event.target;
+    submitButton.disabled = true;
+    submitButton.textContent = '💾 جاري الحفظ...';
+
+    try {
+        const settings = {
+            whatsappNumber: document.getElementById('whatsappNumber').value.trim(),
+            phoneNumber: document.getElementById('phoneNumber').value.trim(),
+            enableSharing: document.getElementById('enableSharing').checked,
+            shippingTime: document.getElementById('shippingTime').value.trim(),
+            shippingCost: document.getElementById('shippingCost').value.trim(),
+            shippingAreas: document.getElementById('shippingAreas').value.trim(),
+            shippingMethods: document.getElementById('shippingMethods').value.trim(),
+            returnPeriod: document.getElementById('returnPeriod').value.trim(),
+            returnConditions: document.getElementById('returnConditions').value.trim(),
+            refundTime: document.getElementById('refundTime').value.trim(),
+            returnContact: document.getElementById('returnContact').value.trim()
+        };
+
+        const response = await fetch('/api/settings', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${authToken}`
+            },
+            body: JSON.stringify(settings)
+        });
+
+        if (!response.ok) {
+            if (response.status === 401) {
+                logout();
+                return;
+            }
+            throw new Error('فشل حفظ الإعدادات');
+        }
+
+        showNotification('تم حفظ الإعدادات بنجاح! ✅', 'success');
+    } catch (error) {
+        console.error('Error saving settings:', error);
+        showNotification('حدث خطأ في حفظ الإعدادات', 'error');
+    } finally {
+        submitButton.disabled = false;
+        submitButton.textContent = '💾 حفظ الإعدادات';
     }
 }

@@ -428,6 +428,28 @@ body {
    FORMS
    ============================================ */
 
+.form-section {
+  margin-bottom: var(--space-6);
+  padding-bottom: var(--space-5);
+  border-bottom: 2px solid var(--border-light);
+}
+
+.form-section:last-child {
+  border-bottom: none;
+  margin-bottom: 0;
+  padding-bottom: 0;
+}
+
+.form-section-title {
+  font-size: var(--font-size-xl);
+  font-weight: var(--font-weight-bold);
+  color: var(--dark);
+  margin-bottom: var(--space-4);
+  padding-bottom: var(--space-2);
+  border-bottom: 2px solid var(--primary);
+  display: inline-block;
+}
+
 .form-group {
   margin-bottom: var(--space-4);
 }
@@ -470,6 +492,22 @@ body {
 .form-input::placeholder,
 .form-textarea::placeholder {
   color: var(--text-lighter);
+}
+
+.form-checkbox {
+  width: 18px;
+  height: 18px;
+  margin-left: var(--space-2);
+  cursor: pointer;
+  accent-color: var(--primary);
+}
+
+.form-help {
+  display: block;
+  margin-top: var(--space-1);
+  font-size: var(--font-size-xs);
+  color: var(--text-light);
+  font-style: italic;
 }
 
 /* ============================================

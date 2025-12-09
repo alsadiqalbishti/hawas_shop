@@ -248,8 +248,8 @@ async function loadProduct() {
             productSku.classList.remove('hidden');
         }
 
-        // Setup contact buttons
-        setupContactButtons(product);
+        // Load store settings (shipping info, return policy, etc.)
+        loadStoreSettings();
 
         // Display specifications if available
         displaySpecifications(product);
@@ -695,42 +695,56 @@ function goToSlide(index) {
     });
 }
 
-// Share Functions
-function shareToFacebook() {
-    const productUrl = window.location.href;
-    const productName = currentProduct ? currentProduct.name : 'منتج';
-    const shareUrl = `https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(productUrl)}`;
-    window.open(shareUrl, '_blank', 'width=600,height=400');
-}
-
-function shareToWhatsApp() {
-    const productUrl = window.location.href;
-    const productName = currentProduct ? currentProduct.name : 'منتج';
-    const message = `شاهد هذا المنتج: ${productName}\n${productUrl}`;
-    const shareUrl = `https://wa.me/?text=${encodeURIComponent(message)}`;
-    window.open(shareUrl, '_blank');
-}
-
-function copyProductLink() {
-    const productUrl = window.location.href;
-    navigator.clipboard.writeText(productUrl).then(() => {
-        showNotification('تم نسخ رابط المنتج! 🎉', 'success');
-    }).catch(() => {
-        // Fallback for older browsers
-        const textArea = document.createElement('textarea');
-        textArea.value = productUrl;
-        textArea.style.position = 'fixed';
-        textArea.style.opacity = '0';
-        document.body.appendChild(textArea);
-        textArea.select();
-        try {
-            document.execCommand('copy');
-            showNotification('تم نسخ رابط المنتج! 🎉', 'success');
-        } catch (err) {
-            showNotification('فشل نسخ الرابط', 'error');
+// Load Store Settings
+async function loadStoreSettings() {
+    try {
+        const response = await fetch('/api/settings');
+        if (!response.ok) {
+            // Use default values if settings not found
+            return;
         }
-        document.body.removeChild(textArea);
-    });
+        
+        const settings = await response.json();
+        
+        // Update shipping information
+        if (settings.shippingTime) {
+            const el = document.getElementById('shippingTime');
+            if (el) el.textContent = settings.shippingTime;
+        }
+        if (settings.shippingCost) {
+            const el = document.getElementById('shippingCost');
+            if (el) el.textContent = settings.shippingCost;
+        }
+        if (settings.shippingAreas) {
+            const el = document.getElementById('shippingAreas');
+            if (el) el.textContent = settings.shippingAreas;
+        }
+        if (settings.shippingMethods) {
+            const el = document.getElementById('shippingMethods');
+            if (el) el.textContent = settings.shippingMethods;
+        }
+        
+        // Update return policy
+        if (settings.returnPeriod) {
+            const el = document.getElementById('returnPeriod');
+            if (el) el.textContent = settings.returnPeriod;
+        }
+        if (settings.returnConditions) {
+            const el = document.getElementById('returnConditions');
+            if (el) el.textContent = settings.returnConditions;
+        }
+        if (settings.refundTime) {
+            const el = document.getElementById('refundTime');
+            if (el) el.textContent = settings.refundTime;
+        }
+        if (settings.returnContact) {
+            const el = document.getElementById('returnContact');
+            if (el) el.textContent = settings.returnContact;
+        }
+    } catch (error) {
+        console.error('Error loading store settings:', error);
+        // Use default values on error
+    }
 }
 
 // Quantity Functions
@@ -760,38 +774,6 @@ function decreaseQuantity() {
     
     if (current > min) {
         quantityInput.value = current - 1;
-    }
-}
-
-// Contact Functions
-function setupContactButtons(product) {
-    // You can configure these phone numbers in admin panel or use default
-    const whatsappNumber = '1234567890'; // Replace with actual WhatsApp number
-    const phoneNumber = '1234567890'; // Replace with actual phone number
-    
-    const whatsappBtn = document.getElementById('whatsappBtn');
-    const phoneBtn = document.getElementById('phoneBtn');
-    
-    if (whatsappBtn) {
-        whatsappBtn.href = `https://wa.me/${whatsappNumber}?text=${encodeURIComponent(`مرحباً، أريد الاستفسار عن المنتج: ${product.name}`)}`;
-    }
-    
-    if (phoneBtn) {
-        phoneBtn.href = `tel:${phoneNumber}`;
-    }
-}
-
-function openWhatsApp() {
-    const whatsappBtn = document.getElementById('whatsappBtn');
-    if (whatsappBtn && whatsappBtn.href) {
-        window.open(whatsappBtn.href, '_blank');
-    }
-}
-
-function callPhone() {
-    const phoneBtn = document.getElementById('phoneBtn');
-    if (phoneBtn && phoneBtn.href) {
-        window.location.href = phoneBtn.href;
     }
 }
 

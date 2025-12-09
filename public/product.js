@@ -403,50 +403,241 @@ document.getElementById('orderForm')?.addEventListener('submit', async (e) => {
     }
 });
 
-// Image zoom modal
+// Full-Screen Image Viewer (Lightbox) with Navigation
+let lightboxImages = [];
+let currentLightboxIndex = 0;
+
 function openImageZoom(imageUrl) {
-    const modal = document.createElement('div');
-    modal.className = 'image-zoom-modal';
-    modal.style.cssText = `
-        position: fixed;
-        top: 0;
-        left: 0;
-        width: 100%;
-        height: 100%;
-        background: rgba(0, 0, 0, 0.95);
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        z-index: 10000;
-        cursor: pointer;
-        animation: fadeIn 0.3s ease;
-    `;
-    modal.setAttribute('role', 'dialog');
-    modal.setAttribute('aria-label', 'تكبير الصورة');
+    if (!currentProduct || !currentProduct.mediaUrls) return;
+    
+    // Get all valid image URLs
+    const validMediaUrls = (currentProduct.mediaUrls || [])
+        .filter(url => {
+            if (!url) return false;
+            const urlStr = typeof url === 'string' ? url.trim() : String(url);
+            return urlStr !== '' && urlStr !== 'null' && urlStr !== 'undefined' && urlStr.length > 10;
+        })
+        .map(url => typeof url === 'string' ? url.trim() : String(url));
+    
+    if (validMediaUrls.length === 0) return;
+    
+    lightboxImages = validMediaUrls;
+    currentLightboxIndex = validMediaUrls.indexOf(imageUrl);
+    if (currentLightboxIndex === -1) currentLightboxIndex = 0;
+    
+    const lightbox = document.getElementById('imageLightbox');
+    const lightboxImage = document.getElementById('lightboxImage');
+    const lightboxCounter = document.getElementById('lightboxCounter');
+    
+    if (lightbox && lightboxImage) {
+        lightboxImage.src = lightboxImages[currentLightboxIndex];
+        lightboxCounter.textContent = `${currentLightboxIndex + 1} / ${lightboxImages.length}`;
+        lightbox.classList.remove('hidden');
+        document.body.style.overflow = 'hidden';
+        
+        // Show/hide navigation buttons
+        const prevBtn = document.querySelector('.lightbox-prev');
+        const nextBtn = document.querySelector('.lightbox-next');
+        if (prevBtn) prevBtn.style.display = lightboxImages.length > 1 ? 'flex' : 'none';
+        if (nextBtn) nextBtn.style.display = lightboxImages.length > 1 ? 'flex' : 'none';
+    }
+}
 
-    const imgContainer = document.createElement('div');
-    imgContainer.style.cssText = `
-        position: relative;
-        max-width: 95%;
-        max-height: 95%;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-    `;
+function closeLightbox() {
+    const lightbox = document.getElementById('imageLightbox');
+    if (lightbox) {
+        lightbox.classList.add('hidden');
+        document.body.style.overflow = '';
+    }
+}
 
-    const img = document.createElement('img');
-    img.src = imageUrl;
-    img.style.cssText = `
-        max-width: 100%;
-        max-height: 95vh;
-        border-radius: 8px;
-        box-shadow: 0 0 50px rgba(255, 255, 255, 0.3);
-        object-fit: contain;
-    `;
-    img.alt = 'صورة المنتج';
-    img.onerror = function() {
-        imgContainer.innerHTML = '<p style="color: white;">فشل تحميل الصورة</p>';
-    };
+function lightboxPrev() {
+    if (lightboxImages.length === 0) return;
+    currentLightboxIndex = (currentLightboxIndex - 1 + lightboxImages.length) % lightboxImages.length;
+    updateLightboxImage();
+}
+
+function lightboxNext() {
+    if (lightboxImages.length === 0) return;
+    currentLightboxIndex = (currentLightboxIndex + 1) % lightboxImages.length;
+    updateLightboxImage();
+}
+
+function updateLightboxImage() {
+    const lightboxImage = document.getElementById('lightboxImage');
+    const lightboxCounter = document.getElementById('lightboxCounter');
+    
+    if (lightboxImage && lightboxImages[currentLightboxIndex]) {
+        lightboxImage.src = lightboxImages[currentLightboxIndex];
+        lightboxCounter.textContent = `${currentLightboxIndex + 1} / ${lightboxImages.length}`;
+    }
+}
+
+// Keyboard navigation for lightbox
+document.addEventListener('keydown', (e) => {
+    const lightbox = document.getElementById('imageLightbox');
+    if (lightbox && !lightbox.classList.contains('hidden')) {
+        if (e.key === 'Escape') {
+            closeLightbox();
+        } else if (e.key === 'ArrowRight' || e.key === 'ArrowLeft') {
+            // In RTL: ArrowRight goes to previous, ArrowLeft goes to next
+            if (e.key === 'ArrowRight') {
+                lightboxPrev();
+            } else {
+                lightboxNext();
+            }
+        }
+    }
+});
+
+// Related Products
+async function loadRelatedProducts(currentProduct) {
+    try {
+        const response = await fetch('/api/products');
+        if (!response.ok) return;
+        
+        const allProducts = await response.json();
+        if (!Array.isArray(allProducts)) return;
+        
+        // Filter out current product and get up to 4 related products
+        const related = allProducts
+            .filter(p => p.id !== currentProduct.id)
+            .slice(0, 4);
+        
+        if (related.length === 0) return;
+        
+        const section = document.getElementById('relatedProductsSection');
+        const grid = document.getElementById('relatedProductsGrid');
+        
+        if (!section || !grid) return;
+        
+        grid.innerHTML = '';
+        
+        related.forEach(product => {
+            const card = document.createElement('a');
+            card.href = `/product.html?id=${product.id}`;
+            card.className = 'related-product-card';
+            
+            const image = document.createElement('img');
+            const mediaUrls = product.mediaUrls || [];
+            const firstImage = mediaUrls.length > 0 ? mediaUrls[0] : (product.mediaUrl || '');
+            image.src = firstImage || 'data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" width="400" height="300"%3E%3Crect fill="%23ddd" width="400" height="300"/%3E%3C/svg%3E';
+            image.className = 'related-product-image';
+            image.alt = escapeHtml(product.name);
+            image.onerror = function() {
+                this.src = 'data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" width="400" height="300"%3E%3Crect fill="%23ddd" width="400" height="300"/%3E%3C/svg%3E';
+            };
+            
+            const info = document.createElement('div');
+            info.className = 'related-product-info';
+            
+            const name = document.createElement('div');
+            name.className = 'related-product-name';
+            name.textContent = product.name;
+            
+            const price = document.createElement('div');
+            price.className = 'related-product-price';
+            const displayPrice = product.discountPrice && product.discountPrice < product.price 
+                ? product.discountPrice 
+                : product.price;
+            price.textContent = `${formatPrice(displayPrice)} د.ل`;
+            
+            info.appendChild(name);
+            info.appendChild(price);
+            
+            card.appendChild(image);
+            card.appendChild(info);
+            grid.appendChild(card);
+        });
+        
+        section.style.display = 'block';
+    } catch (error) {
+        console.error('Error loading related products:', error);
+    }
+}
+
+// Recently Viewed Products
+function addToRecentlyViewed(product) {
+    try {
+        let recentlyViewed = JSON.parse(localStorage.getItem('recentlyViewed') || '[]');
+        
+        // Remove if already exists
+        recentlyViewed = recentlyViewed.filter(p => p.id !== product.id);
+        
+        // Add to beginning
+        recentlyViewed.unshift({
+            id: product.id,
+            name: product.name,
+            price: product.price,
+            discountPrice: product.discountPrice,
+            mediaUrl: (product.mediaUrls && product.mediaUrls[0]) || product.mediaUrl || ''
+        });
+        
+        // Keep only last 4
+        recentlyViewed = recentlyViewed.slice(0, 4);
+        
+        localStorage.setItem('recentlyViewed', JSON.stringify(recentlyViewed));
+    } catch (error) {
+        console.error('Error saving to recently viewed:', error);
+    }
+}
+
+function loadRecentlyViewed() {
+    try {
+        const recentlyViewed = JSON.parse(localStorage.getItem('recentlyViewed') || '[]');
+        
+        // Filter out current product
+        const filtered = recentlyViewed.filter(p => p.id !== productId);
+        
+        if (filtered.length === 0) return;
+        
+        const section = document.getElementById('recentlyViewedSection');
+        const grid = document.getElementById('recentlyViewedGrid');
+        
+        if (!section || !grid) return;
+        
+        grid.innerHTML = '';
+        
+        filtered.forEach(product => {
+            const card = document.createElement('a');
+            card.href = `/product.html?id=${product.id}`;
+            card.className = 'related-product-card';
+            
+            const image = document.createElement('img');
+            image.src = product.mediaUrl || 'data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" width="400" height="300"%3E%3Crect fill="%23ddd" width="400" height="300"/%3E%3C/svg%3E';
+            image.className = 'related-product-image';
+            image.alt = escapeHtml(product.name);
+            image.onerror = function() {
+                this.src = 'data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" width="400" height="300"%3E%3Crect fill="%23ddd" width="400" height="300"/%3E%3C/svg%3E';
+            };
+            
+            const info = document.createElement('div');
+            info.className = 'related-product-info';
+            
+            const name = document.createElement('div');
+            name.className = 'related-product-name';
+            name.textContent = product.name;
+            
+            const price = document.createElement('div');
+            price.className = 'related-product-price';
+            const displayPrice = product.discountPrice && product.discountPrice < product.price 
+                ? product.discountPrice 
+                : product.price;
+            price.textContent = `${formatPrice(displayPrice)} د.ل`;
+            
+            info.appendChild(name);
+            info.appendChild(price);
+            
+            card.appendChild(image);
+            card.appendChild(info);
+            grid.appendChild(card);
+        });
+        
+        section.style.display = 'block';
+    } catch (error) {
+        console.error('Error loading recently viewed:', error);
+    }
+}
 
     const closeBtn = document.createElement('button');
     closeBtn.textContent = '✕';

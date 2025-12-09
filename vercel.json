@@ -10,5 +10,10 @@
             "source": "/product.html",
             "destination": "/product.html"
         }
-    ]
+    ],
+    "git": {
+        "deploymentEnabled": {
+            "main": true
+        }
+    }
 }

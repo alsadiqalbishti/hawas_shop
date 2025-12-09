@@ -87,54 +87,92 @@ module.exports = async (req, res) => {
     }
 
     // Parse the path from the catch-all route
-    // In Vercel, [...path] gives us req.query.path as an array
-    // Fallback to parsing from req.url if query.path is not available
+    // In Vercel, api/[...path].js receives paths like:
+    // - req.query.path as array: ['delivery', 'list'] for /api/delivery/list
+    // - req.url might be '/api/delivery/list' or '/delivery/list'
     let pathParts = [];
     
-    // Try req.query.path first (Vercel's catch-all format)
-    if (req.query && req.query.path !== undefined) {
+    // Method 1: Try req.query.path (Vercel's catch-all format)
+    if (req.query && req.query.path !== undefined && req.query.path !== null) {
         const pathArray = req.query.path;
         if (Array.isArray(pathArray)) {
-            pathParts = pathArray.filter(p => p && p.length > 0);
-        } else if (typeof pathArray === 'string') {
-            pathParts = pathArray.split('/').filter(p => p && p.length > 0);
+            pathParts = pathArray.filter(p => p && String(p).trim().length > 0).map(p => String(p).trim());
+        } else if (typeof pathArray === 'string' && pathArray.trim().length > 0) {
+            pathParts = pathArray.split('/').filter(p => p && p.trim().length > 0).map(p => p.trim());
         }
     }
     
-    // If pathParts is still empty, parse from req.url
+    // Method 2: Parse from req.url if pathParts is still empty
     if (pathParts.length === 0 && req.url) {
-        // Parse from URL
-        const urlPath = req.url.split('?')[0]; // Remove query string
-        // Remove leading/trailing slashes
-        let cleanPath = urlPath.replace(/^\/+/, '').replace(/\/+$/, '');
+        let urlPath = req.url.split('?')[0]; // Remove query string
+        urlPath = urlPath.replace(/^\/+/, '').replace(/\/+$/, ''); // Remove leading/trailing slashes
         
-        // Remove /api prefix if present
-        if (cleanPath.toLowerCase().startsWith('api/')) {
-            cleanPath = cleanPath.substring(4);
-        } else if (cleanPath.toLowerCase() === 'api') {
-            cleanPath = '';
+        // Remove 'api' prefix if present (case insensitive)
+        if (urlPath.toLowerCase().startsWith('api/')) {
+            urlPath = urlPath.substring(4);
+        } else if (urlPath.toLowerCase() === 'api') {
+            urlPath = '';
         }
         
         // Split into parts
-        if (cleanPath) {
-            pathParts = cleanPath.split('/').filter(p => p && p.length > 0);
+        if (urlPath && urlPath.trim().length > 0) {
+            pathParts = urlPath.split('/').filter(p => p && p.trim().length > 0).map(p => p.trim());
         }
     }
     
-    const endpoint = (pathParts[0] || '').toLowerCase();
-    const subEndpoint = (pathParts[1] || '').toLowerCase();
+    // Method 3: Try parsing from the full URL pathname (fallback)
+    if (pathParts.length === 0 && req.url) {
+        try {
+            // Try to extract path from full URL
+            const urlObj = new URL(req.url, 'http://localhost');
+            let pathname = urlObj.pathname.replace(/^\/+/, '').replace(/\/+$/, '');
+            if (pathname.toLowerCase().startsWith('api/')) {
+                pathname = pathname.substring(4);
+            }
+            if (pathname && pathname.trim().length > 0) {
+                pathParts = pathname.split('/').filter(p => p && p.trim().length > 0).map(p => p.trim());
+            }
+        } catch (e) {
+            // URL parsing failed, ignore
+        }
+    }
     
-    // Debug logging (remove in production if needed)
-    console.log('API Request:', {
+    let endpoint = (pathParts[0] || '').toLowerCase().trim();
+    let subEndpoint = (pathParts[1] || '').toLowerCase().trim();
+    
+    // DIRECT URL MATCHING (Fallback for delivery endpoints)
+    // Sometimes Vercel's path parsing doesn't work as expected
+    // So we also check the URL directly for delivery endpoints
+    if (!endpoint || (endpoint !== 'delivery' && pathParts.length === 0)) {
+        const urlLower = (req.url || '').toLowerCase();
+        if (urlLower.includes('/delivery/auth') && req.method === 'POST') {
+            endpoint = 'delivery';
+            subEndpoint = 'auth';
+        } else if (urlLower.includes('/delivery/list') && req.method === 'GET') {
+            endpoint = 'delivery';
+            subEndpoint = 'list';
+        } else if (urlLower.includes('/delivery/orders')) {
+            endpoint = 'delivery';
+            subEndpoint = 'orders';
+        } else if (urlLower.includes('/delivery/info') && req.method === 'GET') {
+            endpoint = 'delivery';
+            subEndpoint = 'info';
+        }
+    }
+    
+    // Debug logging
+    console.log('API Request Debug:', {
         method: req.method,
         url: req.url,
         query: req.query,
+        queryPath: req.query?.path,
         pathParts: pathParts,
         endpoint: endpoint,
         subEndpoint: subEndpoint
     });
 
     try {
+        
         // ============================================
         // AUTH ENDPOINTS
         // ============================================

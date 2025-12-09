@@ -1011,6 +1011,54 @@ async function bulkUpdateStatus() {
     await loadOrders();
 }
 
+// Bulk delete orders
+async function bulkDelete() {
+    const checkboxes = document.querySelectorAll('.order-checkbox:checked');
+    if (checkboxes.length === 0) {
+        showNotification('الرجاء تحديد طلب واحد على الأقل', 'error');
+        return;
+    }
+    
+    const orderIds = Array.from(checkboxes).map(cb => cb.value);
+    const orderCount = orderIds.length;
+    
+    if (!confirm(`هل أنت متأكد من حذف ${orderCount} طلب؟ لا يمكن التراجع عن هذا الإجراء.`)) {
+        return;
+    }
+    
+    let successCount = 0;
+    let failCount = 0;
+    
+    for (const orderId of orderIds) {
+        try {
+            const response = await fetch(`/api/orders?id=${orderId}`, {
+                method: 'DELETE',
+                headers: {
+                    'Authorization': `Bearer ${authToken}`
+                }
+            });
+            
+            if (response.ok) {
+                successCount++;
+            } else {
+                failCount++;
+                const errorData = await response.json().catch(() => ({}));
+                console.error(`Failed to delete order ${orderId}:`, errorData.error || 'Unknown error');
+            }
+        } catch (error) {
+            failCount++;
+            console.error(`Error deleting order ${orderId}:`, error);
+        }
+    }
+    
+    if (successCount > 0) {
+        showNotification(`تم حذف ${successCount} طلب بنجاح${failCount > 0 ? `، فشل ${failCount}` : ''}`, 'success');
+        await loadOrders();
+    } else {
+        showNotification(`فشل حذف جميع الطلبات (${failCount})`, 'error');
+    }
+}
+
 // Export orders
 function exportOrders() {
     const ordersToExport = filteredOrders.length > 0 ? filteredOrders : currentOrders;

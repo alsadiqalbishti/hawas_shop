@@ -565,6 +565,167 @@
             box-shadow: var(--shadow-lg);
         }
 
+        /* Breadcrumb Navigation */
+        .breadcrumb {
+            display: flex;
+            align-items: center;
+            gap: var(--space-2);
+            padding: var(--space-3) 0;
+            margin-bottom: var(--space-4);
+            font-size: var(--font-size-sm);
+        }
+
+        .breadcrumb a {
+            color: var(--primary);
+            text-decoration: none;
+            transition: color var(--transition-base);
+        }
+
+        .breadcrumb a:hover {
+            color: var(--primary-dark);
+            text-decoration: underline;
+        }
+
+        .breadcrumb-separator {
+            color: var(--text-light);
+        }
+
+        /* Trust Badges */
+        .trust-badges {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+            gap: var(--space-2);
+            margin-top: var(--space-4);
+            padding-top: var(--space-4);
+            border-top: 2px solid var(--border-light);
+        }
+
+        .trust-badge {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: var(--space-1);
+            padding: var(--space-3);
+            background: var(--light);
+            border-radius: var(--radius-md);
+            border: 1px solid var(--border-light);
+            transition: all var(--transition-base);
+        }
+
+        .trust-badge:hover {
+            background: var(--white);
+            border-color: var(--primary);
+            transform: translateY(-2px);
+            box-shadow: var(--shadow-sm);
+        }
+
+        .trust-icon {
+            font-size: var(--font-size-2xl);
+        }
+
+        .trust-text {
+            font-size: var(--font-size-xs);
+            color: var(--text);
+            font-weight: var(--font-weight-medium);
+            text-align: center;
+        }
+
+        /* Information Sections */
+        .info-sections {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: var(--space-4);
+            margin-top: var(--space-5);
+        }
+
+        .info-card {
+            background: var(--white);
+            border-radius: var(--radius-xl);
+            padding: var(--space-4);
+            box-shadow: var(--shadow-lg);
+        }
+
+        .info-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 4px;
+            background: linear-gradient(90deg, var(--primary), var(--secondary), var(--accent));
+            border-radius: var(--radius-xl) var(--radius-xl) 0 0;
+        }
+
+        .info-card-title {
+            font-size: var(--font-size-xl);
+            font-weight: var(--font-weight-bold);
+            color: var(--dark);
+            margin-bottom: var(--space-4);
+            display: flex;
+            align-items: center;
+            gap: var(--space-2);
+            padding-bottom: var(--space-3);
+            border-bottom: 2px solid var(--border-light);
+        }
+
+        .info-icon {
+            font-size: var(--font-size-2xl);
+        }
+
+        .info-content {
+            display: flex;
+            flex-direction: column;
+            gap: var(--space-3);
+        }
+
+        .info-item {
+            display: flex;
+            flex-direction: column;
+            gap: var(--space-1);
+            padding: var(--space-2);
+            background: var(--light);
+            border-radius: var(--radius-md);
+        }
+
+        .info-item strong {
+            color: var(--dark);
+            font-size: var(--font-size-sm);
+        }
+
+        .info-item span {
+            color: var(--text);
+            font-size: var(--font-size-sm);
+        }
+
+        /* Specifications Table */
+        .spec-table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        .spec-table tr {
+            border-bottom: 1px solid var(--border-light);
+        }
+
+        .spec-table tr:last-child {
+            border-bottom: none;
+        }
+
+        .spec-table td {
+            padding: var(--space-3);
+            font-size: var(--font-size-sm);
+        }
+
+        .spec-table td:first-child {
+            font-weight: var(--font-weight-bold);
+            color: var(--dark);
+            width: 40%;
+        }
+
+        .spec-table td:last-child {
+            color: var(--text);
+        }
+
         /* Loading and Error States */
         #productNotFound {
             background: var(--white);
@@ -648,12 +809,31 @@
             .price-section {
                 padding: var(--space-4);
             }
+
+            .info-sections {
+                grid-template-columns: 1fr;
+            }
+
+            .trust-badges {
+                grid-template-columns: repeat(2, 1fr);
+            }
+
+            .breadcrumb {
+                font-size: var(--font-size-xs);
+            }
         }
     </style>
 </head>
 
 <body>
     <div class="product-wrapper">
+        <!-- Breadcrumb Navigation -->
+        <nav class="breadcrumb" id="breadcrumb" aria-label="breadcrumb">
+            <a href="/">الرئيسية</a>
+            <span class="breadcrumb-separator">›</span>
+            <span id="breadcrumbProduct">المنتج</span>
+        </nav>
+
         <div id="loadingSpinner" class="spinner"></div>
 
         <div id="productContent" class="hidden">
@@ -734,6 +914,92 @@
                             <span>📞</span>
                             <span>اتصل بنا</span>
                         </a>
+                    </div>
+
+                    <!-- Trust Badges -->
+                    <div class="trust-badges">
+                        <div class="trust-badge">
+                            <span class="trust-icon">🔒</span>
+                            <span class="trust-text">آمن ومضمون</span>
+                        </div>
+                        <div class="trust-badge">
+                            <span class="trust-icon">✅</span>
+                            <span class="trust-text">ضمان الجودة</span>
+                        </div>
+                        <div class="trust-badge">
+                            <span class="trust-icon">🚚</span>
+                            <span class="trust-text">توصيل سريع</span>
+                        </div>
+                        <div class="trust-badge">
+                            <span class="trust-icon">💳</span>
+                            <span class="trust-text">الدفع عند الاستلام</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Information Sections -->
+            <div class="info-sections">
+                <!-- Shipping Information -->
+                <div class="info-card">
+                    <h3 class="info-card-title">
+                        <span class="info-icon">🚚</span>
+                        معلومات التوصيل
+                    </h3>
+                    <div class="info-content">
+                        <div class="info-item">
+                            <strong>⏱️ وقت التوصيل:</strong>
+                            <span>من 24 إلى 48 ساعة داخل المدينة</span>
+                        </div>
+                        <div class="info-item">
+                            <strong>💰 تكلفة التوصيل:</strong>
+                            <span>مجاني للطلبات فوق 50 دينار | 5 دينار للطلبات الأخرى</span>
+                        </div>
+                        <div class="info-item">
+                            <strong>📍 مناطق التوصيل:</strong>
+                            <span>جميع المدن الرئيسية</span>
+                        </div>
+                        <div class="info-item">
+                            <strong>📦 طرق التوصيل:</strong>
+                            <span>توصيل مباشر | نقاط الاستلام</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Return/Refund Policy -->
+                <div class="info-card">
+                    <h3 class="info-card-title">
+                        <span class="info-icon">↩️</span>
+                        سياسة الإرجاع والاسترداد
+                    </h3>
+                    <div class="info-content">
+                        <div class="info-item">
+                            <strong>⏰ فترة الإرجاع:</strong>
+                            <span>7 أيام من تاريخ الاستلام</span>
+                        </div>
+                        <div class="info-item">
+                            <strong>✅ شروط الإرجاع:</strong>
+                            <span>المنتج يجب أن يكون بحالته الأصلية مع جميع الملحقات</span>
+                        </div>
+                        <div class="info-item">
+                            <strong>💰 الاسترداد:</strong>
+                            <span>يتم استرداد المبلغ خلال 3-5 أيام عمل</span>
+                        </div>
+                        <div class="info-item">
+                            <strong>📞 للاستفسار:</strong>
+                            <span>اتصل بنا على واتساب أو الهاتف</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Product Specifications (if available) -->
+                <div class="info-card" id="specificationsCard" style="display: none;">
+                    <h3 class="info-card-title">
+                        <span class="info-icon">📋</span>
+                        المواصفات
+                    </h3>
+                    <div class="info-content" id="specificationsContent">
+                        <!-- Will be populated from product data if available -->
                     </div>
                 </div>
             </div>

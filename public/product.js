@@ -46,6 +46,12 @@ async function loadProduct() {
 
         // Update page title
         document.getElementById('pageTitle').textContent = product.name;
+        
+        // Update breadcrumb
+        const breadcrumbProduct = document.getElementById('breadcrumbProduct');
+        if (breadcrumbProduct) {
+            breadcrumbProduct.textContent = product.name;
+        }
 
         // Display product media with zoom
         const mediaContainer = document.getElementById('productMedia');
@@ -676,6 +682,41 @@ function createImageThumbnails(imageUrls, productName) {
         thumbnail.appendChild(img);
         thumbnailsContainer.appendChild(thumbnail);
     });
+}
+
+// Display Product Specifications
+function displaySpecifications(product) {
+    const specsCard = document.getElementById('specificationsCard');
+    const specsContent = document.getElementById('specificationsContent');
+    
+    if (!specsCard || !specsContent) return;
+    
+    // Check if product has specifications data
+    // You can add specifications to product data in admin panel
+    const specifications = product.specifications || {};
+    
+    if (Object.keys(specifications).length > 0) {
+        specsCard.style.display = 'block';
+        
+        const table = document.createElement('table');
+        table.className = 'spec-table';
+        
+        Object.entries(specifications).forEach(([key, value]) => {
+            const row = document.createElement('tr');
+            const keyCell = document.createElement('td');
+            const valueCell = document.createElement('td');
+            
+            keyCell.textContent = key;
+            valueCell.textContent = value;
+            
+            row.appendChild(keyCell);
+            row.appendChild(valueCell);
+            table.appendChild(row);
+        });
+        
+        specsContent.innerHTML = '';
+        specsContent.appendChild(table);
+    }
 }
 
 // Notification function

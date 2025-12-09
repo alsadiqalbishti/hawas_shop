@@ -144,24 +144,32 @@ module.exports = async (req, res) => {
     // DIRECT URL MATCHING (Primary method for delivery endpoints)
     // Vercel's path parsing can be inconsistent, so we check the URL directly first
     const urlLower = (req.url || '').toLowerCase();
-    const urlPath = urlLower.split('?')[0]; // Remove query string
+    let urlPath = urlLower.split('?')[0]; // Remove query string
+    
+    // Normalize URL path - remove /api prefix if present
+    if (urlPath.startsWith('/api/')) {
+        urlPath = urlPath.substring(5);
+    } else if (urlPath.startsWith('api/')) {
+        urlPath = urlPath.substring(4);
+    }
     
     // Explicit checks for delivery endpoints (check these FIRST before pathParts)
-    if (urlPath.includes('/delivery/list') && req.method === 'GET') {
+    // Check both with and without /api prefix
+    if ((urlPath.includes('delivery/list') || urlLower.includes('/delivery/list')) && req.method === 'GET') {
         endpoint = 'delivery';
         subEndpoint = 'list';
-    } else if (urlPath.includes('/delivery/auth') && req.method === 'POST') {
+    } else if ((urlPath.includes('delivery/auth') || urlLower.includes('/delivery/auth')) && req.method === 'POST') {
         endpoint = 'delivery';
         subEndpoint = 'auth';
-    } else if (urlPath.includes('/delivery/orders')) {
+    } else if (urlPath.includes('delivery/orders') || urlLower.includes('/delivery/orders')) {
         endpoint = 'delivery';
         subEndpoint = 'orders';
-    } else if (urlPath.includes('/delivery/info') && req.method === 'GET') {
+    } else if ((urlPath.includes('delivery/info') || urlLower.includes('/delivery/info')) && req.method === 'GET') {
         endpoint = 'delivery';
         subEndpoint = 'info';
-    } else if (urlPath.includes('/delivery/')) {
+    } else if (urlPath.includes('delivery/') || urlLower.includes('/delivery/')) {
         // Generic delivery endpoint extraction
-        const deliveryMatch = urlPath.match(/\/delivery\/([^\/\?]+)/);
+        const deliveryMatch = (urlPath + urlLower).match(/delivery\/([^\/\?]+)/i);
         if (deliveryMatch) {
             endpoint = 'delivery';
             subEndpoint = deliveryMatch[1].toLowerCase().trim();

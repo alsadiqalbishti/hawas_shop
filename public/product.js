@@ -651,64 +651,6 @@ function loadRecentlyViewed() {
     }
 }
 
-    const closeBtn = document.createElement('button');
-    closeBtn.textContent = '✕';
-    closeBtn.style.cssText = `
-        position: absolute;
-        top: 20px;
-        right: 20px;
-        background: rgba(255, 255, 255, 0.2);
-        border: 2px solid white;
-        color: white;
-        width: 40px;
-        height: 40px;
-        border-radius: 50%;
-        font-size: 24px;
-        cursor: pointer;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        transition: all 0.3s;
-        z-index: 10001;
-    `;
-    closeBtn.setAttribute('aria-label', 'إغلاق');
-    closeBtn.onmouseover = () => closeBtn.style.background = 'rgba(255, 255, 255, 0.4)';
-    closeBtn.onmouseout = () => closeBtn.style.background = 'rgba(255, 255, 255, 0.2)';
-
-    const closeModal = () => {
-        document.body.removeChild(modal);
-        document.body.style.overflow = '';
-    };
-
-    closeBtn.onclick = (e) => {
-        e.stopPropagation();
-        closeModal();
-    };
-
-    modal.onclick = (e) => {
-        if (e.target === modal) {
-            closeModal();
-        }
-    };
-
-    // Keyboard support
-    const handleKeyDown = (e) => {
-        if (e.key === 'Escape') {
-            closeModal();
-            document.removeEventListener('keydown', handleKeyDown);
-        }
-    };
-    document.addEventListener('keydown', handleKeyDown);
-
-    // Prevent body scroll
-    document.body.style.overflow = 'hidden';
-
-    imgContainer.appendChild(img);
-    imgContainer.appendChild(closeBtn);
-    modal.appendChild(imgContainer);
-    document.body.appendChild(modal);
-}
-
 // Slider functions
 function updateSlider() {
     const track = document.getElementById('sliderTrack');

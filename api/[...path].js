@@ -154,22 +154,24 @@ module.exports = async (req, res) => {
     }
     
     // Explicit checks for delivery endpoints (check these FIRST before pathParts)
-    // Check both with and without /api prefix
-    if ((urlPath.includes('delivery/list') || urlLower.includes('/delivery/list')) && req.method === 'GET') {
+    // Check both normalized path and original URL (case-insensitive)
+    const checkUrl = (urlPath + ' ' + urlLower).toLowerCase();
+    
+    if (checkUrl.includes('delivery/list') && req.method === 'GET') {
         endpoint = 'delivery';
         subEndpoint = 'list';
-    } else if ((urlPath.includes('delivery/auth') || urlLower.includes('/delivery/auth')) && req.method === 'POST') {
+    } else if (checkUrl.includes('delivery/auth') && req.method === 'POST') {
         endpoint = 'delivery';
         subEndpoint = 'auth';
-    } else if (urlPath.includes('delivery/orders') || urlLower.includes('/delivery/orders')) {
+    } else if (checkUrl.includes('delivery/orders')) {
         endpoint = 'delivery';
         subEndpoint = 'orders';
-    } else if ((urlPath.includes('delivery/info') || urlLower.includes('/delivery/info')) && req.method === 'GET') {
+    } else if (checkUrl.includes('delivery/info') && req.method === 'GET') {
         endpoint = 'delivery';
         subEndpoint = 'info';
-    } else if (urlPath.includes('delivery/') || urlLower.includes('/delivery/')) {
+    } else if (checkUrl.includes('delivery/')) {
         // Generic delivery endpoint extraction
-        const deliveryMatch = (urlPath + urlLower).match(/delivery\/([^\/\?]+)/i);
+        const deliveryMatch = checkUrl.match(/delivery\/([^\/\?\s]+)/);
         if (deliveryMatch) {
             endpoint = 'delivery';
             subEndpoint = deliveryMatch[1].toLowerCase().trim();

@@ -75,6 +75,15 @@
                         </button>
                     </div>
 
+                    <!-- Product Search -->
+                    <div class="filter-panel" style="background: var(--card-bg); padding: 1rem; border-radius: 8px; margin-bottom: 1rem; border: 1px solid var(--border);">
+                        <div class="form-group">
+                            <label class="form-label">🔍 بحث في المنتجات</label>
+                            <input type="text" id="productSearch" class="form-input" placeholder="اسم المنتج، الوصف..." 
+                                oninput="filterProducts()">
+                        </div>
+                    </div>
+
                     <div id="productsContainer">
                         <div class="spinner"></div>
                     </div>
@@ -130,6 +139,18 @@
                             <div class="form-group" style="min-width: 150px;">
                                 <label class="form-label" style="font-size: 0.85rem;">إلى تاريخ</label>
                                 <input type="date" id="dateTo" class="form-input" onchange="filterOrders()">
+                            </div>
+                            
+                            <!-- Sort By -->
+                            <div class="form-group" style="min-width: 150px;">
+                                <label class="form-label" style="font-size: 0.85rem;">ترتيب حسب</label>
+                                <select id="orderSortBy" class="form-input" onchange="applyFilters()">
+                                    <option value="date-desc">التاريخ (الأحدث)</option>
+                                    <option value="date-asc">التاريخ (الأقدم)</option>
+                                    <option value="status">الحالة</option>
+                                    <option value="customer">اسم العميل</option>
+                                    <option value="orderNumber">رقم الطلب</option>
+                                </select>
                             </div>
                             
                             <!-- Clear Filters -->

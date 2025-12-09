@@ -1,6 +1,7 @@
 // Global state
 let authToken = localStorage.getItem('adminToken');
 let currentProducts = [];
+let filteredProducts = [];
 let currentOrders = [];
 let filteredOrders = [];
 let editingProductId = null;
@@ -389,36 +390,76 @@ async function loadProducts() {
         }
 
         currentProducts = products;
+        filteredProducts = products;
+        
+        // Apply filters if any
+        applyProductFilters();
+    } catch (error) {
+        console.error('Error loading products:', error);
+        const errorDiv = document.createElement('div');
+        errorDiv.className = 'alert alert-error';
+        errorDiv.textContent = `حدث خطأ في تحميل المنتجات: ${error.message}`;
+        container.innerHTML = '';
+        container.appendChild(errorDiv);
+    }
+}
 
-        if (products.length === 0) {
-            const emptyMsg = document.createElement('p');
-            emptyMsg.className = 'text-center';
-            emptyMsg.style.cssText = 'color: var(--text-light); padding: 2rem;';
-            emptyMsg.textContent = 'لا توجد منتجات بعد. قم بإضافة منتج جديد!';
-            container.innerHTML = '';
-            container.appendChild(emptyMsg);
-            return;
+// Filter products based on search
+function applyProductFilters() {
+    const searchTerm = (document.getElementById('productSearch')?.value || '').toLowerCase();
+    
+    filteredProducts = currentProducts.filter(product => {
+        if (searchTerm) {
+            const name = (product.name || '').toLowerCase();
+            const description = (product.description || '').toLowerCase();
+            return name.includes(searchTerm) || description.includes(searchTerm);
         }
+        return true;
+    });
+    
+    renderProductsTable();
+}
 
-        // Create table using DOM methods to prevent XSS
-        const tableContainer = document.createElement('div');
-        tableContainer.className = 'table-container';
-        
-        const table = document.createElement('table');
-        const thead = document.createElement('thead');
-        const tbody = document.createElement('tbody');
-        
-        // Header
-        const headerRow = document.createElement('tr');
-        ['الصورة', 'اسم المنتج', 'السعر', 'رابط المنتج', 'الإجراءات'].forEach(text => {
-            const th = document.createElement('th');
-            th.textContent = text;
-            headerRow.appendChild(th);
-        });
-        thead.appendChild(headerRow);
-        
-        // Rows
-        products.forEach(product => {
+// Alias for filterProducts (called from HTML)
+function filterProducts() {
+    applyProductFilters();
+}
+
+// Render products table
+function renderProductsTable() {
+    const container = document.getElementById('productsContainer');
+    
+    if (filteredProducts.length === 0) {
+        const emptyMsg = document.createElement('p');
+        emptyMsg.className = 'text-center';
+        emptyMsg.style.cssText = 'color: var(--text-light); padding: 2rem;';
+        emptyMsg.textContent = currentProducts.length === 0 
+            ? 'لا توجد منتجات بعد. قم بإضافة منتج جديد!' 
+            : 'لا توجد نتائج للبحث';
+        container.innerHTML = '';
+        container.appendChild(emptyMsg);
+        return;
+    }
+
+    // Create table using DOM methods to prevent XSS
+    const tableContainer = document.createElement('div');
+    tableContainer.className = 'table-container';
+    
+    const table = document.createElement('table');
+    const thead = document.createElement('thead');
+    const tbody = document.createElement('tbody');
+    
+    // Header
+    const headerRow = document.createElement('tr');
+    ['الصورة', 'اسم المنتج', 'السعر', 'رابط المنتج', 'الإجراءات'].forEach(text => {
+        const th = document.createElement('th');
+        th.textContent = text;
+        headerRow.appendChild(th);
+    });
+    thead.appendChild(headerRow);
+    
+    // Rows
+    filteredProducts.forEach(product => {
             const row = document.createElement('tr');
             
             // Image cell - show first image or multiple indicator
@@ -538,14 +579,6 @@ async function loadProducts() {
         tableContainer.appendChild(table);
         container.innerHTML = '';
         container.appendChild(tableContainer);
-    } catch (error) {
-        console.error('Error loading products:', error);
-        const errorDiv = document.createElement('div');
-        errorDiv.className = 'alert alert-error';
-        errorDiv.textContent = `حدث خطأ في تحميل المنتجات: ${error.message}`;
-        container.innerHTML = '';
-        container.appendChild(errorDiv);
-    }
 }
 
 // Get status info
@@ -637,6 +670,7 @@ function applyFilters() {
     const statusFilter = document.getElementById('statusFilter')?.value || '';
     const dateFrom = document.getElementById('dateFrom')?.value || '';
     const dateTo = document.getElementById('dateTo')?.value || '';
+    const sortBy = document.getElementById('orderSortBy')?.value || 'date-desc';
     
     filteredOrders = currentOrders.filter(order => {
         // Search filter
@@ -675,6 +709,26 @@ function applyFilters() {
         }
         
         return true;
+    });
+    
+    // Sort orders
+    filteredOrders.sort((a, b) => {
+        switch(sortBy) {
+            case 'date-desc':
+                return new Date(b.createdAt) - new Date(a.createdAt);
+            case 'date-asc':
+                return new Date(a.createdAt) - new Date(b.createdAt);
+            case 'status':
+                return (a.status || '').localeCompare(b.status || '');
+            case 'customer':
+                return (a.customerName || '').localeCompare(b.customerName || '');
+            case 'orderNumber':
+                const aNum = (a.orderNumber || a.id).toLowerCase();
+                const bNum = (b.orderNumber || b.id).toLowerCase();
+                return aNum.localeCompare(bNum);
+            default:
+                return 0;
+        }
     });
     
     renderOrdersTable();

@@ -135,7 +135,7 @@ async function loadAnalytics() {
         if (!response.ok) {
             if (response.status === 401) {
                 logout();
-                return;
+            return;
             }
             throw new Error(`HTTP error! status: ${response.status}`);
         }
@@ -212,8 +212,8 @@ function renderAnalyticsDashboard(stats) {
                     </tbody>
                 </table>
             </div>
-        </div>
-    `;
+            </div>
+        `;
     
     container.innerHTML = cardsHtml + chartsHtml + topProductsHtml;
     
@@ -760,8 +760,8 @@ function renderOrdersTable() {
         container.innerHTML = '';
         container.appendChild(emptyMsg);
         updateSelectedCount();
-        return;
-    }
+            return;
+        }
 
     // Create table using DOM methods to prevent XSS
     const tableContainer = document.createElement('div');
@@ -951,8 +951,10 @@ function updateSelectedCount() {
     
     // Enable/disable bulk action buttons
     const bulkStatusBtn = document.getElementById('bulkStatusBtn');
+    const bulkDeleteBtn = document.getElementById('bulkDeleteBtn');
     const bulkExportBtn = document.getElementById('bulkExportBtn');
     if (bulkStatusBtn) bulkStatusBtn.disabled = count === 0;
+    if (bulkDeleteBtn) bulkDeleteBtn.disabled = count === 0;
     if (bulkExportBtn) bulkExportBtn.disabled = count === 0;
     
     // Update select all checkbox
@@ -1000,7 +1002,7 @@ async function bulkUpdateStatus() {
             } else {
                 failCount++;
             }
-        } catch (error) {
+    } catch (error) {
             failCount++;
         }
     }
@@ -1258,7 +1260,7 @@ document.getElementById('productForm')?.addEventListener('submit', async (e) => 
             .map(url => typeof url === 'string' ? url.trim() : String(url));
         
         console.log('Saving product with media URLs:', validMediaUrls.length, validMediaUrls);
-        
+
         // Create/update product
         const productData = {
             name: name,

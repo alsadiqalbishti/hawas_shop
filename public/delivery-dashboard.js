@@ -70,7 +70,7 @@ async function loadOrders() {
     try {
         const response = await fetch(`${API_BASE}/api/delivery/orders`, {
             headers: {
-                'Authorization': token
+                'Authorization': `Bearer ${token}`
             }
         });
 
@@ -176,7 +176,7 @@ async function quickUpdate(orderId, newStatus) {
             method: 'PUT',
             headers: {
                 'Content-Type': 'application/json',
-                'Authorization': token
+                'Authorization': `Bearer ${token}`
             },
             body: JSON.stringify({
                 id: orderId,
@@ -207,19 +207,29 @@ async function updateOrder(e, orderId) {
     const form = e.target;
     const formData = new FormData(form);
     
+    // Get values and convert empty strings to null
+    const shippingPrice = formData.get('shippingPrice');
+    const paymentReceived = formData.get('paymentReceived');
+    
     const data = {
         id: orderId,
         status: formData.get('status'),
-        shippingPrice: formData.get('shippingPrice') || null,
-        paymentReceived: formData.get('paymentReceived') || null
+        shippingPrice: shippingPrice && shippingPrice.trim() !== '' ? parseFloat(shippingPrice) : null,
+        paymentReceived: paymentReceived && paymentReceived.trim() !== '' ? parseFloat(paymentReceived) : null
     };
+
+    // Validate status is provided
+    if (!data.status) {
+        showNotification('يجب اختيار حالة الطلب', 'error');
+        return;
+    }
 
     try {
         const response = await fetch(`${API_BASE}/api/delivery/orders`, {
             method: 'PUT',
             headers: {
                 'Content-Type': 'application/json',
-                'Authorization': token
+                'Authorization': `Bearer ${token}`
             },
             body: JSON.stringify(data)
         });

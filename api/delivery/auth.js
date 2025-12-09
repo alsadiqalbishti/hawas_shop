@@ -38,8 +38,13 @@ module.exports = async (req, res) => {
         if (req.method === 'POST') {
             const { name, phone, password, action } = req.body;
 
-            if (!name || !phone || !password) {
-                return res.status(400).json({ error: 'الاسم ورقم الهاتف وكلمة المرور مطلوبة' });
+            // Validate required fields based on action
+            if (!phone || !password) {
+                return res.status(400).json({ error: 'رقم الهاتف وكلمة المرور مطلوبة' });
+            }
+
+            if (action === 'signup' && !name) {
+                return res.status(400).json({ error: 'الاسم مطلوب للتسجيل' });
             }
 
             const redisClient = getRedis();

@@ -103,6 +103,14 @@ function validateProduct(data) {
         errors.push('Description is too long (max 5000 characters)');
     }
     
+    // Stock validation (optional, but if provided must be valid)
+    if (data.stock !== undefined && data.stock !== null) {
+        const stock = parseInt(data.stock);
+        if (isNaN(stock) || stock < 0) {
+            errors.push('Stock must be a non-negative integer');
+        }
+    }
+    
     // Base64 images can be very long, so we check size differently
     // Max 5MB for images, 10MB for videos (base64 is ~33% larger)
     if (data.mediaUrl) {
@@ -145,7 +153,8 @@ function validateProduct(data) {
             description: data.description ? sanitizeString(data.description) : '',
             mediaUrl: data.mediaUrl || '',
             mediaUrls: Array.isArray(data.mediaUrls) ? data.mediaUrls.slice(0, 10) : [],
-            mediaType: ['image', 'video'].includes(data.mediaType) ? data.mediaType : 'image'
+            mediaType: ['image', 'video'].includes(data.mediaType) ? data.mediaType : 'image',
+            stock: data.stock !== undefined && data.stock !== null ? parseInt(data.stock) : null
         }
     };
 }
@@ -191,6 +200,11 @@ function validateOrder(data) {
         errors.push('Quantity must be between 1 and 1000');
     }
     
+    // Notes validation (optional)
+    if (data.notes && data.notes.length > 1000) {
+        errors.push('Notes are too long (max 1000 characters)');
+    }
+    
     return {
         valid: errors.length === 0,
         errors,
@@ -199,7 +213,8 @@ function validateOrder(data) {
             customerName: sanitizeString(data.customerName.trim()),
             customerPhone: data.customerPhone.trim(),
             customerAddress: sanitizeString(data.customerAddress.trim()),
-            quantity: quantity
+            quantity: quantity,
+            notes: data.notes ? sanitizeString(data.notes.trim()) : ''
         }
     };
 }

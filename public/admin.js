@@ -149,6 +149,8 @@ async function loadStorageUsage() {
 // Render storage usage
 function renderStorageUsage(storage) {
     const storageText = document.getElementById('storageText');
+    const storageFill = document.getElementById('storageFill');
+    const storageTooltip = document.getElementById('storageTooltip');
     if (!storageText) return;
     
     const formatBytes = (bytes) => {
@@ -164,25 +166,33 @@ function renderStorageUsage(storage) {
     const max = formatBytes(storage.total.max);
     const percent = storage.total.percent;
     
-    // Color based on usage
-    let color = '#4caf50'; // green
-    if (percent > 80) color = '#f44336'; // red
-    else if (percent > 60) color = '#ff9800'; // orange
+    // Update text
+    storageText.textContent = `${used} / ${max} (${percent.toFixed(1)}%)`;
     
-    storageText.innerHTML = `
-        <strong>💾 التخزين:</strong> 
-        <span style="color: ${color};">${used}</span> / ${max} 
-        <span style="color: var(--text-light);">(${percent.toFixed(1)}%)</span>
-    `;
+    // Update progress bar
+    if (storageFill) {
+        storageFill.style.width = `${percent}%`;
+        // Color based on usage
+        if (percent > 80) {
+            storageFill.style.background = 'var(--danger)';
+        } else if (percent > 60) {
+            storageFill.style.background = 'var(--warning)';
+        } else {
+            storageFill.style.background = 'var(--success)';
+        }
+    }
     
-    // Add tooltip with breakdown
-    storageText.title = `
-        المنتجات: ${formatBytes(storage.breakdown.products)} (${storage.counts.products} منتج)
-        الطلبات: ${formatBytes(storage.breakdown.orders)} (${storage.counts.orders} طلب)
-        مندوبو التوصيل: ${formatBytes(storage.breakdown.deliveryMen)} (${storage.counts.deliveryMen} مندوب)
-        أخرى: ${formatBytes(storage.breakdown.other)}
-        متبقي: ${free}
-    `.trim();
+    // Update tooltip
+    if (storageTooltip) {
+        storageTooltip.innerHTML = `
+            <strong>تفاصيل التخزين:</strong><br>
+            المنتجات: ${formatBytes(storage.breakdown.products)} (${storage.counts.products} منتج)<br>
+            الطلبات: ${formatBytes(storage.breakdown.orders)} (${storage.counts.orders} طلب)<br>
+            مندوبو التوصيل: ${formatBytes(storage.breakdown.deliveryMen)} (${storage.counts.deliveryMen} مندوب)<br>
+            أخرى: ${formatBytes(storage.breakdown.other)}<br>
+            <strong>متبقي: ${free}</strong>
+        `;
+    }
 }
 
 // Switch tabs
@@ -405,17 +415,32 @@ function renderTrendsChart(trendsData) {
 }
 
 function switchTab(tab, eventElement) {
-    // Update tab buttons
-    document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+    // Update sidebar nav items
+    document.querySelectorAll('.nav-item').forEach(t => t.classList.remove('active'));
     if (eventElement) {
         eventElement.classList.add('active');
     }
+    
+    // Also update old tab buttons if they exist
+    document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
 
     // Update tab content
     document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
     const tabContent = document.getElementById(tab + 'Tab');
     if (tabContent) {
         tabContent.classList.add('active');
+    }
+    
+    // Update page title
+    const pageTitle = document.getElementById('pageTitle');
+    const tabTitles = {
+        'products': 'المنتجات',
+        'orders': 'الطلبات',
+        'analytics': 'الإحصائيات',
+        'delivery-men': 'مندوبو التوصيل'
+    };
+    if (pageTitle && tabTitles[tab]) {
+        pageTitle.textContent = tabTitles[tab];
     }
     
     // Load data when switching tabs
@@ -498,152 +523,164 @@ function renderProductsTable() {
     const container = document.getElementById('productsContainer');
     
     if (filteredProducts.length === 0) {
-        const emptyMsg = document.createElement('p');
+        const emptyMsg = document.createElement('div');
         emptyMsg.className = 'text-center';
-        emptyMsg.style.cssText = 'color: var(--text-light); padding: 2rem;';
-        emptyMsg.textContent = currentProducts.length === 0 
-            ? 'لا توجد منتجات بعد. قم بإضافة منتج جديد!' 
-            : 'لا توجد نتائج للبحث';
+        emptyMsg.style.cssText = 'color: var(--text-light); padding: 4rem 2rem; background: var(--light); border-radius: var(--radius-lg);';
+        emptyMsg.innerHTML = `
+            <div style="font-size: 4rem; margin-bottom: 1rem;">📦</div>
+            <h3 style="font-size: 1.5rem; margin-bottom: 0.5rem; color: var(--text);">${currentProducts.length === 0 ? 'لا توجد منتجات بعد' : 'لا توجد نتائج للبحث'}</h3>
+            <p style="color: var(--text-light);">${currentProducts.length === 0 ? 'قم بإضافة منتج جديد للبدء!' : 'جرب البحث بكلمات مختلفة'}</p>
+        `;
         container.innerHTML = '';
         container.appendChild(emptyMsg);
         return;
     }
 
-    // Create table using DOM methods to prevent XSS
-    const tableContainer = document.createElement('div');
-    tableContainer.className = 'table-container';
+    // Create modern grid layout
+    const grid = document.createElement('div');
+    grid.className = 'products-grid';
     
-    const table = document.createElement('table');
-    const thead = document.createElement('thead');
-    const tbody = document.createElement('tbody');
-    
-    // Header
-    const headerRow = document.createElement('tr');
-    ['الصورة', 'اسم المنتج', 'السعر', 'رابط المنتج', 'الإجراءات'].forEach(text => {
-        const th = document.createElement('th');
-        th.textContent = text;
-        headerRow.appendChild(th);
-    });
-    thead.appendChild(headerRow);
-    
-    // Rows
     filteredProducts.forEach(product => {
-            const row = document.createElement('tr');
-            
-            // Image cell - show first image or multiple indicator
-            const imgCell = document.createElement('td');
-            const imgContainer = document.createElement('div');
-            imgContainer.style.cssText = 'display: flex; align-items: center; gap: 0.25rem;';
-            
-            const mediaUrls = product.mediaUrls && product.mediaUrls.length > 0 
-                ? product.mediaUrls 
-                : (product.mediaUrl ? [product.mediaUrl] : []);
-            
-            if (mediaUrls.length > 0) {
-                const firstMedia = mediaUrls[0];
-                if (product.mediaType === 'video' || firstMedia.includes('data:video')) {
-                    const video = document.createElement('video');
-                    video.src = firstMedia;
-                    video.style.cssText = 'width: 60px; height: 60px; object-fit: cover; border-radius: 8px;';
-                    imgContainer.appendChild(video);
-                } else {
-                    const img = document.createElement('img');
-                    img.src = firstMedia;
-                    img.alt = escapeHtml(product.name);
-                    img.style.cssText = 'width: 60px; height: 60px; object-fit: cover; border-radius: 8px;';
-                    imgContainer.appendChild(img);
-                }
-                
-                // Show count if multiple images
-                if (mediaUrls.length > 1) {
-                    const countBadge = document.createElement('span');
-                    countBadge.style.cssText = 'background: var(--primary); color: white; font-size: 0.7rem; padding: 0.2rem 0.4rem; border-radius: 10px; font-weight: 600;';
-                    countBadge.textContent = `+${mediaUrls.length - 1}`;
-                    imgContainer.appendChild(countBadge);
-                }
-            } else {
-                imgContainer.textContent = '📦';
-            }
-            
-            imgCell.appendChild(imgContainer);
-            row.appendChild(imgCell);
-            
-            // Name cell
-            const nameCell = document.createElement('td');
-            const nameStrong = document.createElement('strong');
-            nameStrong.textContent = product.name;
-            nameCell.appendChild(nameStrong);
-            row.appendChild(nameCell);
-            
-            // Price cell - show discount if available
-            const priceCell = document.createElement('td');
-            const priceContainer = document.createElement('div');
-            priceContainer.style.cssText = 'display: flex; flex-direction: column; gap: 0.25rem;';
-            
-            if (product.discountPrice && product.discountPrice < product.price) {
-                // Show discounted price
-                const discountPriceSpan = document.createElement('span');
-                discountPriceSpan.className = 'price';
-                discountPriceSpan.style.cssText = 'font-size: 1.2rem; color: var(--success); font-weight: 700;';
-                discountPriceSpan.textContent = `${product.discountPrice} د.ل`;
-                priceContainer.appendChild(discountPriceSpan);
-                
-                const originalPriceSpan = document.createElement('span');
-                originalPriceSpan.style.cssText = 'font-size: 0.9rem; color: var(--text-light); text-decoration: line-through;';
-                originalPriceSpan.textContent = `${product.price} د.ل`;
-                priceContainer.appendChild(originalPriceSpan);
-                
-                const discountPercent = Math.round(((product.price - product.discountPrice) / product.price) * 100);
-                const discountBadge = document.createElement('span');
-                discountBadge.style.cssText = 'font-size: 0.75rem; background: var(--danger); color: white; padding: 0.2rem 0.5rem; border-radius: 4px; display: inline-block; margin-top: 0.25rem;';
-                discountBadge.textContent = `خصم ${discountPercent}%`;
-                priceContainer.appendChild(discountBadge);
-            } else {
-                // Show regular price
-                const priceSpan = document.createElement('span');
-                priceSpan.className = 'price';
-                priceSpan.style.fontSize = '1.2rem';
-                priceSpan.textContent = `${product.price} د.ل`;
-                priceContainer.appendChild(priceSpan);
-            }
-            
-            priceCell.appendChild(priceContainer);
-            row.appendChild(priceCell);
-            
-            // Link cell
-            const linkCell = document.createElement('td');
-            const copyBtn = document.createElement('button');
-            copyBtn.className = 'btn btn-success btn-sm';
-            copyBtn.textContent = '📋 نسخ الرابط';
-            copyBtn.onclick = () => copyProductLink(product.id);
-            linkCell.appendChild(copyBtn);
-            row.appendChild(linkCell);
-            
-            // Actions cell
-            const actionsCell = document.createElement('td');
-            const actionsDiv = document.createElement('div');
-            actionsDiv.className = 'flex gap-1';
-            
-            const editBtn = document.createElement('button');
-            editBtn.className = 'btn btn-warning btn-sm';
-            editBtn.textContent = '✏️ تعديل';
-            editBtn.onclick = () => editProduct(product.id);
-            actionsDiv.appendChild(editBtn);
-            
-            const deleteBtn = document.createElement('button');
-            deleteBtn.className = 'btn btn-danger btn-sm';
-            deleteBtn.textContent = '🗑️ حذف';
-            deleteBtn.onclick = () => deleteProduct(product.id);
-            actionsDiv.appendChild(deleteBtn);
-            
-            actionsCell.appendChild(actionsDiv);
-            row.appendChild(actionsCell);
-            
-            tbody.appendChild(row);
-        });
+        const card = document.createElement('div');
+        card.className = 'product-card';
         
-        table.appendChild(thead);
-        table.appendChild(tbody);
+        // Image section
+        const imageSection = document.createElement('div');
+        imageSection.style.cssText = 'position: relative; width: 100%; height: 200px; background: var(--light); overflow: hidden;';
+        
+        const mediaUrls = product.mediaUrls && product.mediaUrls.length > 0 
+            ? product.mediaUrls 
+            : (product.mediaUrl ? [product.mediaUrl] : []);
+        
+        if (mediaUrls.length > 0) {
+            const firstMedia = mediaUrls[0];
+            if (product.mediaType === 'video' || firstMedia.includes('data:video')) {
+                const video = document.createElement('video');
+                video.src = firstMedia;
+                video.style.cssText = 'width: 100%; height: 100%; object-fit: cover;';
+                imageSection.appendChild(video);
+            } else {
+                const img = document.createElement('img');
+                img.src = firstMedia;
+                img.alt = escapeHtml(product.name);
+                img.className = 'product-card-image';
+                imageSection.appendChild(img);
+            }
+            
+            // Show count badge if multiple images
+            if (mediaUrls.length > 1) {
+                const countBadge = document.createElement('div');
+                countBadge.style.cssText = 'position: absolute; top: 8px; left: 8px; background: rgba(0,0,0,0.7); color: white; font-size: 0.75rem; padding: 0.25rem 0.5rem; border-radius: var(--radius-full); font-weight: 600;';
+                countBadge.textContent = `+${mediaUrls.length - 1}`;
+                imageSection.appendChild(countBadge);
+            }
+        } else {
+            const placeholder = document.createElement('div');
+            placeholder.style.cssText = 'width: 100%; height: 100%; display: flex; align-items: center; justify-content: center; font-size: 4rem; color: var(--text-lighter);';
+            placeholder.textContent = '📦';
+            imageSection.appendChild(placeholder);
+        }
+        
+        card.appendChild(imageSection);
+        
+        // Body section
+        const body = document.createElement('div');
+        body.className = 'product-card-body';
+        
+        // Product name
+        const name = document.createElement('h3');
+        name.className = 'product-card-title';
+        name.textContent = product.name;
+        body.appendChild(name);
+        
+        // Price section
+        const priceSection = document.createElement('div');
+        priceSection.style.cssText = 'margin: var(--space-2) 0;';
+        
+        if (product.discountPrice && product.discountPrice < product.price) {
+            const discountPrice = document.createElement('div');
+            discountPrice.className = 'product-card-price';
+            discountPrice.style.color = 'var(--success)';
+            discountPrice.textContent = `${product.discountPrice} د.ل`;
+            priceSection.appendChild(discountPrice);
+            
+            const originalPrice = document.createElement('div');
+            originalPrice.style.cssText = 'font-size: var(--font-size-sm); color: var(--text-light); text-decoration: line-through; margin-bottom: 0.25rem;';
+            originalPrice.textContent = `${product.price} د.ل`;
+            priceSection.appendChild(originalPrice);
+            
+            const discountPercent = Math.round(((product.price - product.discountPrice) / product.price) * 100);
+            const discountBadge = document.createElement('span');
+            discountBadge.className = 'badge badge-danger';
+            discountBadge.textContent = `خصم ${discountPercent}%`;
+            priceSection.appendChild(discountBadge);
+        } else {
+            const price = document.createElement('div');
+            price.className = 'product-card-price';
+            price.textContent = `${product.price} د.ل`;
+            priceSection.appendChild(price);
+        }
+        
+        body.appendChild(priceSection);
+        
+        // Stock section
+        if (product.stock !== null && product.stock !== undefined) {
+            const stockSection = document.createElement('div');
+            stockSection.style.cssText = 'margin: var(--space-2) 0; padding: var(--space-2); background: var(--light); border-radius: var(--radius-md);';
+            
+            const stockLabel = document.createElement('div');
+            stockLabel.style.cssText = 'font-size: var(--font-size-sm); color: var(--text-light); margin-bottom: 0.25rem;';
+            stockLabel.textContent = 'الكمية المتوفرة:';
+            
+            const stockValue = document.createElement('div');
+            stockValue.style.cssText = 'font-size: var(--font-size-lg); font-weight: var(--font-weight-bold);';
+            
+            if (product.stock === 0) {
+                stockValue.style.color = 'var(--danger)';
+                stockValue.textContent = 'نفد المخزون';
+            } else if (product.stock <= 5) {
+                stockValue.style.color = 'var(--warning)';
+                stockValue.textContent = `${product.stock} (مخزون منخفض)`;
+            } else {
+                stockValue.style.color = 'var(--success)';
+                stockValue.textContent = product.stock;
+            }
+            
+            stockSection.appendChild(stockLabel);
+            stockSection.appendChild(stockValue);
+            body.appendChild(stockSection);
+        }
+        
+        // Actions
+        const actions = document.createElement('div');
+        actions.className = 'product-card-actions';
+        
+        const copyBtn = document.createElement('button');
+        copyBtn.className = 'btn btn-success btn-sm';
+        copyBtn.style.flex = '1';
+        copyBtn.textContent = '📋 نسخ';
+        copyBtn.onclick = () => copyProductLink(product.id);
+        actions.appendChild(copyBtn);
+        
+        const editBtn = document.createElement('button');
+        editBtn.className = 'btn btn-warning btn-sm';
+        editBtn.textContent = '✏️';
+        editBtn.onclick = () => editProduct(product.id);
+        actions.appendChild(editBtn);
+        
+        const deleteBtn = document.createElement('button');
+        deleteBtn.className = 'btn btn-danger btn-sm';
+        deleteBtn.textContent = '🗑️';
+        deleteBtn.onclick = () => deleteProduct(product.id);
+        actions.appendChild(deleteBtn);
+        
+        body.appendChild(actions);
+        card.appendChild(body);
+        grid.appendChild(card);
+    });
+    
+    container.innerHTML = '';
+    container.appendChild(grid);
         tableContainer.appendChild(table);
         container.innerHTML = '';
         container.appendChild(tableContainer);
@@ -821,175 +858,227 @@ function renderOrdersTable() {
     const container = document.getElementById('ordersContainer');
     
     if (filteredOrders.length === 0) {
-        const emptyMsg = document.createElement('p');
+        const emptyMsg = document.createElement('div');
         emptyMsg.className = 'text-center';
-        emptyMsg.style.cssText = 'color: var(--text-light); padding: 2rem;';
-        emptyMsg.textContent = currentOrders.length === 0 ? 'لا توجد طلبات بعد' : 'لا توجد نتائج للبحث';
+        emptyMsg.style.cssText = 'color: var(--text-light); padding: 4rem 2rem; background: var(--light); border-radius: var(--radius-lg);';
+        emptyMsg.innerHTML = `
+            <div style="font-size: 4rem; margin-bottom: 1rem;">📋</div>
+            <h3 style="font-size: 1.5rem; margin-bottom: 0.5rem; color: var(--text);">${currentOrders.length === 0 ? 'لا توجد طلبات بعد' : 'لا توجد نتائج للبحث'}</h3>
+            <p style="color: var(--text-light);">${currentOrders.length === 0 ? 'الطلبات الجديدة ستظهر هنا' : 'جرب البحث بكلمات مختلفة'}</p>
+        `;
         container.innerHTML = '';
         container.appendChild(emptyMsg);
         updateSelectedCount();
-            return;
-        }
+        return;
+    }
 
-    // Create table using DOM methods to prevent XSS
-    const tableContainer = document.createElement('div');
-    tableContainer.className = 'table-container';
+    // Create modern grid layout
+    const grid = document.createElement('div');
+    grid.className = 'orders-grid';
     
-    const table = document.createElement('table');
-    const thead = document.createElement('thead');
-    const tbody = document.createElement('tbody');
-    
-    // Header with checkbox
-    const headerRow = document.createElement('tr');
-    const checkboxHeader = document.createElement('th');
-    checkboxHeader.style.width = '40px';
-    const checkboxInput = document.createElement('input');
-    checkboxInput.type = 'checkbox';
-    checkboxInput.id = 'selectAllHeader';
-    checkboxInput.onchange = toggleSelectAll;
-    checkboxHeader.appendChild(checkboxInput);
-    headerRow.appendChild(checkboxHeader);
-    
-    ['رقم الطلب', 'المنتج', 'اسم العميل', 'رقم الهاتف', 'العنوان', 'الكمية', 'مندوب التوصيل', 'سعر التوصيل', 'المبلغ المستلم', 'التاريخ', 'الحالة', 'الإجراءات'].forEach(text => {
-        const th = document.createElement('th');
-        th.textContent = text;
-        headerRow.appendChild(th);
-    });
-    thead.appendChild(headerRow);
-    
-    // Rows
     filteredOrders.forEach(order => {
-            const product = currentProducts.find(p => p.id === order.productId);
-            const row = document.createElement('tr');
-            row.dataset.orderId = order.id;
-            
-            // Checkbox cell
-            const checkboxCell = document.createElement('td');
-            const checkbox = document.createElement('input');
-            checkbox.type = 'checkbox';
-            checkbox.className = 'order-checkbox';
-            checkbox.value = order.id;
-            checkbox.onchange = updateSelectedCount;
-            checkboxCell.appendChild(checkbox);
-            row.appendChild(checkboxCell);
-            
-            // Order Number (professional format)
-            const idCell = document.createElement('td');
-            const idStrong = document.createElement('strong');
-            const orderNumber = order.orderNumber || order.id;
-            // Display full order number if it's in ORD-YYYY-XXXXX format, otherwise show shortened
-            if (orderNumber.startsWith('ORD-')) {
-                idStrong.textContent = orderNumber;
-                idStrong.style.color = '#2196F3';
-            } else {
-                idStrong.textContent = `#${orderNumber.substring(0, 8)}`;
-            }
-            idCell.appendChild(idStrong);
-            row.appendChild(idCell);
-            
-            // Product name
-            const productCell = document.createElement('td');
-            productCell.textContent = product ? product.name : 'غير معروف';
-            row.appendChild(productCell);
-            
-            // Customer name
-            const nameCell = document.createElement('td');
-            nameCell.textContent = order.customerName;
-            row.appendChild(nameCell);
-            
-            // Phone
-            const phoneCell = document.createElement('td');
-            const phoneLink = document.createElement('a');
-            phoneLink.href = `tel:${order.customerPhone}`;
-            phoneLink.textContent = order.customerPhone;
-            phoneCell.appendChild(phoneLink);
-            row.appendChild(phoneCell);
-            
-            // Address
-            const addressCell = document.createElement('td');
-            addressCell.textContent = order.customerAddress;
-            row.appendChild(addressCell);
-            
-            // Quantity
-            const qtyCell = document.createElement('td');
-            const qtyStrong = document.createElement('strong');
-            qtyStrong.textContent = order.quantity;
-            qtyCell.appendChild(qtyStrong);
-            row.appendChild(qtyCell);
-            
-            // Delivery Man
-            const deliveryManCell = document.createElement('td');
-            if (order.deliveryManId) {
-                deliveryManCell.innerHTML = '<span class="text-muted">جاري التحميل...</span>';
-                loadDeliveryManInfo(order.deliveryManId, deliveryManCell);
-            } else {
-                deliveryManCell.textContent = 'غير مُسند';
-                deliveryManCell.style.color = '#999';
-            }
-            row.appendChild(deliveryManCell);
-            
-            // Shipping Price
-            const shippingCell = document.createElement('td');
-            shippingCell.textContent = order.shippingPrice ? `${parseFloat(order.shippingPrice).toFixed(2)} د.ع` : '-';
-            row.appendChild(shippingCell);
-            
-            // Payment Received
-            const paymentCell = document.createElement('td');
-            paymentCell.textContent = order.paymentReceived ? `${parseFloat(order.paymentReceived).toFixed(2)} د.ع` : '-';
-            row.appendChild(paymentCell);
-            
-            // Date
-            const dateCell = document.createElement('td');
-            dateCell.textContent = new Date(order.createdAt).toLocaleDateString('ar-EG');
-            row.appendChild(dateCell);
-            
-            // Status
-            const statusCell = document.createElement('td');
-            const statusBadge = document.createElement('span');
-            const statusInfo = getStatusInfo(order.status);
-            statusBadge.className = statusInfo.class;
-            statusBadge.textContent = statusInfo.label;
-            statusCell.appendChild(statusBadge);
-            row.appendChild(statusCell);
-            
-            // Actions
-            const actionsCell = document.createElement('td');
-            const actionsDiv = document.createElement('div');
-            actionsDiv.className = 'flex gap-1';
-            
-            // Status update button
-            const statusBtn = document.createElement('button');
-            statusBtn.className = 'btn btn-primary btn-sm';
-            statusBtn.textContent = '🔄 تحديث الحالة';
-            statusBtn.onclick = () => openOrderStatusModal(order);
-            actionsDiv.appendChild(statusBtn);
-            
-            // View details button
-            const viewBtn = document.createElement('button');
-            viewBtn.className = 'btn btn-info btn-sm';
-            viewBtn.textContent = '👁️ تفاصيل';
-            viewBtn.onclick = () => viewOrderDetails(order);
-            actionsDiv.appendChild(viewBtn);
-            
-            const deleteBtn = document.createElement('button');
-            deleteBtn.className = 'btn btn-danger btn-sm';
-            deleteBtn.textContent = '🗑️ حذف';
-            deleteBtn.onclick = () => deleteOrder(order.id);
-            actionsDiv.appendChild(deleteBtn);
-            
-            actionsCell.appendChild(actionsDiv);
-            row.appendChild(actionsCell);
-            
-            tbody.appendChild(row);
-        });
+        const product = currentProducts.find(p => p.id === order.productId);
+        const card = document.createElement('div');
+        card.className = 'order-card';
+        card.dataset.orderId = order.id;
         
-        table.appendChild(thead);
-        table.appendChild(tbody);
-        tableContainer.appendChild(table);
-        container.innerHTML = '';
-        container.appendChild(tableContainer);
+        // Header with checkbox and order number
+        const header = document.createElement('div');
+        header.className = 'order-card-header';
         
-        updateSelectedCount();
+        const leftSection = document.createElement('div');
+        leftSection.className = 'flex items-center gap-2';
+        
+        const checkbox = document.createElement('input');
+        checkbox.type = 'checkbox';
+        checkbox.className = 'order-checkbox';
+        checkbox.value = order.id;
+        checkbox.onchange = updateSelectedCount;
+        leftSection.appendChild(checkbox);
+        
+        const orderNumber = order.orderNumber || order.id;
+        const orderNumDiv = document.createElement('div');
+        orderNumDiv.className = 'order-number';
+        if (orderNumber.startsWith('ORD-')) {
+            orderNumDiv.textContent = orderNumber;
+        } else {
+            orderNumDiv.textContent = `#${orderNumber.substring(0, 8)}`;
+        }
+        leftSection.appendChild(orderNumDiv);
+        
+        header.appendChild(leftSection);
+        
+        const dateDiv = document.createElement('div');
+        dateDiv.className = 'order-date';
+        dateDiv.textContent = new Date(order.createdAt).toLocaleDateString('ar-EG');
+        header.appendChild(dateDiv);
+        
+        card.appendChild(header);
+        
+        // Order info
+        const info = document.createElement('div');
+        info.className = 'order-info';
+        
+        // Status badge at top
+        const statusInfo = getStatusInfo(order.status);
+        const statusBadge = document.createElement('span');
+        statusBadge.className = statusInfo.class;
+        statusBadge.style.cssText = 'display: inline-block; margin-bottom: var(--space-3);';
+        statusBadge.textContent = statusInfo.label;
+        info.appendChild(statusBadge);
+        
+        // Product
+        const productItem = document.createElement('div');
+        productItem.className = 'order-info-item';
+        const productLabel = document.createElement('span');
+        productLabel.className = 'order-info-label';
+        productLabel.textContent = 'المنتج:';
+        const productValue = document.createElement('span');
+        productValue.className = 'order-info-value';
+        productValue.textContent = product ? product.name : 'غير معروف';
+        productItem.appendChild(productLabel);
+        productItem.appendChild(productValue);
+        info.appendChild(productItem);
+        
+        // Customer
+        const customerItem = document.createElement('div');
+        customerItem.className = 'order-info-item';
+        const customerLabel = document.createElement('span');
+        customerLabel.className = 'order-info-label';
+        customerLabel.textContent = 'العميل:';
+        const customerValue = document.createElement('span');
+        customerValue.className = 'order-info-value';
+        customerValue.textContent = order.customerName;
+        customerItem.appendChild(customerLabel);
+        customerItem.appendChild(customerValue);
+        info.appendChild(customerItem);
+        
+        // Phone
+        const phoneItem = document.createElement('div');
+        phoneItem.className = 'order-info-item';
+        const phoneLabel = document.createElement('span');
+        phoneLabel.className = 'order-info-label';
+        phoneLabel.textContent = 'الهاتف:';
+        const phoneValue = document.createElement('a');
+        phoneValue.href = `tel:${order.customerPhone}`;
+        phoneValue.className = 'order-info-value';
+        phoneValue.style.color = 'var(--primary)';
+        phoneValue.textContent = order.customerPhone;
+        phoneItem.appendChild(phoneLabel);
+        phoneItem.appendChild(phoneValue);
+        info.appendChild(phoneItem);
+        
+        // Address
+        const addressItem = document.createElement('div');
+        addressItem.className = 'order-info-item';
+        const addressLabel = document.createElement('span');
+        addressLabel.className = 'order-info-label';
+        addressLabel.textContent = 'العنوان:';
+        const addressValue = document.createElement('span');
+        addressValue.className = 'order-info-value';
+        addressValue.textContent = order.customerAddress;
+        addressValue.style.cssText += 'word-break: break-word;';
+        addressItem.appendChild(addressLabel);
+        addressItem.appendChild(addressValue);
+        info.appendChild(addressItem);
+        
+        // Quantity
+        const qtyItem = document.createElement('div');
+        qtyItem.className = 'order-info-item';
+        const qtyLabel = document.createElement('span');
+        qtyLabel.className = 'order-info-label';
+        qtyLabel.textContent = 'الكمية:';
+        const qtyValue = document.createElement('span');
+        qtyValue.className = 'order-info-value';
+        qtyValue.textContent = order.quantity;
+        qtyItem.appendChild(qtyLabel);
+        qtyItem.appendChild(qtyValue);
+        info.appendChild(qtyItem);
+        
+        // Delivery Man
+        const deliveryItem = document.createElement('div');
+        deliveryItem.className = 'order-info-item';
+        const deliveryLabel = document.createElement('span');
+        deliveryLabel.className = 'order-info-label';
+        deliveryLabel.textContent = 'مندوب التوصيل:';
+        const deliveryValue = document.createElement('span');
+        deliveryValue.className = 'order-info-value';
+        if (order.deliveryManId) {
+            deliveryValue.innerHTML = '<span style="color: var(--text-light);">جاري التحميل...</span>';
+            loadDeliveryManInfo(order.deliveryManId, deliveryValue);
+        } else {
+            deliveryValue.textContent = 'غير مُسند';
+            deliveryValue.style.color = 'var(--text-light)';
+        }
+        deliveryItem.appendChild(deliveryLabel);
+        deliveryItem.appendChild(deliveryValue);
+        info.appendChild(deliveryItem);
+        
+        // Shipping & Payment
+        if (order.shippingPrice || order.paymentReceived) {
+            const financialItem = document.createElement('div');
+            financialItem.className = 'order-info-item';
+            financialItem.style.cssText = 'padding-top: var(--space-2); border-top: 1px solid var(--border-light); margin-top: var(--space-2);';
+            const financialText = [];
+            if (order.shippingPrice) {
+                financialText.push(`شحن: ${parseFloat(order.shippingPrice).toFixed(2)} د.ع`);
+            }
+            if (order.paymentReceived) {
+                financialText.push(`مستلم: ${parseFloat(order.paymentReceived).toFixed(2)} د.ع`);
+            }
+            financialItem.innerHTML = `<span class="order-info-value" style="color: var(--success); font-weight: 600;">${financialText.join(' | ')}</span>`;
+            info.appendChild(financialItem);
+        }
+        
+        // Notes
+        if (order.notes && order.notes.trim()) {
+            const notesItem = document.createElement('div');
+            notesItem.className = 'order-info-item';
+            notesItem.style.cssText = 'padding-top: var(--space-2); border-top: 1px solid var(--border-light); margin-top: var(--space-2);';
+            const notesLabel = document.createElement('span');
+            notesLabel.className = 'order-info-label';
+            notesLabel.textContent = 'ملاحظات:';
+            const notesValue = document.createElement('span');
+            notesValue.className = 'order-info-value';
+            notesValue.style.cssText = 'font-style: italic; color: var(--text); word-break: break-word;';
+            notesValue.textContent = order.notes;
+            notesItem.appendChild(notesLabel);
+            notesItem.appendChild(notesValue);
+            info.appendChild(notesItem);
+        }
+        
+        card.appendChild(info);
+        
+        // Actions
+        const actions = document.createElement('div');
+        actions.className = 'order-actions';
+        
+        const statusBtn = document.createElement('button');
+        statusBtn.className = 'btn btn-primary btn-sm';
+        statusBtn.style.flex = '1';
+        statusBtn.textContent = '🔄 تحديث';
+        statusBtn.onclick = () => openOrderStatusModal(order);
+        actions.appendChild(statusBtn);
+        
+        const viewBtn = document.createElement('button');
+        viewBtn.className = 'btn btn-info btn-sm';
+        viewBtn.textContent = '👁️';
+        viewBtn.onclick = () => viewOrderDetails(order);
+        actions.appendChild(viewBtn);
+        
+        const deleteBtn = document.createElement('button');
+        deleteBtn.className = 'btn btn-danger btn-sm';
+        deleteBtn.textContent = '🗑️';
+        deleteBtn.onclick = () => deleteOrder(order.id);
+        actions.appendChild(deleteBtn);
+        
+        card.appendChild(actions);
+        grid.appendChild(card);
+    });
+    
+    container.innerHTML = '';
+    container.appendChild(grid);
+    updateSelectedCount();
 }
 
 // Toggle select all orders
@@ -1215,6 +1304,7 @@ function openProductModal(productId = null) {
             document.getElementById('productName').value = product.name;
             document.getElementById('productPrice').value = product.price;
             document.getElementById('productDiscountPrice').value = product.discountPrice || '';
+            document.getElementById('productStock').value = product.stock !== null && product.stock !== undefined ? product.stock : '';
             document.getElementById('productDescription').value = product.description || '';
 
             // Show current media (handle multiple images)
@@ -1344,6 +1434,8 @@ document.getElementById('productForm')?.addEventListener('submit', async (e) => 
         const price = parseFloat(document.getElementById('productPrice').value);
         const discountPrice = document.getElementById('productDiscountPrice').value ?
             parseFloat(document.getElementById('productDiscountPrice').value) : null;
+        const stock = document.getElementById('productStock').value ?
+            parseInt(document.getElementById('productStock').value) : null;
 
         if (!name || name.length === 0) {
             showNotification('اسم المنتج مطلوب', 'error');
@@ -1382,6 +1474,7 @@ document.getElementById('productForm')?.addEventListener('submit', async (e) => 
             name: name,
             price: price,
             discountPrice: discountPrice,
+            stock: stock,
             description: document.getElementById('productDescription').value.trim(),
             mediaUrls: validMediaUrls,
             mediaUrl: validMediaUrls[0] || '', // Keep first image as main for backward compatibility
@@ -1589,7 +1682,7 @@ async function openOrderStatusModal(order) {
     document.getElementById('orderDeliveryManSelect').value = order.deliveryManId || '';
     document.getElementById('orderShippingPrice').value = order.shippingPrice || '';
     document.getElementById('orderPaymentReceived').value = order.paymentReceived || '';
-    document.getElementById('orderNotes').value = '';
+    document.getElementById('orderNotes').value = order.notes || '';
 
     // Store current order ID
     modal.dataset.orderId = order.id;

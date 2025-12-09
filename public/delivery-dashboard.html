@@ -4,142 +4,284 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>لوحة تحكم مندوب التوصيل</title>
-    <link rel="stylesheet" href="styles.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="/styles.css">
     <style>
         body {
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            background: #f0f2f5;
+            background: linear-gradient(135deg, var(--primary) 0%, var(--secondary) 100%);
+            min-height: 100vh;
+            padding: 0;
             margin: 0;
-            padding: 20px;
         }
-        .header {
-            background: white;
-            padding: 20px;
-            border-radius: 10px;
-            margin-bottom: 20px;
+
+        .delivery-wrapper {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: var(--space-4) var(--space-2);
+        }
+
+        .delivery-header {
+            background: var(--white);
+            border-radius: var(--radius-xl);
+            padding: var(--space-4);
+            margin-bottom: var(--space-4);
+            box-shadow: var(--shadow-xl);
             display: flex;
             justify-content: space-between;
             align-items: center;
         }
-        .header h1 {
+
+        .delivery-header h1 {
             margin: 0;
-            color: #1877f2;
+            font-size: var(--font-size-3xl);
+            font-weight: var(--font-weight-bold);
+            background: linear-gradient(135deg, var(--primary), var(--secondary));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
         }
-        .btn-logout {
-            padding: 10px 20px;
-            background: #f44336;
-            color: white;
-            border: none;
-            border-radius: 5px;
-            cursor: pointer;
+
+        .delivery-stats {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: var(--space-3);
+            margin-bottom: var(--space-4);
         }
+
+        .stat-card {
+            background: var(--white);
+            padding: var(--space-4);
+            border-radius: var(--radius-lg);
+            box-shadow: var(--shadow-md);
+            border: 1px solid var(--border-light);
+            text-align: center;
+            transition: all var(--transition-base);
+        }
+
+        .stat-card:hover {
+            transform: translateY(-4px);
+            box-shadow: var(--shadow-lg);
+        }
+
+        .stat-icon {
+            font-size: 2.5rem;
+            margin-bottom: var(--space-2);
+        }
+
+        .stat-value {
+            font-size: var(--font-size-3xl);
+            font-weight: var(--font-weight-bold);
+            color: var(--primary);
+            margin: var(--space-2) 0;
+        }
+
+        .stat-label {
+            font-size: var(--font-size-sm);
+            color: var(--text-light);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
         .orders-container {
-            background: white;
-            padding: 20px;
-            border-radius: 10px;
+            background: var(--white);
+            border-radius: var(--radius-xl);
+            padding: var(--space-5);
+            box-shadow: var(--shadow-xl);
         }
+
+        .orders-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: var(--space-4);
+            padding-bottom: var(--space-3);
+            border-bottom: 2px solid var(--border-light);
+        }
+
+        .orders-header h2 {
+            margin: 0;
+            font-size: var(--font-size-2xl);
+            font-weight: var(--font-weight-bold);
+            color: var(--dark);
+        }
+
         .order-card {
-            border: 1px solid #ddd;
-            border-radius: 8px;
-            padding: 20px;
-            margin-bottom: 20px;
-            background: #f9f9f9;
+            background: var(--light);
+            border: 1px solid var(--border-light);
+            border-radius: var(--radius-lg);
+            padding: var(--space-4);
+            margin-bottom: var(--space-4);
+            transition: all var(--transition-base);
         }
+
+        .order-card:hover {
+            box-shadow: var(--shadow-md);
+            transform: translateY(-2px);
+            border-color: var(--primary);
+        }
+
+        .order-card:last-child {
+            margin-bottom: 0;
+        }
+
         .order-header {
             display: flex;
             justify-content: space-between;
             align-items: center;
-            margin-bottom: 15px;
+            margin-bottom: var(--space-3);
+            padding-bottom: var(--space-3);
+            border-bottom: 1px solid var(--border-light);
         }
+
         .order-id {
-            font-weight: bold;
-            color: #1877f2;
+            font-weight: var(--font-weight-bold);
+            color: var(--primary);
+            font-size: var(--font-size-lg);
         }
-        .order-status {
-            padding: 5px 15px;
-            border-radius: 20px;
-            font-size: 14px;
-            font-weight: bold;
-        }
-        .status-pending { background: #ff9800; color: white; }
-        .status-assigned { background: #2196f3; color: white; }
-        .status-in_transit { background: #9c27b0; color: white; }
-        .status-delivered { background: #4caf50; color: white; }
-        .status-completed { background: #4caf50; color: white; }
-        .status-cancelled { background: #f44336; color: white; }
+
         .order-info {
-            margin-bottom: 15px;
+            margin-bottom: var(--space-3);
         }
-        .order-info p {
-            margin: 5px 0;
+
+        .order-info-item {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: var(--space-2);
+            font-size: var(--font-size-base);
         }
+
+        .order-info-label {
+            color: var(--text-light);
+            font-weight: var(--font-weight-medium);
+        }
+
+        .order-info-value {
+            color: var(--text);
+            font-weight: var(--font-weight-medium);
+        }
+
+        .order-info-value a {
+            color: var(--primary);
+            text-decoration: none;
+            transition: color var(--transition-base);
+        }
+
+        .order-info-value a:hover {
+            color: var(--primary-dark);
+            text-decoration: underline;
+        }
+
         .order-form {
-            margin-top: 15px;
-            padding-top: 15px;
-            border-top: 1px solid #ddd;
+            margin-top: var(--space-3);
+            padding-top: var(--space-3);
+            border-top: 1px solid var(--border-light);
         }
-        .form-group {
-            margin-bottom: 15px;
+
+        .form-row {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: var(--space-3);
+            margin-bottom: var(--space-3);
         }
-        .form-group label {
-            display: block;
-            margin-bottom: 5px;
-            font-weight: bold;
+
+        .quick-actions {
+            display: flex;
+            gap: var(--space-2);
+            flex-wrap: wrap;
+            margin-top: var(--space-3);
         }
-        .form-group input, .form-group select {
-            width: 100%;
-            padding: 10px;
-            border: 1px solid #ddd;
-            border-radius: 5px;
-            font-size: 14px;
-            box-sizing: border-box;
-        }
-        .btn-update {
-            padding: 10px 20px;
-            background: #1877f2;
-            color: white;
+
+        .btn-quick {
+            padding: var(--space-2) var(--space-3);
+            color: var(--white);
             border: none;
-            border-radius: 5px;
+            border-radius: var(--radius-md);
             cursor: pointer;
-            margin-top: 10px;
+            font-size: var(--font-size-sm);
+            font-weight: var(--font-weight-medium);
+            transition: all var(--transition-base);
         }
-        .btn-update:hover {
-            background: #166fe5;
+
+        .btn-quick:hover {
+            transform: translateY(-2px);
+            box-shadow: var(--shadow);
         }
+
         .empty-state {
             text-align: center;
-            padding: 40px;
-            color: #999;
+            padding: var(--space-6);
+            color: var(--text-light);
         }
-        .btn-quick {
-            padding: 8px 16px;
-            color: white;
-            border: none;
-            border-radius: 5px;
-            cursor: pointer;
-            font-size: 14px;
-            margin-top: 5px;
+
+        .empty-state-icon {
+            font-size: 5rem;
+            margin-bottom: var(--space-3);
         }
-        .btn-quick:hover {
-            opacity: 0.9;
+
+        .empty-state h3 {
+            font-size: var(--font-size-2xl);
+            color: var(--text);
+            margin-bottom: var(--space-2);
+        }
+
+        @media (max-width: 768px) {
+            .delivery-wrapper {
+                padding: var(--space-2);
+            }
+
+            .delivery-header {
+                flex-direction: column;
+                gap: var(--space-3);
+                align-items: flex-start;
+            }
+
+            .delivery-header h1 {
+                font-size: var(--font-size-2xl);
+            }
+
+            .form-row {
+                grid-template-columns: 1fr;
+            }
+
+            .quick-actions {
+                flex-direction: column;
+            }
+
+            .btn-quick {
+                width: 100%;
+            }
         }
     </style>
 </head>
 <body>
-    <div class="header">
-        <h1>لوحة تحكم مندوب التوصيل</h1>
-        <button class="btn-logout" onclick="logout()">تسجيل الخروج</button>
-    </div>
-    <div class="orders-container">
-        <div style="margin-bottom: 20px; display: flex; justify-content: space-between; align-items: center;">
-            <h2 style="margin: 0;">الطلبات المخصصة</h2>
-            <button onclick="loadOrders()" class="btn-update" style="margin: 0;">🔄 تحديث</button>
+    <div class="delivery-wrapper">
+        <div class="delivery-header">
+            <h1>🚚 لوحة تحكم مندوب التوصيل</h1>
+            <button onclick="logout()" class="btn btn-danger">
+                🚪 تسجيل الخروج
+            </button>
         </div>
-        <div id="ordersList">
-            <div class="empty-state">جاري التحميل...</div>
+
+        <div class="delivery-stats" id="statsContainer">
+            <!-- Stats will be loaded here -->
+        </div>
+
+        <div class="orders-container">
+            <div class="orders-header">
+                <h2>الطلبات المخصصة</h2>
+                <button onclick="loadOrders()" class="btn btn-success">
+                    🔄 تحديث
+                </button>
+            </div>
+            <div id="ordersList">
+                <div class="empty-state">
+                    <div class="spinner"></div>
+                </div>
+            </div>
         </div>
     </div>
-    <script src="delivery-dashboard.js"></script>
+    <script src="/delivery-dashboard.js"></script>
 </body>
 </html>
-

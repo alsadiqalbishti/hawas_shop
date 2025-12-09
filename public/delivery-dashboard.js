@@ -62,8 +62,48 @@ function formatPrice(price) {
     return parseFloat(price).toFixed(2);
 }
 
-// Load orders on page load
-loadOrders();
+// Load stats and orders on page load
+window.addEventListener('DOMContentLoaded', () => {
+    loadOrders();
+    // Refresh every 30 seconds
+    setInterval(loadOrders, 30000);
+});
+
+// Load stats
+function renderStats(orders) {
+    const statsContainer = document.getElementById('statsContainer');
+    if (!statsContainer) return;
+    
+    const total = orders.length;
+    const inTransit = orders.filter(o => o.status === 'in_transit').length;
+    const delivered = orders.filter(o => o.status === 'delivered' || o.status === 'completed').length;
+    const totalEarnings = orders
+        .filter(o => o.paymentReceived)
+        .reduce((sum, o) => sum + parseFloat(o.paymentReceived || 0), 0);
+    
+    statsContainer.innerHTML = `
+        <div class="stat-card">
+            <div class="stat-icon">📦</div>
+            <div class="stat-value">${total}</div>
+            <div class="stat-label">إجمالي الطلبات</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-icon">🚚</div>
+            <div class="stat-value">${inTransit}</div>
+            <div class="stat-label">قيد التوصيل</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-icon">✅</div>
+            <div class="stat-value">${delivered}</div>
+            <div class="stat-label">تم التوصيل</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-icon">💰</div>
+            <div class="stat-value">${totalEarnings.toFixed(2)}</div>
+            <div class="stat-label">إجمالي الأرباح (د.ع)</div>
+        </div>
+    `;
+}
 
 // Load orders
 async function loadOrders() {
@@ -88,12 +128,30 @@ async function loadOrders() {
             throw new Error('Invalid response format');
         }
 
+        renderStats(orders);
         renderOrders(orders);
     } catch (error) {
         console.error('Error loading orders:', error);
         document.getElementById('ordersList').innerHTML = 
-            '<div class="empty-state">حدث خطأ في تحميل الطلبات</div>';
+            '<div class="empty-state"><div class="empty-state-icon">❌</div><h3>حدث خطأ في تحميل الطلبات</h3></div>';
     }
+}
+
+// Get status badge class
+function getStatusBadgeClass(status) {
+    const classes = {
+        'pending': 'badge badge-warning',
+        'assigned': 'badge badge-info',
+        'preparing': 'badge badge-info',
+        'in_transit': 'badge badge-primary',
+        'delivered': 'badge badge-success',
+        'completed': 'badge badge-success',
+        'cancelled': 'badge badge-danger',
+        'on_hold': 'badge badge-warning',
+        'returned': 'badge badge-danger',
+        'refunded': 'badge badge-danger'
+    };
+    return classes[status] || 'badge';
 }
 
 // Render orders
@@ -101,13 +159,19 @@ function renderOrders(orders) {
     const container = document.getElementById('ordersList');
     
     if (orders.length === 0) {
-        container.innerHTML = '<div class="empty-state" style="text-align: center; padding: 3rem; color: #666;"><p style="font-size: 1.2rem; margin-bottom: 1rem;">لا توجد طلبات مُسندة إليك</p><p style="color: #999;">سيتم إظهار الطلبات هنا بعد أن يقوم المدير بإسنادها إليك من لوحة التحكم</p></div>';
+        container.innerHTML = `
+            <div class="empty-state">
+                <div class="empty-state-icon">📦</div>
+                <h3>لا توجد طلبات مُسندة إليك</h3>
+                <p>سيتم إظهار الطلبات هنا بعد أن يقوم المدير بإسنادها إليك من لوحة التحكم</p>
+            </div>
+        `;
         return;
     }
 
     container.innerHTML = orders.map(order => {
         const product = order.product || {};
-        const statusClass = `status-${order.status}`;
+        const statusBadgeClass = getStatusBadgeClass(order.status);
         
         const orderNumber = order.orderNumber || order.id;
         const displayOrderNumber = orderNumber.startsWith('ORD-') ? orderNumber : `#${orderNumber.substring(0, 8)}`;
@@ -115,54 +179,84 @@ function renderOrders(orders) {
         // Quick action buttons based on status
         let quickActions = '';
         if (order.status === 'assigned') {
-            quickActions = `<button onclick="quickUpdate('${order.id}', 'preparing')" class="btn-quick" style="background: #2196f3;">⏳ بدء التحضير</button>`;
+            quickActions = `<button onclick="quickUpdate('${order.id}', 'preparing')" class="btn-quick" style="background: var(--info);">⏳ بدء التحضير</button>`;
         } else if (order.status === 'preparing') {
-            quickActions = `<button onclick="quickUpdate('${order.id}', 'in_transit')" class="btn-quick" style="background: #9c27b0;">🚚 بدء التوصيل</button>`;
+            quickActions = `<button onclick="quickUpdate('${order.id}', 'in_transit')" class="btn-quick" style="background: var(--primary);">🚚 بدء التوصيل</button>`;
         } else if (order.status === 'in_transit') {
-            quickActions = `<button onclick="quickUpdate('${order.id}', 'delivered')" class="btn-quick" style="background: #4caf50;">✅ تم التوصيل</button>`;
+            quickActions = `<button onclick="quickUpdate('${order.id}', 'delivered')" class="btn-quick" style="background: var(--success);">✅ تم التوصيل</button>`;
         }
         
         return `
             <div class="order-card" data-order-id="${order.id}">
                 <div class="order-header">
                     <span class="order-id">${displayOrderNumber}</span>
-                    <span class="order-status ${statusClass}">${getStatusLabel(order.status)}</span>
+                    <span class="${statusBadgeClass}">${getStatusLabel(order.status)}</span>
                 </div>
                 <div class="order-info">
-                    <p><strong>العميل:</strong> ${escapeHtml(order.customerName)}</p>
-                    <p><strong>الهاتف:</strong> <a href="tel:${escapeHtml(order.customerPhone)}" style="color: #1877f2; text-decoration: none;">${escapeHtml(order.customerPhone)} 📞</a></p>
-                    <p><strong>العنوان:</strong> ${escapeHtml(order.customerAddress)}</p>
-                    <p><strong>المنتج:</strong> ${escapeHtml(product.name || 'غير معروف')}</p>
-                    <p><strong>الكمية:</strong> ${order.quantity || 1}</p>
-                    <p><strong>السعر:</strong> ${formatPrice(product.price)} د.ع</p>
-                    ${product.discountPrice ? `<p><strong>السعر بعد الخصم:</strong> ${formatPrice(product.discountPrice)} د.ع</p>` : ''}
-                    <p><strong>تاريخ الطلب:</strong> ${new Date(order.createdAt).toLocaleDateString('ar')}</p>
+                    <div class="order-info-item">
+                        <span class="order-info-label">العميل:</span>
+                        <span class="order-info-value">${escapeHtml(order.customerName)}</span>
+                    </div>
+                    <div class="order-info-item">
+                        <span class="order-info-label">الهاتف:</span>
+                        <span class="order-info-value"><a href="tel:${escapeHtml(order.customerPhone)}">${escapeHtml(order.customerPhone)} 📞</a></span>
+                    </div>
+                    <div class="order-info-item">
+                        <span class="order-info-label">العنوان:</span>
+                        <span class="order-info-value">${escapeHtml(order.customerAddress)}</span>
+                    </div>
+                    <div class="order-info-item">
+                        <span class="order-info-label">المنتج:</span>
+                        <span class="order-info-value">${escapeHtml(product.name || 'غير معروف')}</span>
+                    </div>
+                    <div class="order-info-item">
+                        <span class="order-info-label">الكمية:</span>
+                        <span class="order-info-value">${order.quantity || 1}</span>
+                    </div>
+                    <div class="order-info-item">
+                        <span class="order-info-label">السعر:</span>
+                        <span class="order-info-value">${formatPrice(product.price)} د.ع</span>
+                    </div>
+                    ${product.discountPrice ? `
+                    <div class="order-info-item">
+                        <span class="order-info-label">السعر بعد الخصم:</span>
+                        <span class="order-info-value" style="color: var(--success); font-weight: 600;">${formatPrice(product.discountPrice)} د.ع</span>
+                    </div>
+                    ` : ''}
+                    <div class="order-info-item">
+                        <span class="order-info-label">تاريخ الطلب:</span>
+                        <span class="order-info-value">${new Date(order.createdAt).toLocaleDateString('ar')}</span>
+                    </div>
                 </div>
-                ${quickActions ? `<div style="margin: 15px 0; padding: 10px; background: #f0f2f5; border-radius: 5px;">
-                    <strong>إجراء سريع:</strong><br>
+                ${quickActions ? `
+                <div class="quick-actions">
+                    <strong style="display: block; margin-bottom: var(--space-2); color: var(--text);">إجراء سريع:</strong>
                     ${quickActions}
-                </div>` : ''}
+                </div>
+                ` : ''}
                 <form class="order-form" onsubmit="updateOrder(event, '${order.id}')">
-                    <div class="form-group">
-                        <label for="status-${order.id}">حالة الطلب</label>
-                        <select id="status-${order.id}" name="status" required>
-                            <option value="assigned" ${order.status === 'assigned' ? 'selected' : ''}>مُسند</option>
-                            <option value="preparing" ${order.status === 'preparing' ? 'selected' : ''}>قيد التحضير</option>
-                            <option value="in_transit" ${order.status === 'in_transit' ? 'selected' : ''}>قيد التوصيل</option>
-                            <option value="delivered" ${order.status === 'delivered' ? 'selected' : ''}>تم التوصيل</option>
-                        </select>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label class="form-label" for="status-${order.id}">حالة الطلب</label>
+                            <select id="status-${order.id}" name="status" class="form-input" required>
+                                <option value="assigned" ${order.status === 'assigned' ? 'selected' : ''}>مُسند</option>
+                                <option value="preparing" ${order.status === 'preparing' ? 'selected' : ''}>قيد التحضير</option>
+                                <option value="in_transit" ${order.status === 'in_transit' ? 'selected' : ''}>قيد التوصيل</option>
+                                <option value="delivered" ${order.status === 'delivered' ? 'selected' : ''}>تم التوصيل</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label" for="shippingPrice-${order.id}">سعر التوصيل (د.ع)</label>
+                            <input type="number" id="shippingPrice-${order.id}" name="shippingPrice" class="form-input"
+                                   value="${order.shippingPrice || ''}" step="0.01" min="0" placeholder="0.00">
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label" for="paymentReceived-${order.id}">المبلغ المستلم (د.ع)</label>
+                            <input type="number" id="paymentReceived-${order.id}" name="paymentReceived" class="form-input"
+                                   value="${order.paymentReceived || ''}" step="0.01" min="0" placeholder="0.00">
+                        </div>
                     </div>
-                    <div class="form-group">
-                        <label for="shippingPrice-${order.id}">سعر التوصيل (د.ع)</label>
-                        <input type="number" id="shippingPrice-${order.id}" name="shippingPrice" 
-                               value="${order.shippingPrice || ''}" step="0.01" min="0">
-                    </div>
-                    <div class="form-group">
-                        <label for="paymentReceived-${order.id}">المبلغ المستلم (د.ع)</label>
-                        <input type="number" id="paymentReceived-${order.id}" name="paymentReceived" 
-                               value="${order.paymentReceived || ''}" step="0.01" min="0">
-                    </div>
-                    <button type="submit" class="btn-update">💾 تحديث الطلب</button>
+                    <button type="submit" class="btn btn-primary" style="width: 100%;">💾 تحديث الطلب</button>
                 </form>
             </div>
         `;
@@ -260,8 +354,4 @@ function escapeHtml(text) {
     return div.innerHTML;
 }
 
-// Load orders on page load
-loadOrders();
-// Refresh every 30 seconds
-setInterval(loadOrders, 30000);
 

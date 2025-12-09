@@ -309,13 +309,13 @@ document.getElementById('orderForm')?.addEventListener('submit', async (e) => {
             
             // Show success message with order number
             successDiv.innerHTML = `
-                <div style="text-align: center; padding: 1rem;">
-                    <h3 style="color: #4caf50; margin-bottom: 0.5rem;">✅ تم إرسال الطلب بنجاح!</h3>
-                    <p style="font-size: 1.1rem; margin: 0.5rem 0;">
+                <div style="text-align: center; padding: var(--space-3);">
+                    <h3 style="color: var(--success); margin-bottom: var(--space-2); font-size: var(--font-size-xl);">✅ تم إرسال الطلب بنجاح!</h3>
+                    <p style="font-size: var(--font-size-lg); margin: var(--space-2) 0;">
                         <strong>رقم الطلب:</strong> 
-                        <span style="color: #2196F3; font-weight: bold; font-size: 1.2rem;">${orderNumber}</span>
+                        <span style="color: var(--primary); font-weight: var(--font-weight-bold); font-size: var(--font-size-2xl);">${orderNumber}</span>
                     </p>
-                    <p style="color: #666; margin-top: 0.5rem;">سيتم التواصل معك قريباً لتأكيد الطلب</p>
+                    <p style="color: var(--text-light); margin-top: var(--space-2);">سيتم التواصل معك قريباً لتأكيد الطلب</p>
                 </div>
             `;
             successDiv.classList.remove('hidden');
@@ -338,7 +338,7 @@ document.getElementById('orderForm')?.addEventListener('submit', async (e) => {
     } finally {
         // Re-enable submit button
         submitButton.disabled = false;
-        submitButton.textContent = '🛒 اطلب الآن';
+        submitButton.textContent = '🛒 تأكيد الطلب';
     }
 });
 

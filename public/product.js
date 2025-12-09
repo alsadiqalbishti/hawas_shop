@@ -254,6 +254,12 @@ async function loadProduct() {
         // Display specifications if available
         displaySpecifications(product);
 
+        // Display product variants if available
+        displayProductVariants(product);
+
+        // Show size chart button if applicable
+        checkSizeChart(product);
+
         // Load related products
         loadRelatedProducts(product);
 
@@ -915,6 +921,184 @@ function displaySpecifications(product) {
         specsContent.appendChild(table);
     }
 }
+
+// Video Gallery Support
+function createVideoGallery(videoUrls, productName, container) {
+    container.innerHTML = '';
+    
+    if (videoUrls.length === 1) {
+        // Single video
+        const video = document.createElement('video');
+        video.src = videoUrls[0];
+        video.controls = true;
+        video.className = 'product-video';
+        video.style.cssText = 'width: 100%; max-height: 70vh; border-radius: 12px;';
+        video.muted = true;
+        video.loop = true;
+        video.textContent = 'متصفحك لا يدعم تشغيل الفيديو';
+        container.appendChild(video);
+    } else {
+        // Multiple videos - create tabs or grid
+        const videoContainer = document.createElement('div');
+        videoContainer.className = 'video-gallery';
+        
+        videoUrls.forEach((url, index) => {
+            const videoWrapper = document.createElement('div');
+            videoWrapper.className = 'video-wrapper';
+            if (index > 0) videoWrapper.style.display = 'none';
+            
+            const video = document.createElement('video');
+            video.src = url;
+            video.controls = true;
+            video.className = 'product-video';
+            video.style.cssText = 'width: 100%; max-height: 70vh; border-radius: 12px;';
+            video.muted = true;
+            video.loop = true;
+            
+            videoWrapper.appendChild(video);
+            videoContainer.appendChild(videoWrapper);
+        });
+        
+        // Add video navigation if multiple videos
+        if (videoUrls.length > 1) {
+            const videoNav = document.createElement('div');
+            videoNav.className = 'video-nav';
+            videoNav.style.cssText = 'display: flex; gap: var(--space-2); margin-top: var(--space-3); justify-content: center;';
+            
+            videoUrls.forEach((url, index) => {
+                const btn = document.createElement('button');
+                btn.textContent = `فيديو ${index + 1}`;
+                btn.className = 'video-nav-btn';
+                btn.style.cssText = 'padding: var(--space-2) var(--space-3); border: 1px solid var(--border); border-radius: var(--radius-md); background: var(--white); cursor: pointer;';
+                if (index === 0) btn.style.background = 'var(--primary)';
+                btn.onclick = () => switchVideo(index);
+                videoNav.appendChild(btn);
+            });
+            
+            videoContainer.appendChild(videoNav);
+        }
+        
+        container.appendChild(videoContainer);
+    }
+}
+
+function switchVideo(index) {
+    const wrappers = document.querySelectorAll('.video-wrapper');
+    const buttons = document.querySelectorAll('.video-nav-btn');
+    
+    wrappers.forEach((wrapper, i) => {
+        wrapper.style.display = i === index ? 'block' : 'none';
+    });
+    
+    buttons.forEach((btn, i) => {
+        btn.style.background = i === index ? 'var(--primary)' : 'var(--white)';
+        btn.style.color = i === index ? 'var(--white)' : 'var(--text)';
+    });
+}
+
+// Product Variants
+function displayProductVariants(product) {
+    const variantsSection = document.getElementById('productVariants');
+    const variantsContainer = document.getElementById('variantsContainer');
+    
+    if (!variantsSection || !variantsContainer) return;
+    
+    // Check if product has variants (e.g., size, color)
+    const variants = product.variants || {};
+    
+    if (Object.keys(variants).length === 0) return;
+    
+    variantsContainer.innerHTML = '';
+    
+    Object.entries(variants).forEach(([variantType, options]) => {
+        const group = document.createElement('div');
+        group.className = 'variant-group';
+        
+        const label = document.createElement('div');
+        label.className = 'variant-label';
+        label.textContent = variantType === 'size' ? 'المقاس' : variantType === 'color' ? 'اللون' : variantType;
+        
+        const optionsContainer = document.createElement('div');
+        optionsContainer.className = 'variant-options';
+        
+        if (Array.isArray(options)) {
+            options.forEach(option => {
+                const optionBtn = document.createElement('button');
+                optionBtn.type = 'button';
+                optionBtn.className = 'variant-option';
+                optionBtn.textContent = option.label || option;
+                optionBtn.onclick = () => selectVariant(variantType, option);
+                optionsContainer.appendChild(optionBtn);
+            });
+        }
+        
+        group.appendChild(label);
+        group.appendChild(optionsContainer);
+        variantsContainer.appendChild(group);
+    });
+    
+    variantsSection.classList.remove('hidden');
+}
+
+function selectVariant(variantType, option) {
+    // Remove selected class from all options in this group
+    const group = event.target.closest('.variant-group');
+    if (group) {
+        group.querySelectorAll('.variant-option').forEach(btn => {
+            btn.classList.remove('selected');
+        });
+        
+        // Add selected class to clicked option
+        event.target.classList.add('selected');
+        
+        // Store selected variant (can be used when ordering)
+        if (!window.selectedVariants) window.selectedVariants = {};
+        window.selectedVariants[variantType] = option;
+    }
+}
+
+// Size Chart
+function checkSizeChart(product) {
+    const sizeChartSection = document.getElementById('sizeChartSection');
+    if (!sizeChartSection) return;
+    
+    // Show size chart if product has size-related keywords or if explicitly set
+    const hasSize = product.name?.toLowerCase().includes('مقاس') || 
+                    product.description?.toLowerCase().includes('مقاس') ||
+                    product.category === 'clothing' ||
+                    product.category === 'shoes' ||
+                    product.hasSizeChart === true;
+    
+    if (hasSize) {
+        sizeChartSection.classList.remove('hidden');
+    }
+}
+
+function openSizeChart() {
+    const modal = document.getElementById('sizeChartModal');
+    if (modal) {
+        modal.classList.remove('hidden');
+        document.body.style.overflow = 'hidden';
+    }
+}
+
+function closeSizeChart() {
+    const modal = document.getElementById('sizeChartModal');
+    if (modal) {
+        modal.classList.add('hidden');
+        document.body.style.overflow = '';
+    }
+}
+
+// Close modal when clicking outside
+document.addEventListener('click', (e) => {
+    const modal = document.getElementById('sizeChartModal');
+    if (modal && !modal.classList.contains('hidden')) {
+        if (e.target === modal) {
+            closeSizeChart();
+        }
+    }
+});
 
 // Notification function
 function showNotification(message, type = 'info') {

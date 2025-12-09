@@ -77,9 +77,77 @@
                 <div id="ordersTab" class="tab-content">
                     <div class="flex justify-between items-center mb-3">
                         <h2 style="font-size: 1.5rem; font-weight: 600;">قائمة الطلبات</h2>
-                        <button onclick="loadOrders()" class="btn btn-success btn-sm">
-                            🔄 تحديث
-                        </button>
+                        <div class="flex gap-2">
+                            <button onclick="exportOrders()" class="btn btn-info btn-sm">
+                                📥 تصدير
+                            </button>
+                            <button onclick="loadOrders()" class="btn btn-success btn-sm">
+                                🔄 تحديث
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Filter Panel -->
+                    <div class="filter-panel" style="background: var(--card-bg); padding: 1rem; border-radius: 8px; margin-bottom: 1rem; border: 1px solid var(--border);">
+                        <div class="flex flex-wrap gap-2 items-end">
+                            <!-- Search -->
+                            <div class="form-group" style="flex: 1; min-width: 200px;">
+                                <label class="form-label" style="font-size: 0.85rem;">🔍 بحث</label>
+                                <input type="text" id="orderSearch" class="form-input" placeholder="رقم الطلب، اسم العميل، رقم الهاتف..." 
+                                    oninput="filterOrders()">
+                            </div>
+                            
+                            <!-- Status Filter -->
+                            <div class="form-group" style="min-width: 150px;">
+                                <label class="form-label" style="font-size: 0.85rem;">الحالة</label>
+                                <select id="statusFilter" class="form-input" onchange="filterOrders()">
+                                    <option value="">الكل</option>
+                                    <option value="pending">قيد الانتظار</option>
+                                    <option value="assigned">مُسند</option>
+                                    <option value="preparing">قيد التحضير</option>
+                                    <option value="in_transit">قيد التوصيل</option>
+                                    <option value="delivered">تم التوصيل</option>
+                                    <option value="completed">مكتمل</option>
+                                    <option value="cancelled">ملغي</option>
+                                    <option value="on_hold">معلق</option>
+                                </select>
+                            </div>
+                            
+                            <!-- Date From -->
+                            <div class="form-group" style="min-width: 150px;">
+                                <label class="form-label" style="font-size: 0.85rem;">من تاريخ</label>
+                                <input type="date" id="dateFrom" class="form-input" onchange="filterOrders()">
+                            </div>
+                            
+                            <!-- Date To -->
+                            <div class="form-group" style="min-width: 150px;">
+                                <label class="form-label" style="font-size: 0.85rem;">إلى تاريخ</label>
+                                <input type="date" id="dateTo" class="form-input" onchange="filterOrders()">
+                            </div>
+                            
+                            <!-- Clear Filters -->
+                            <button onclick="clearFilters()" class="btn btn-secondary btn-sm" style="height: fit-content;">
+                                🗑️ مسح
+                            </button>
+                        </div>
+                        
+                        <!-- Bulk Actions -->
+                        <div class="flex justify-between items-center mt-2" style="padding-top: 0.5rem; border-top: 1px solid var(--border);">
+                            <div class="flex items-center gap-2">
+                                <input type="checkbox" id="selectAllOrders" onchange="toggleSelectAll()">
+                                <label for="selectAllOrders" style="margin: 0; cursor: pointer;">
+                                    تحديد الكل (<span id="selectedCount">0</span>)
+                                </label>
+                            </div>
+                            <div class="flex gap-2">
+                                <button onclick="bulkUpdateStatus()" class="btn btn-primary btn-sm" id="bulkStatusBtn" disabled>
+                                    🔄 تحديث الحالة
+                                </button>
+                                <button onclick="bulkExport()" class="btn btn-info btn-sm" id="bulkExportBtn" disabled>
+                                    📥 تصدير المحدد
+                                </button>
+                            </div>
+                        </div>
                     </div>
 
                     <div id="ordersContainer">

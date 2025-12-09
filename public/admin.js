@@ -2,6 +2,7 @@
 let authToken = localStorage.getItem('adminToken');
 let currentProducts = [];
 let currentOrders = [];
+let filteredOrders = [];
 let editingProductId = null;
 
 // Utility: Escape HTML to prevent XSS
@@ -385,38 +386,141 @@ async function loadOrders() {
         }
 
         currentOrders = orders;
+        filteredOrders = orders;
+        
+        // Apply filters if any
+        applyFilters();
+        
+        renderOrdersTable();
+    } catch (error) {
+        console.error('Error loading orders:', error);
+        const errorDiv = document.createElement('div');
+        errorDiv.className = 'alert alert-error';
+        errorDiv.textContent = `حدث خطأ في تحميل الطلبات: ${error.message}`;
+        container.innerHTML = '';
+        container.appendChild(errorDiv);
+    }
+}
 
-        if (orders.length === 0) {
-            const emptyMsg = document.createElement('p');
-            emptyMsg.className = 'text-center';
-            emptyMsg.style.cssText = 'color: var(--text-light); padding: 2rem;';
-            emptyMsg.textContent = 'لا توجد طلبات بعد';
-            container.innerHTML = '';
-            container.appendChild(emptyMsg);
-            return;
+// Filter orders based on search and filters
+function applyFilters() {
+    const searchTerm = (document.getElementById('orderSearch')?.value || '').toLowerCase();
+    const statusFilter = document.getElementById('statusFilter')?.value || '';
+    const dateFrom = document.getElementById('dateFrom')?.value || '';
+    const dateTo = document.getElementById('dateTo')?.value || '';
+    
+    filteredOrders = currentOrders.filter(order => {
+        // Search filter
+        if (searchTerm) {
+            const orderNumber = (order.orderNumber || order.id).toLowerCase();
+            const customerName = (order.customerName || '').toLowerCase();
+            const customerPhone = (order.customerPhone || '').toLowerCase();
+            const customerAddress = (order.customerAddress || '').toLowerCase();
+            
+            if (!orderNumber.includes(searchTerm) && 
+                !customerName.includes(searchTerm) && 
+                !customerPhone.includes(searchTerm) &&
+                !customerAddress.includes(searchTerm)) {
+                return false;
+            }
         }
+        
+        // Status filter
+        if (statusFilter && order.status !== statusFilter) {
+            return false;
+        }
+        
+        // Date range filter
+        if (dateFrom || dateTo) {
+            const orderDate = new Date(order.createdAt);
+            if (dateFrom && orderDate < new Date(dateFrom)) {
+                return false;
+            }
+            if (dateTo) {
+                const toDate = new Date(dateTo);
+                toDate.setHours(23, 59, 59, 999); // End of day
+                if (orderDate > toDate) {
+                    return false;
+                }
+            }
+        }
+        
+        return true;
+    });
+    
+    renderOrdersTable();
+}
 
-        // Create table using DOM methods to prevent XSS
-        const tableContainer = document.createElement('div');
-        tableContainer.className = 'table-container';
-        
-        const table = document.createElement('table');
-        const thead = document.createElement('thead');
-        const tbody = document.createElement('tbody');
-        
-        // Header
-        const headerRow = document.createElement('tr');
-        ['رقم الطلب', 'المنتج', 'اسم العميل', 'رقم الهاتف', 'العنوان', 'الكمية', 'مندوب التوصيل', 'سعر التوصيل', 'المبلغ المستلم', 'التاريخ', 'الحالة', 'الإجراءات'].forEach(text => {
-            const th = document.createElement('th');
-            th.textContent = text;
-            headerRow.appendChild(th);
-        });
-        thead.appendChild(headerRow);
-        
-        // Rows
-        orders.forEach(order => {
+// Alias for filterOrders (called from HTML)
+function filterOrders() {
+    applyFilters();
+}
+
+// Clear all filters
+function clearFilters() {
+    document.getElementById('orderSearch').value = '';
+    document.getElementById('statusFilter').value = '';
+    document.getElementById('dateFrom').value = '';
+    document.getElementById('dateTo').value = '';
+    applyFilters();
+}
+
+// Render orders table
+function renderOrdersTable() {
+    const container = document.getElementById('ordersContainer');
+    
+    if (filteredOrders.length === 0) {
+        const emptyMsg = document.createElement('p');
+        emptyMsg.className = 'text-center';
+        emptyMsg.style.cssText = 'color: var(--text-light); padding: 2rem;';
+        emptyMsg.textContent = currentOrders.length === 0 ? 'لا توجد طلبات بعد' : 'لا توجد نتائج للبحث';
+        container.innerHTML = '';
+        container.appendChild(emptyMsg);
+        updateSelectedCount();
+        return;
+    }
+
+    // Create table using DOM methods to prevent XSS
+    const tableContainer = document.createElement('div');
+    tableContainer.className = 'table-container';
+    
+    const table = document.createElement('table');
+    const thead = document.createElement('thead');
+    const tbody = document.createElement('tbody');
+    
+    // Header with checkbox
+    const headerRow = document.createElement('tr');
+    const checkboxHeader = document.createElement('th');
+    checkboxHeader.style.width = '40px';
+    const checkboxInput = document.createElement('input');
+    checkboxInput.type = 'checkbox';
+    checkboxInput.id = 'selectAllHeader';
+    checkboxInput.onchange = toggleSelectAll;
+    checkboxHeader.appendChild(checkboxInput);
+    headerRow.appendChild(checkboxHeader);
+    
+    ['رقم الطلب', 'المنتج', 'اسم العميل', 'رقم الهاتف', 'العنوان', 'الكمية', 'مندوب التوصيل', 'سعر التوصيل', 'المبلغ المستلم', 'التاريخ', 'الحالة', 'الإجراءات'].forEach(text => {
+        const th = document.createElement('th');
+        th.textContent = text;
+        headerRow.appendChild(th);
+    });
+    thead.appendChild(headerRow);
+    
+    // Rows
+    filteredOrders.forEach(order => {
             const product = currentProducts.find(p => p.id === order.productId);
             const row = document.createElement('tr');
+            row.dataset.orderId = order.id;
+            
+            // Checkbox cell
+            const checkboxCell = document.createElement('td');
+            const checkbox = document.createElement('input');
+            checkbox.type = 'checkbox';
+            checkbox.className = 'order-checkbox';
+            checkbox.value = order.id;
+            checkbox.onchange = updateSelectedCount;
+            checkboxCell.appendChild(checkbox);
+            row.appendChild(checkboxCell);
             
             // Order Number (professional format)
             const idCell = document.createElement('td');
@@ -533,14 +637,163 @@ async function loadOrders() {
         tableContainer.appendChild(table);
         container.innerHTML = '';
         container.appendChild(tableContainer);
-    } catch (error) {
-        console.error('Error loading orders:', error);
-        const errorDiv = document.createElement('div');
-        errorDiv.className = 'alert alert-error';
-        errorDiv.textContent = `حدث خطأ في تحميل الطلبات: ${error.message}`;
-        container.innerHTML = '';
-        container.appendChild(errorDiv);
+        
+        updateSelectedCount();
+}
+
+// Toggle select all orders
+function toggleSelectAll() {
+    const selectAll = document.getElementById('selectAllOrders') || document.getElementById('selectAllHeader');
+    const checkboxes = document.querySelectorAll('.order-checkbox');
+    const isChecked = selectAll?.checked || false;
+    
+    checkboxes.forEach(checkbox => {
+        checkbox.checked = isChecked;
+    });
+    
+    if (selectAll && selectAll.id === 'selectAllHeader') {
+        const selectAllOrders = document.getElementById('selectAllOrders');
+        if (selectAllOrders) selectAllOrders.checked = isChecked;
     }
+    
+    updateSelectedCount();
+}
+
+// Update selected count
+function updateSelectedCount() {
+    const checkboxes = document.querySelectorAll('.order-checkbox:checked');
+    const count = checkboxes.length;
+    const countSpan = document.getElementById('selectedCount');
+    if (countSpan) countSpan.textContent = count;
+    
+    // Enable/disable bulk action buttons
+    const bulkStatusBtn = document.getElementById('bulkStatusBtn');
+    const bulkExportBtn = document.getElementById('bulkExportBtn');
+    if (bulkStatusBtn) bulkStatusBtn.disabled = count === 0;
+    if (bulkExportBtn) bulkExportBtn.disabled = count === 0;
+    
+    // Update select all checkbox
+    const selectAll = document.getElementById('selectAllOrders');
+    if (selectAll) {
+        const allCheckboxes = document.querySelectorAll('.order-checkbox');
+        selectAll.checked = allCheckboxes.length > 0 && checkboxes.length === allCheckboxes.length;
+    }
+}
+
+// Bulk update status
+async function bulkUpdateStatus() {
+    const checkboxes = document.querySelectorAll('.order-checkbox:checked');
+    if (checkboxes.length === 0) {
+        showNotification('الرجاء تحديد طلب واحد على الأقل', 'error');
+        return;
+    }
+    
+    const status = prompt('أدخل الحالة الجديدة (pending, assigned, preparing, in_transit, delivered, completed, cancelled, on_hold):');
+    if (!status) return;
+    
+    const validStatuses = ['pending', 'assigned', 'preparing', 'in_transit', 'delivered', 'completed', 'cancelled', 'on_hold'];
+    if (!validStatuses.includes(status)) {
+        showNotification('حالة غير صحيحة', 'error');
+        return;
+    }
+    
+    const orderIds = Array.from(checkboxes).map(cb => cb.value);
+    let successCount = 0;
+    let failCount = 0;
+    
+    for (const orderId of orderIds) {
+        try {
+            const response = await fetch('/api/orders', {
+                method: 'PUT',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${authToken}`
+                },
+                body: JSON.stringify({ id: orderId, status: status })
+            });
+            
+            if (response.ok) {
+                successCount++;
+            } else {
+                failCount++;
+            }
+        } catch (error) {
+            failCount++;
+        }
+    }
+    
+    showNotification(`تم تحديث ${successCount} طلب${failCount > 0 ? `، فشل ${failCount}` : ''}`, successCount > 0 ? 'success' : 'error');
+    await loadOrders();
+}
+
+// Export orders
+function exportOrders() {
+    const ordersToExport = filteredOrders.length > 0 ? filteredOrders : currentOrders;
+    exportOrdersToCSV(ordersToExport);
+}
+
+// Bulk export
+function bulkExport() {
+    const checkboxes = document.querySelectorAll('.order-checkbox:checked');
+    if (checkboxes.length === 0) {
+        showNotification('الرجاء تحديد طلب واحد على الأقل', 'error');
+        return;
+    }
+    
+    const orderIds = Array.from(checkboxes).map(cb => cb.value);
+    const ordersToExport = currentOrders.filter(order => orderIds.includes(order.id));
+    exportOrdersToCSV(ordersToExport);
+}
+
+// Export orders to CSV
+function exportOrdersToCSV(orders) {
+    if (orders.length === 0) {
+        showNotification('لا توجد طلبات للتصدير', 'error');
+        return;
+    }
+    
+    // CSV headers
+    const headers = ['رقم الطلب', 'المنتج', 'اسم العميل', 'رقم الهاتف', 'العنوان', 'الكمية', 'الحالة', 'سعر التوصيل', 'المبلغ المستلم', 'تاريخ الإنشاء'];
+    
+    // CSV rows
+    const rows = orders.map(order => {
+        const product = currentProducts.find(p => p.id === order.productId);
+        const orderNumber = order.orderNumber || order.id;
+        const statusInfo = getStatusInfo(order.status);
+        
+        return [
+            orderNumber,
+            product ? product.name : 'غير معروف',
+            order.customerName || '',
+            order.customerPhone || '',
+            order.customerAddress || '',
+            order.quantity || 0,
+            statusInfo.label,
+            order.shippingPrice ? parseFloat(order.shippingPrice).toFixed(2) : '',
+            order.paymentReceived ? parseFloat(order.paymentReceived).toFixed(2) : '',
+            new Date(order.createdAt).toLocaleDateString('ar-EG')
+        ];
+    });
+    
+    // Create CSV content
+    const csvContent = [
+        headers.join(','),
+        ...rows.map(row => row.map(cell => `"${cell}"`).join(','))
+    ].join('\n');
+    
+    // Add BOM for Excel UTF-8 support
+    const BOM = '\uFEFF';
+    const blob = new Blob([BOM + csvContent], { type: 'text/csv;charset=utf-8;' });
+    const link = document.createElement('a');
+    const url = URL.createObjectURL(blob);
+    link.setAttribute('href', url);
+    link.setAttribute('download', `orders_${new Date().toISOString().split('T')[0]}.csv`);
+    link.style.visibility = 'hidden';
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    
+    showNotification(`تم تصدير ${orders.length} طلب بنجاح`, 'success');
 }
 
 // Open product modal

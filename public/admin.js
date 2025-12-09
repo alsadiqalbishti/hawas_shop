@@ -1525,3 +1525,130 @@ async function deleteOrder(orderId) {
         showNotification('حدث خطأ في الاتصال', 'error');
     }
 }
+
+// Load and render delivery men list (for management tab)
+async function loadDeliveryMenList() {
+    const container = document.getElementById('deliveryMenContainer');
+    if (!container) return;
+    
+    try {
+        container.innerHTML = '<div class="spinner"></div>';
+        
+        const response = await fetch('/api/delivery/list', {
+            headers: {
+                'Authorization': `Bearer ${authToken}`
+            }
+        });
+
+        if (!response.ok) {
+            if (response.status === 401) {
+                logout();
+                return;
+            }
+            throw new Error(`HTTP error! status: ${response.status}`);
+        }
+
+        const deliveryMen = await response.json();
+        deliveryMenList = deliveryMen;
+        
+        if (deliveryMen.length === 0) {
+            container.innerHTML = '<div class="text-center" style="padding: 2rem; color: var(--text-light);">لا يوجد مندوبو توصيل مسجلون</div>';
+            return;
+        }
+
+        // Get orders to calculate stats
+        const ordersResponse = await fetch('/api/orders', {
+            headers: {
+                'Authorization': `Bearer ${authToken}`
+            }
+        });
+        const orders = ordersResponse.ok ? await ordersResponse.json() : [];
+
+        // Calculate stats for each delivery man
+        const deliveryMenWithStats = deliveryMen.map(dm => {
+            const dmOrders = orders.filter(o => o.deliveryManId === dm.id);
+            const delivered = dmOrders.filter(o => o.status === 'delivered' || o.status === 'completed').length;
+            const inTransit = dmOrders.filter(o => o.status === 'in_transit').length;
+            const totalRevenue = dmOrders.reduce((sum, o) => sum + (parseFloat(o.shippingPrice) || 0), 0);
+            
+            return {
+                ...dm,
+                totalOrders: dmOrders.length,
+                delivered: delivered,
+                inTransit: inTransit,
+                totalRevenue: totalRevenue
+            };
+        });
+
+        // Render table
+        const tableContainer = document.createElement('div');
+        tableContainer.className = 'table-container';
+        
+        const table = document.createElement('table');
+        const thead = document.createElement('thead');
+        const tbody = document.createElement('tbody');
+        
+        // Header
+        const headerRow = document.createElement('tr');
+        ['الاسم', 'رقم الهاتف', 'إجمالي الطلبات', 'تم التوصيل', 'قيد التوصيل', 'إجمالي الإيرادات', 'تاريخ التسجيل'].forEach(text => {
+            const th = document.createElement('th');
+            th.textContent = text;
+            headerRow.appendChild(th);
+        });
+        thead.appendChild(headerRow);
+        
+        // Rows
+        deliveryMenWithStats.forEach(dm => {
+            const row = document.createElement('tr');
+            
+            // Name
+            const nameCell = document.createElement('td');
+            nameCell.textContent = dm.name;
+            row.appendChild(nameCell);
+            
+            // Phone
+            const phoneCell = document.createElement('td');
+            const phoneLink = document.createElement('a');
+            phoneLink.href = `tel:${dm.phone}`;
+            phoneLink.textContent = dm.phone;
+            phoneCell.appendChild(phoneLink);
+            row.appendChild(phoneCell);
+            
+            // Total orders
+            const totalCell = document.createElement('td');
+            totalCell.innerHTML = `<strong>${dm.totalOrders}</strong>`;
+            row.appendChild(totalCell);
+            
+            // Delivered
+            const deliveredCell = document.createElement('td');
+            deliveredCell.innerHTML = `<span class="badge badge-success">${dm.delivered}</span>`;
+            row.appendChild(deliveredCell);
+            
+            // In transit
+            const transitCell = document.createElement('td');
+            transitCell.innerHTML = `<span class="badge badge-primary">${dm.inTransit}</span>`;
+            row.appendChild(transitCell);
+            
+            // Revenue
+            const revenueCell = document.createElement('td');
+            revenueCell.innerHTML = `<strong>${formatPrice(dm.totalRevenue)} د.ع</strong>`;
+            row.appendChild(revenueCell);
+            
+            // Created date
+            const dateCell = document.createElement('td');
+            dateCell.textContent = dm.createdAt ? new Date(dm.createdAt).toLocaleDateString('ar-EG') : '-';
+            row.appendChild(dateCell);
+            
+            tbody.appendChild(row);
+        });
+        
+        table.appendChild(thead);
+        table.appendChild(tbody);
+        tableContainer.appendChild(table);
+        container.innerHTML = '';
+        container.appendChild(tableContainer);
+    } catch (error) {
+        console.error('Error loading delivery men:', error);
+        container.innerHTML = `<div class="alert alert-error">حدث خطأ في تحميل مندوبي التوصيل: ${error.message}</div>`;
+    }
+}

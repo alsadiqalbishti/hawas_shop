@@ -443,13 +443,22 @@ module.exports = async (req, res) => {
                                 }
                             } catch (error) {
                                 console.error(`Error fetching order ${orderId}:`, error);
+                                // Continue with other orders
                             }
                         }
-                        ordersList.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+                        ordersList.sort((a, b) => {
+                            try {
+                                return new Date(b.createdAt || 0) - new Date(a.createdAt || 0);
+                            } catch (e) {
+                                return 0;
+                            }
+                        });
                         return ordersList;
                     }, 'Failed to fetch orders', true);
                     return res.status(200).json(orders || []);
                 } catch (error) {
+                    console.error('Error in GET /api/orders:', error);
+                    // Return empty array on error instead of 500
                     return res.status(200).json([]);
                 }
             }
@@ -474,7 +483,7 @@ module.exports = async (req, res) => {
                             }
                         }
 
-                        const orderNumber = await generateOrderNumber();
+                        const orderNumber = await generateOrderNumber(client);
                         const order = {
                             id: orderNumber,
                             orderNumber: orderNumber,

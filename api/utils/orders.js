@@ -25,14 +25,15 @@ function getRedis() {
  * Format: ORD-YYYY-XXXXX (5 digits)
  * Example: ORD-2024-00123
  */
-async function generateOrderNumber() {
+async function generateOrderNumber(redisClient) {
     try {
-        const redisClient = getRedis();
+        // Use provided Redis client or get new one
+        const client = redisClient || getRedis();
         const year = new Date().getFullYear();
         const counterKey = `order:counter:${year}`;
         
         // Atomically increment counter for this year
-        const counter = await redisClient.incr(counterKey);
+        const counter = await client.incr(counterKey);
         
         // Format: ORD-YYYY-XXXXX (5 digits, zero-padded)
         const orderNumber = `ORD-${year}-${String(counter).padStart(5, '0')}`;

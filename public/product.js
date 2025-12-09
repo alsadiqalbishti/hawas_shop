@@ -68,7 +68,8 @@ async function loadProduct() {
             })
             .map(url => typeof url === 'string' ? url.trim() : String(url));
         
-        console.log('Loading product with media URLs:', validMediaUrls.length, validMediaUrls);
+        // Debug: Only log in development
+        // console.log('Loading product with media URLs:', validMediaUrls.length, validMediaUrls);
         
         // Check if we have multiple images or videos
         if (validMediaUrls.length > 0) {

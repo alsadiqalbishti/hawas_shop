@@ -111,6 +111,18 @@
             padding: 40px;
             color: #999;
         }
+        .btn-quick {
+            padding: 8px 16px;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 14px;
+            margin-top: 5px;
+        }
+        .btn-quick:hover {
+            opacity: 0.9;
+        }
     </style>
 </head>
 <body>
@@ -119,6 +131,10 @@
         <button class="btn-logout" onclick="logout()">تسجيل الخروج</button>
     </div>
     <div class="orders-container">
+        <div style="margin-bottom: 20px; display: flex; justify-content: space-between; align-items: center;">
+            <h2 style="margin: 0;">الطلبات المخصصة</h2>
+            <button onclick="loadOrders()" class="btn-update" style="margin: 0;">🔄 تحديث</button>
+        </div>
         <div id="ordersList">
             <div class="empty-state">جاري التحميل...</div>
         </div>

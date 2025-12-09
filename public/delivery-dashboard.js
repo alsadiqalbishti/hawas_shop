@@ -62,6 +62,9 @@ function formatPrice(price) {
     return parseFloat(price).toFixed(2);
 }
 
+// Load orders on page load
+loadOrders();
+
 // Load orders
 async function loadOrders() {
     try {
@@ -109,6 +112,16 @@ function renderOrders(orders) {
         const orderNumber = order.orderNumber || order.id;
         const displayOrderNumber = orderNumber.startsWith('ORD-') ? orderNumber : `#${orderNumber.substring(0, 8)}`;
         
+        // Quick action buttons based on status
+        let quickActions = '';
+        if (order.status === 'assigned') {
+            quickActions = `<button onclick="quickUpdate('${order.id}', 'preparing')" class="btn-quick" style="background: #2196f3;">⏳ بدء التحضير</button>`;
+        } else if (order.status === 'preparing') {
+            quickActions = `<button onclick="quickUpdate('${order.id}', 'in_transit')" class="btn-quick" style="background: #9c27b0;">🚚 بدء التوصيل</button>`;
+        } else if (order.status === 'in_transit') {
+            quickActions = `<button onclick="quickUpdate('${order.id}', 'delivered')" class="btn-quick" style="background: #4caf50;">✅ تم التوصيل</button>`;
+        }
+        
         return `
             <div class="order-card" data-order-id="${order.id}">
                 <div class="order-header">
@@ -117,13 +130,18 @@ function renderOrders(orders) {
                 </div>
                 <div class="order-info">
                     <p><strong>العميل:</strong> ${escapeHtml(order.customerName)}</p>
-                    <p><strong>الهاتف:</strong> ${escapeHtml(order.customerPhone)}</p>
+                    <p><strong>الهاتف:</strong> <a href="tel:${escapeHtml(order.customerPhone)}" style="color: #1877f2; text-decoration: none;">${escapeHtml(order.customerPhone)} 📞</a></p>
                     <p><strong>العنوان:</strong> ${escapeHtml(order.customerAddress)}</p>
                     <p><strong>المنتج:</strong> ${escapeHtml(product.name || 'غير معروف')}</p>
+                    <p><strong>الكمية:</strong> ${order.quantity || 1}</p>
                     <p><strong>السعر:</strong> ${formatPrice(product.price)} د.ع</p>
                     ${product.discountPrice ? `<p><strong>السعر بعد الخصم:</strong> ${formatPrice(product.discountPrice)} د.ع</p>` : ''}
                     <p><strong>تاريخ الطلب:</strong> ${new Date(order.createdAt).toLocaleDateString('ar')}</p>
                 </div>
+                ${quickActions ? `<div style="margin: 15px 0; padding: 10px; background: #f0f2f5; border-radius: 5px;">
+                    <strong>إجراء سريع:</strong><br>
+                    ${quickActions}
+                </div>` : ''}
                 <form class="order-form" onsubmit="updateOrder(event, '${order.id}')">
                     <div class="form-group">
                         <label for="status-${order.id}">حالة الطلب</label>
@@ -144,11 +162,43 @@ function renderOrders(orders) {
                         <input type="number" id="paymentReceived-${order.id}" name="paymentReceived" 
                                value="${order.paymentReceived || ''}" step="0.01" min="0">
                     </div>
-                    <button type="submit" class="btn-update">تحديث الطلب</button>
+                    <button type="submit" class="btn-update">💾 تحديث الطلب</button>
                 </form>
             </div>
         `;
     }).join('');
+}
+
+// Quick status update
+async function quickUpdate(orderId, newStatus) {
+    try {
+        const response = await fetch(`${API_BASE}/api/delivery/orders`, {
+            method: 'PUT',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': token
+            },
+            body: JSON.stringify({
+                id: orderId,
+                status: newStatus
+            })
+        });
+
+        if (response.status === 401) {
+            logout();
+            return;
+        }
+
+        const result = await response.json();
+        if (response.ok) {
+            showNotification('تم تحديث حالة الطلب بنجاح', 'success');
+            loadOrders();
+        } else {
+            showNotification(result.error || 'حدث خطأ في تحديث الطلب');
+        }
+    } catch (error) {
+        showNotification('حدث خطأ في الاتصال بالخادم');
+    }
 }
 
 // Update order

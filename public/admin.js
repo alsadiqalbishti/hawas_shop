@@ -118,6 +118,73 @@ function logout() {
     location.reload();
 }
 
+// Load storage usage
+async function loadStorageUsage() {
+    try {
+        const response = await fetch('/api/storage', {
+            headers: {
+                'Authorization': `Bearer ${authToken}`
+            }
+        });
+
+        if (!response.ok) {
+            if (response.status === 401) {
+                logout();
+                return;
+            }
+            throw new Error(`HTTP error! status: ${response.status}`);
+        }
+
+        const storage = await response.json();
+        renderStorageUsage(storage);
+    } catch (error) {
+        console.error('Error loading storage usage:', error);
+        const storageText = document.getElementById('storageText');
+        if (storageText) {
+            storageText.textContent = 'خطأ في التحميل';
+        }
+    }
+}
+
+// Render storage usage
+function renderStorageUsage(storage) {
+    const storageText = document.getElementById('storageText');
+    if (!storageText) return;
+    
+    const formatBytes = (bytes) => {
+        if (bytes === 0) return '0 B';
+        const k = 1024;
+        const sizes = ['B', 'KB', 'MB', 'GB'];
+        const i = Math.floor(Math.log(bytes) / Math.log(k));
+        return Math.round((bytes / Math.pow(k, i)) * 100) / 100 + ' ' + sizes[i];
+    };
+    
+    const used = formatBytes(storage.total.used);
+    const free = formatBytes(storage.total.free);
+    const max = formatBytes(storage.total.max);
+    const percent = storage.total.percent;
+    
+    // Color based on usage
+    let color = '#4caf50'; // green
+    if (percent > 80) color = '#f44336'; // red
+    else if (percent > 60) color = '#ff9800'; // orange
+    
+    storageText.innerHTML = `
+        <strong>💾 التخزين:</strong> 
+        <span style="color: ${color};">${used}</span> / ${max} 
+        <span style="color: var(--text-light);">(${percent.toFixed(1)}%)</span>
+    `;
+    
+    // Add tooltip with breakdown
+    storageText.title = `
+        المنتجات: ${formatBytes(storage.breakdown.products)} (${storage.counts.products} منتج)
+        الطلبات: ${formatBytes(storage.breakdown.orders)} (${storage.counts.orders} طلب)
+        مندوبو التوصيل: ${formatBytes(storage.breakdown.deliveryMen)} (${storage.counts.deliveryMen} مندوب)
+        أخرى: ${formatBytes(storage.breakdown.other)}
+        متبقي: ${free}
+    `.trim();
+}
+
 // Switch tabs
 // Load analytics dashboard
 async function loadAnalytics() {

@@ -14,6 +14,9 @@ function formatPrice(price) {
 const urlParams = new URLSearchParams(window.location.search);
 const productId = urlParams.get('id');
 
+// Store current product data
+let currentProduct = null;
+
 // Load product on page load
 window.addEventListener('DOMContentLoaded', loadProduct);
 
@@ -37,6 +40,9 @@ async function loadProduct() {
         }
 
         const product = await response.json();
+        
+        // Store product data globally
+        currentProduct = product;
 
         // Update page title
         document.getElementById('pageTitle').textContent = product.name;
@@ -214,6 +220,22 @@ async function loadProduct() {
             priceElement.textContent = `${formatPrice(product.price)} د.ل`;
         }
 
+        // Display stock badge
+        const stockBadge = document.getElementById('stockBadge');
+        if (product.stock !== undefined && product.stock !== null) {
+            stockBadge.classList.remove('hidden');
+            if (product.stock === 0) {
+                stockBadge.className = 'stock-badge out-of-stock';
+                stockBadge.innerHTML = '❌ <span>نفد المخزون</span>';
+            } else if (product.stock <= 5) {
+                stockBadge.className = 'stock-badge low-stock';
+                stockBadge.innerHTML = `⚠️ <span>مخزون منخفض (${product.stock} متبقي)</span>`;
+            } else {
+                stockBadge.className = 'stock-badge in-stock';
+                stockBadge.innerHTML = `✅ <span>متوفر (${product.stock} قطعة)</span>`;
+            }
+        }
+
         // Show product content
         loadingSpinner.classList.add('hidden');
         productContent.classList.remove('hidden');
@@ -286,6 +308,24 @@ document.getElementById('orderForm')?.addEventListener('submit', async (e) => {
         submitButton.disabled = false;
         submitButton.textContent = '🛒 تأكيد الطلب';
         return;
+    }
+
+    // Check stock availability
+    if (currentProduct && currentProduct.stock !== undefined && currentProduct.stock !== null) {
+        if (currentProduct.stock === 0) {
+            errorDiv.textContent = 'عذراً، هذا المنتج غير متوفر حالياً';
+            errorDiv.classList.remove('hidden');
+            submitButton.disabled = false;
+            submitButton.textContent = '🛒 تأكيد الطلب';
+            return;
+        }
+        if (quantity > currentProduct.stock) {
+            errorDiv.textContent = `عذراً، الكمية المتوفرة هي ${currentProduct.stock} قطعة فقط`;
+            errorDiv.classList.remove('hidden');
+            submitButton.disabled = false;
+            submitButton.textContent = '🛒 تأكيد الطلب';
+            return;
+        }
     }
 
     const orderData = {

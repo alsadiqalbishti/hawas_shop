@@ -257,6 +257,18 @@ async function loadProduct() {
         // Setup contact buttons
         setupContactButtons(product);
 
+        // Display specifications if available
+        displaySpecifications(product);
+
+        // Load related products
+        loadRelatedProducts(product);
+
+        // Add to recently viewed
+        addToRecentlyViewed(product);
+
+        // Load recently viewed products
+        loadRecentlyViewed();
+
         // Show product content
         loadingSpinner.classList.add('hidden');
         productContent.classList.remove('hidden');

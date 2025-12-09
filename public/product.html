@@ -1216,7 +1216,7 @@
                 <div class="product-info-card">
                     <div class="product-header">
                         <div class="product-header-top">
-                            <span class="product-badge">✨ منتج مميز</span>
+                    <span class="product-badge">✨ منتج مميز</span>
                         </div>
                         <h1 class="product-title" id="productName"></h1>
                         <div class="product-meta">
@@ -1229,16 +1229,16 @@
                     <div class="price-section">
                         <div class="price-label">السعر</div>
                         <div class="price-container">
-                            <span class="current-price" id="productPrice"></span>
-                            <div id="originalPrice" class="original-price hidden"></div>
-                            <div id="discountBadge" class="discount-badge hidden"></div>
+                        <span class="current-price" id="productPrice"></span>
+                        <div id="originalPrice" class="original-price hidden"></div>
+                        <div id="discountBadge" class="discount-badge hidden"></div>
                         </div>
                     </div>
 
                     <!-- Description -->
                     <div class="description-section">
                         <h2 class="section-heading">📝 الوصف</h2>
-                        <div class="product-description" id="productDescription"></div>
+                    <div class="product-description" id="productDescription"></div>
                     </div>
 
                     <!-- Product Variants (if available) -->
@@ -1324,19 +1324,19 @@
                         معلومات التوصيل
                     </h3>
                     <div class="info-content" id="shippingInfoContent">
-                        <div class="info-item">
+                        <div class="info-item" id="shippingTimeItem">
                             <strong>⏱️ وقت التوصيل:</strong>
                             <span id="shippingTime">من 24 إلى 48 ساعة داخل المدينة</span>
                         </div>
-                        <div class="info-item">
+                        <div class="info-item" id="shippingCostItem">
                             <strong>💰 تكلفة التوصيل:</strong>
                             <span id="shippingCost">مجاني للطلبات فوق 50 دينار | 5 دينار للطلبات الأخرى</span>
                         </div>
-                        <div class="info-item">
+                        <div class="info-item" id="shippingAreasItem">
                             <strong>📍 مناطق التوصيل:</strong>
                             <span id="shippingAreas">جميع المدن الرئيسية</span>
                         </div>
-                        <div class="info-item">
+                        <div class="info-item" id="shippingMethodsItem">
                             <strong>📦 طرق التوصيل:</strong>
                             <span id="shippingMethods">توصيل مباشر | نقاط الاستلام</span>
                         </div>
@@ -1350,19 +1350,19 @@
                         سياسة الإرجاع والاسترداد
                     </h3>
                     <div class="info-content" id="returnPolicyContent">
-                        <div class="info-item">
+                        <div class="info-item" id="returnPeriodItem">
                             <strong>⏰ فترة الإرجاع:</strong>
                             <span id="returnPeriod">7 أيام من تاريخ الاستلام</span>
                         </div>
-                        <div class="info-item">
+                        <div class="info-item" id="returnConditionsItem">
                             <strong>✅ شروط الإرجاع:</strong>
                             <span id="returnConditions">المنتج يجب أن يكون بحالته الأصلية مع جميع الملحقات</span>
                         </div>
-                        <div class="info-item">
+                        <div class="info-item" id="refundTimeItem">
                             <strong>💰 الاسترداد:</strong>
                             <span id="refundTime">يتم استرداد المبلغ خلال 3-5 أيام عمل</span>
                         </div>
-                        <div class="info-item">
+                        <div class="info-item" id="returnContactItem">
                             <strong>📞 للاستفسار:</strong>
                             <span id="returnContact" style="user-select: none; -webkit-touch-callout: none;">اتصل بنا على واتساب أو الهاتف</span>
                         </div>
@@ -1397,14 +1397,14 @@
 
                 <form id="orderForm">
                     <div class="form-grid">
-                        <div class="form-group">
-                            <label class="form-label">الاسم الكامل *</label>
-                            <input type="text" id="customerName" class="form-input" required placeholder="أدخل اسمك الكامل">
-                        </div>
+                    <div class="form-group">
+                        <label class="form-label">الاسم الكامل *</label>
+                        <input type="text" id="customerName" class="form-input" required placeholder="أدخل اسمك الكامل">
+                    </div>
 
-                        <div class="form-group">
-                            <label class="form-label">رقم الهاتف *</label>
-                            <input type="tel" id="customerPhone" class="form-input" required placeholder="مثال: 0912345678">
+                    <div class="form-group">
+                        <label class="form-label">رقم الهاتف *</label>
+                        <input type="tel" id="customerPhone" class="form-input" required placeholder="مثال: 0912345678">
                         </div>
                     </div>
 

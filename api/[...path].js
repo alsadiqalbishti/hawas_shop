@@ -1151,13 +1151,21 @@ module.exports = async (req, res) => {
                         // Return default settings
                         return res.status(200).json({
                             shippingTime: 'من 24 إلى 48 ساعة داخل المدينة',
+                            showShippingTime: true,
                             shippingCost: 'مجاني للطلبات فوق 50 دينار | 5 دينار للطلبات الأخرى',
+                            showShippingCost: true,
                             shippingAreas: 'جميع المدن الرئيسية',
+                            showShippingAreas: true,
                             shippingMethods: 'توصيل مباشر | نقاط الاستلام',
+                            showShippingMethods: true,
                             returnPeriod: '7 أيام من تاريخ الاستلام',
+                            showReturnPeriod: true,
                             returnConditions: 'المنتج يجب أن يكون بحالته الأصلية مع جميع الملحقات',
+                            showReturnConditions: true,
                             refundTime: 'يتم استرداد المبلغ خلال 3-5 أيام عمل',
+                            showRefundTime: true,
                             returnContact: 'اتصل بنا على واتساب أو الهاتف',
+                            showReturnContact: true,
                             enableSharing: false,
                             whatsappNumber: '',
                             phoneNumber: ''
@@ -1178,13 +1186,21 @@ module.exports = async (req, res) => {
                         phoneNumber: req.body.phoneNumber || '',
                         enableSharing: req.body.enableSharing !== false,
                         shippingTime: req.body.shippingTime || 'من 24 إلى 48 ساعة داخل المدينة',
+                        showShippingTime: req.body.showShippingTime !== false,
                         shippingCost: req.body.shippingCost || 'مجاني للطلبات فوق 50 دينار | 5 دينار للطلبات الأخرى',
+                        showShippingCost: req.body.showShippingCost !== false,
                         shippingAreas: req.body.shippingAreas || 'جميع المدن الرئيسية',
+                        showShippingAreas: req.body.showShippingAreas !== false,
                         shippingMethods: req.body.shippingMethods || 'توصيل مباشر | نقاط الاستلام',
+                        showShippingMethods: req.body.showShippingMethods !== false,
                         returnPeriod: req.body.returnPeriod || '7 أيام من تاريخ الاستلام',
+                        showReturnPeriod: req.body.showReturnPeriod !== false,
                         returnConditions: req.body.returnConditions || 'المنتج يجب أن يكون بحالته الأصلية مع جميع الملحقات',
+                        showReturnConditions: req.body.showReturnConditions !== false,
                         refundTime: req.body.refundTime || 'يتم استرداد المبلغ خلال 3-5 أيام عمل',
+                        showRefundTime: req.body.showRefundTime !== false,
                         returnContact: req.body.returnContact || 'اتصل بنا على واتساب أو الهاتف',
+                        showReturnContact: req.body.showReturnContact !== false,
                         updatedAt: new Date().toISOString()
                     };
 

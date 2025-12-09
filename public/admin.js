@@ -1972,31 +1972,47 @@ async function loadSettings() {
         }
         document.getElementById('enableSharing').checked = settings.enableSharing !== false;
         
+        // Load shipping fields
         if (settings.shippingTime) {
             document.getElementById('shippingTime').value = settings.shippingTime;
         }
+        document.getElementById('showShippingTime').checked = settings.showShippingTime !== false;
+        
         if (settings.shippingCost) {
             document.getElementById('shippingCost').value = settings.shippingCost;
         }
+        document.getElementById('showShippingCost').checked = settings.showShippingCost !== false;
+        
         if (settings.shippingAreas) {
             document.getElementById('shippingAreas').value = settings.shippingAreas;
         }
+        document.getElementById('showShippingAreas').checked = settings.showShippingAreas !== false;
+        
         if (settings.shippingMethods) {
             document.getElementById('shippingMethods').value = settings.shippingMethods;
         }
+        document.getElementById('showShippingMethods').checked = settings.showShippingMethods !== false;
         
+        // Load return policy fields
         if (settings.returnPeriod) {
             document.getElementById('returnPeriod').value = settings.returnPeriod;
         }
+        document.getElementById('showReturnPeriod').checked = settings.showReturnPeriod !== false;
+        
         if (settings.returnConditions) {
             document.getElementById('returnConditions').value = settings.returnConditions;
         }
+        document.getElementById('showReturnConditions').checked = settings.showReturnConditions !== false;
+        
         if (settings.refundTime) {
             document.getElementById('refundTime').value = settings.refundTime;
         }
+        document.getElementById('showRefundTime').checked = settings.showRefundTime !== false;
+        
         if (settings.returnContact) {
             document.getElementById('returnContact').value = settings.returnContact;
         }
+        document.getElementById('showReturnContact').checked = settings.showReturnContact !== false;
     } catch (error) {
         console.error('Error loading settings:', error);
     }
@@ -2014,13 +2030,21 @@ async function saveSettings() {
             phoneNumber: document.getElementById('phoneNumber').value.trim(),
             enableSharing: document.getElementById('enableSharing').checked,
             shippingTime: document.getElementById('shippingTime').value.trim(),
+            showShippingTime: document.getElementById('showShippingTime').checked,
             shippingCost: document.getElementById('shippingCost').value.trim(),
+            showShippingCost: document.getElementById('showShippingCost').checked,
             shippingAreas: document.getElementById('shippingAreas').value.trim(),
+            showShippingAreas: document.getElementById('showShippingAreas').checked,
             shippingMethods: document.getElementById('shippingMethods').value.trim(),
+            showShippingMethods: document.getElementById('showShippingMethods').checked,
             returnPeriod: document.getElementById('returnPeriod').value.trim(),
+            showReturnPeriod: document.getElementById('showReturnPeriod').checked,
             returnConditions: document.getElementById('returnConditions').value.trim(),
+            showReturnConditions: document.getElementById('showReturnConditions').checked,
             refundTime: document.getElementById('refundTime').value.trim(),
-            returnContact: document.getElementById('returnContact').value.trim()
+            showRefundTime: document.getElementById('showRefundTime').checked,
+            returnContact: document.getElementById('returnContact').value.trim(),
+            showReturnContact: document.getElementById('showReturnContact').checked
         };
 
         const response = await fetch('/api/settings', {

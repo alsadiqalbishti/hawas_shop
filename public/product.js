@@ -705,45 +705,120 @@ async function loadStoreSettings() {
         
         const settings = await response.json();
         
-        // Update shipping information
-        if (settings.shippingTime) {
-            const el = document.getElementById('shippingTime');
-            if (el) el.textContent = settings.shippingTime;
-        }
-        if (settings.shippingCost) {
-            const el = document.getElementById('shippingCost');
-            if (el) el.textContent = settings.shippingCost;
-        }
-        if (settings.shippingAreas) {
-            const el = document.getElementById('shippingAreas');
-            if (el) el.textContent = settings.shippingAreas;
-        }
-        if (settings.shippingMethods) {
-            const el = document.getElementById('shippingMethods');
-            if (el) el.textContent = settings.shippingMethods;
+        // Update shipping information with visibility control
+        const shippingTimeItem = document.getElementById('shippingTimeItem');
+        if (shippingTimeItem) {
+            if (settings.showShippingTime !== false && settings.shippingTime) {
+                shippingTimeItem.style.display = '';
+                const el = document.getElementById('shippingTime');
+                if (el) el.textContent = settings.shippingTime;
+            } else {
+                shippingTimeItem.style.display = 'none';
+            }
         }
         
-        // Update return policy
-        if (settings.returnPeriod) {
-            const el = document.getElementById('returnPeriod');
-            if (el) el.textContent = settings.returnPeriod;
+        const shippingCostItem = document.getElementById('shippingCostItem');
+        if (shippingCostItem) {
+            if (settings.showShippingCost !== false && settings.shippingCost) {
+                shippingCostItem.style.display = '';
+                const el = document.getElementById('shippingCost');
+                if (el) el.textContent = settings.shippingCost;
+            } else {
+                shippingCostItem.style.display = 'none';
+            }
         }
-        if (settings.returnConditions) {
-            const el = document.getElementById('returnConditions');
-            if (el) el.textContent = settings.returnConditions;
+        
+        const shippingAreasItem = document.getElementById('shippingAreasItem');
+        if (shippingAreasItem) {
+            if (settings.showShippingAreas !== false && settings.shippingAreas) {
+                shippingAreasItem.style.display = '';
+                const el = document.getElementById('shippingAreas');
+                if (el) el.textContent = settings.shippingAreas;
+            } else {
+                shippingAreasItem.style.display = 'none';
+            }
         }
-        if (settings.refundTime) {
-            const el = document.getElementById('refundTime');
-            if (el) el.textContent = settings.refundTime;
+        
+        const shippingMethodsItem = document.getElementById('shippingMethodsItem');
+        if (shippingMethodsItem) {
+            if (settings.showShippingMethods !== false && settings.shippingMethods) {
+                shippingMethodsItem.style.display = '';
+                const el = document.getElementById('shippingMethods');
+                if (el) el.textContent = settings.shippingMethods;
+            } else {
+                shippingMethodsItem.style.display = 'none';
+            }
         }
-        if (settings.returnContact) {
-            const el = document.getElementById('returnContact');
-            if (el) {
-                // Use textContent to prevent HTML/phone auto-linking
-                el.textContent = settings.returnContact;
-                // Ensure no phone number auto-linking
-                el.style.userSelect = 'none';
-                el.style.webkitTouchCallout = 'none';
+        
+        // Update return policy with visibility control
+        const returnPeriodItem = document.getElementById('returnPeriodItem');
+        if (returnPeriodItem) {
+            if (settings.showReturnPeriod !== false && settings.returnPeriod) {
+                returnPeriodItem.style.display = '';
+                const el = document.getElementById('returnPeriod');
+                if (el) el.textContent = settings.returnPeriod;
+            } else {
+                returnPeriodItem.style.display = 'none';
+            }
+        }
+        
+        const returnConditionsItem = document.getElementById('returnConditionsItem');
+        if (returnConditionsItem) {
+            if (settings.showReturnConditions !== false && settings.returnConditions) {
+                returnConditionsItem.style.display = '';
+                const el = document.getElementById('returnConditions');
+                if (el) el.textContent = settings.returnConditions;
+            } else {
+                returnConditionsItem.style.display = 'none';
+            }
+        }
+        
+        const refundTimeItem = document.getElementById('refundTimeItem');
+        if (refundTimeItem) {
+            if (settings.showRefundTime !== false && settings.refundTime) {
+                refundTimeItem.style.display = '';
+                const el = document.getElementById('refundTime');
+                if (el) el.textContent = settings.refundTime;
+            } else {
+                refundTimeItem.style.display = 'none';
+            }
+        }
+        
+        const returnContactItem = document.getElementById('returnContactItem');
+        if (returnContactItem) {
+            if (settings.showReturnContact !== false && settings.returnContact) {
+                returnContactItem.style.display = '';
+                const el = document.getElementById('returnContact');
+                if (el) {
+                    // Use textContent to prevent HTML/phone auto-linking
+                    el.textContent = settings.returnContact;
+                    // Ensure no phone number auto-linking
+                    el.style.userSelect = 'none';
+                    el.style.webkitTouchCallout = 'none';
+                }
+            } else {
+                returnContactItem.style.display = 'none';
+            }
+        }
+        
+        // Hide entire sections if all items are hidden
+        const shippingInfoCard = document.getElementById('shippingInfoCard');
+        if (shippingInfoCard) {
+            const visibleItems = ['shippingTimeItem', 'shippingCostItem', 'shippingAreasItem', 'shippingMethodsItem']
+                .map(id => document.getElementById(id))
+                .filter(el => el && el.style.display !== 'none');
+            if (visibleItems.length === 0) {
+                shippingInfoCard.style.display = 'none';
+            }
+        }
+        
+        const returnPolicyCard = document.getElementById('returnPolicyCard');
+        if (returnPolicyCard) {
+            const visibleItems = ['returnPeriodItem', 'returnConditionsItem', 'refundTimeItem', 'returnContactItem']
+                .map(id => document.getElementById(id))
+                .filter(el => el && el.style.display !== 'none');
+            if (visibleItems.length === 0) {
+                returnPolicyCard.style.display = 'none';
             }
         }
     } catch (error) {

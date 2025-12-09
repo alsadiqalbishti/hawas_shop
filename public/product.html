@@ -70,6 +70,43 @@
             border-radius: var(--radius-lg);
             overflow: hidden;
             background: var(--light);
+            margin-bottom: var(--space-3);
+        }
+
+        .image-thumbnails {
+            display: flex;
+            gap: var(--space-2);
+            flex-wrap: wrap;
+            justify-content: center;
+            padding-top: var(--space-3);
+            border-top: 1px solid var(--border-light);
+        }
+
+        .thumbnail-item {
+            width: 80px;
+            height: 80px;
+            border-radius: var(--radius-md);
+            overflow: hidden;
+            cursor: pointer;
+            border: 2px solid transparent;
+            transition: all var(--transition-base);
+            background: var(--light);
+        }
+
+        .thumbnail-item:hover {
+            border-color: var(--primary);
+            transform: scale(1.05);
+        }
+
+        .thumbnail-item.active {
+            border-color: var(--primary);
+            box-shadow: 0 0 0 2px var(--primary-light);
+        }
+
+        .thumbnail-item img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
         }
 
         /* Product Info Card */
@@ -95,6 +132,59 @@
             margin-bottom: var(--space-4);
             padding-bottom: var(--space-4);
             border-bottom: 2px solid var(--border-light);
+        }
+
+        .product-header-top {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: var(--space-3);
+        }
+
+        .share-buttons {
+            display: flex;
+            gap: var(--space-2);
+        }
+
+        .share-btn {
+            width: 40px;
+            height: 40px;
+            border-radius: var(--radius-full);
+            border: 1px solid var(--border);
+            background: var(--white);
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: var(--font-size-lg);
+            transition: all var(--transition-base);
+            box-shadow: var(--shadow-sm);
+        }
+
+        .share-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: var(--shadow-md);
+            background: var(--light);
+        }
+
+        .product-meta {
+            display: flex;
+            gap: var(--space-3);
+            align-items: center;
+            flex-wrap: wrap;
+            margin-top: var(--space-2);
+        }
+
+        .product-sku {
+            font-size: var(--font-size-sm);
+            color: var(--text-light);
+            background: var(--light);
+            padding: var(--space-1) var(--space-3);
+            border-radius: var(--radius-md);
+        }
+
+        .product-sku::before {
+            content: '🆔 ';
         }
 
         .product-badge {
@@ -385,6 +475,96 @@
             transform: none;
         }
 
+        /* Quantity Selector */
+        .quantity-selector {
+            display: flex;
+            align-items: center;
+            gap: var(--space-2);
+            max-width: 200px;
+        }
+
+        .quantity-btn {
+            width: 40px;
+            height: 40px;
+            border: 1px solid var(--border);
+            background: var(--white);
+            border-radius: var(--radius-md);
+            font-size: var(--font-size-xl);
+            font-weight: var(--font-weight-bold);
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all var(--transition-base);
+            color: var(--text);
+        }
+
+        .quantity-btn:hover {
+            background: var(--primary);
+            color: var(--white);
+            border-color: var(--primary);
+        }
+
+        .quantity-btn:active {
+            transform: scale(0.95);
+        }
+
+        .quantity-input {
+            flex: 1;
+            text-align: center;
+            font-size: var(--font-size-lg);
+            font-weight: var(--font-weight-bold);
+            border: 1px solid var(--border);
+            border-radius: var(--radius-md);
+            padding: var(--space-2);
+            background: var(--light);
+        }
+
+        /* Contact Buttons */
+        .contact-buttons {
+            display: flex;
+            gap: var(--space-3);
+            margin-top: var(--space-4);
+            padding-top: var(--space-4);
+            border-top: 2px solid var(--border-light);
+        }
+
+        .contact-btn {
+            flex: 1;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: var(--space-2);
+            padding: var(--space-3) var(--space-4);
+            border-radius: var(--radius-md);
+            text-decoration: none;
+            font-weight: var(--font-weight-bold);
+            transition: all var(--transition-base);
+            box-shadow: var(--shadow);
+        }
+
+        .whatsapp-btn {
+            background: #25D366;
+            color: var(--white);
+        }
+
+        .whatsapp-btn:hover {
+            background: #20BA5A;
+            transform: translateY(-2px);
+            box-shadow: var(--shadow-lg);
+        }
+
+        .phone-btn {
+            background: var(--primary);
+            color: var(--white);
+        }
+
+        .phone-btn:hover {
+            background: var(--primary-dark);
+            transform: translateY(-2px);
+            box-shadow: var(--shadow-lg);
+        }
+
         /* Loading and Error States */
         #productNotFound {
             background: var(--white);
@@ -481,14 +661,31 @@
                 <!-- Image Gallery -->
                 <div class="product-gallery">
                     <div id="productMedia"></div>
+                    <div id="imageThumbnails" class="image-thumbnails hidden"></div>
                 </div>
 
                 <!-- Product Info Card -->
                 <div class="product-info-card">
                     <div class="product-header">
-                        <span class="product-badge">✨ منتج مميز</span>
+                        <div class="product-header-top">
+                            <span class="product-badge">✨ منتج مميز</span>
+                            <div class="share-buttons">
+                                <button onclick="shareToFacebook()" class="share-btn" title="مشاركة على فيسبوك">
+                                    📘
+                                </button>
+                                <button onclick="shareToWhatsApp()" class="share-btn" title="مشاركة على واتساب">
+                                    💬
+                                </button>
+                                <button onclick="copyProductLink()" class="share-btn" title="نسخ الرابط">
+                                    🔗
+                                </button>
+                            </div>
+                        </div>
                         <h1 class="product-title" id="productName"></h1>
-                        <div id="stockBadge" class="stock-badge hidden"></div>
+                        <div class="product-meta">
+                            <div id="productSku" class="product-sku hidden"></div>
+                            <div id="stockBadge" class="stock-badge hidden"></div>
+                        </div>
                     </div>
 
                     <!-- Price Section -->
@@ -525,6 +722,18 @@
                             <div class="feature-icon">🎯</div>
                             <div class="feature-text">خدمة عملاء متميزة</div>
                         </div>
+                    </div>
+
+                    <!-- Quick Contact Buttons -->
+                    <div class="contact-buttons">
+                        <a href="#" id="whatsappBtn" class="contact-btn whatsapp-btn" onclick="openWhatsApp(); return false;">
+                            <span>💬</span>
+                            <span>واتساب</span>
+                        </a>
+                        <a href="#" id="phoneBtn" class="contact-btn phone-btn" onclick="callPhone(); return false;">
+                            <span>📞</span>
+                            <span>اتصل بنا</span>
+                        </a>
                     </div>
                 </div>
             </div>
@@ -564,7 +773,11 @@
 
                     <div class="form-group">
                         <label class="form-label">الكمية *</label>
-                        <input type="number" id="quantity" class="form-input" required min="1" max="1000" value="1" style="max-width: 200px;">
+                        <div class="quantity-selector">
+                            <button type="button" class="quantity-btn" onclick="decreaseQuantity()">−</button>
+                            <input type="number" id="quantity" class="quantity-input" required min="1" max="1000" value="1" readonly>
+                            <button type="button" class="quantity-btn" onclick="increaseQuantity()">+</button>
+                        </div>
                     </div>
 
                     <button type="submit" class="submit-btn" id="submitBtn">

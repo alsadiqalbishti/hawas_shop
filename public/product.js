@@ -103,6 +103,11 @@ async function loadProduct() {
                     sliderTrack.appendChild(slide);
                 });
 
+                // Create image thumbnails if multiple images
+                if (validMediaUrls.length > 1) {
+                    createImageThumbnails(validMediaUrls, product.name);
+                }
+
                 // For RTL: 
                 // - Right button (prev) should point right (❯) and go to previous slide (moves right)
                 // - Left button (next) should point left (❮) and go to next slide (moves left)
@@ -235,6 +240,16 @@ async function loadProduct() {
                 stockBadge.innerHTML = `✅ <span>متوفر (${product.stock} قطعة)</span>`;
             }
         }
+
+        // Display product SKU/ID
+        const productSku = document.getElementById('productSku');
+        if (product.id) {
+            productSku.textContent = `رقم المنتج: ${product.id}`;
+            productSku.classList.remove('hidden');
+        }
+
+        // Setup contact buttons
+        setupContactButtons(product);
 
         // Show product content
         loadingSpinner.classList.add('hidden');
@@ -517,4 +532,175 @@ function moveSlider(direction) {
 function goToSlide(index) {
     window.currentSlide = index;
     updateSlider();
+    
+    // Update thumbnail active state
+    const thumbnails = document.querySelectorAll('.thumbnail-item');
+    thumbnails.forEach((thumb, i) => {
+        if (i === index) {
+            thumb.classList.add('active');
+        } else {
+            thumb.classList.remove('active');
+        }
+    });
+}
+
+// Share Functions
+function shareToFacebook() {
+    const productUrl = window.location.href;
+    const productName = currentProduct ? currentProduct.name : 'منتج';
+    const shareUrl = `https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(productUrl)}`;
+    window.open(shareUrl, '_blank', 'width=600,height=400');
+}
+
+function shareToWhatsApp() {
+    const productUrl = window.location.href;
+    const productName = currentProduct ? currentProduct.name : 'منتج';
+    const message = `شاهد هذا المنتج: ${productName}\n${productUrl}`;
+    const shareUrl = `https://wa.me/?text=${encodeURIComponent(message)}`;
+    window.open(shareUrl, '_blank');
+}
+
+function copyProductLink() {
+    const productUrl = window.location.href;
+    navigator.clipboard.writeText(productUrl).then(() => {
+        showNotification('تم نسخ رابط المنتج! 🎉', 'success');
+    }).catch(() => {
+        // Fallback for older browsers
+        const textArea = document.createElement('textarea');
+        textArea.value = productUrl;
+        textArea.style.position = 'fixed';
+        textArea.style.opacity = '0';
+        document.body.appendChild(textArea);
+        textArea.select();
+        try {
+            document.execCommand('copy');
+            showNotification('تم نسخ رابط المنتج! 🎉', 'success');
+        } catch (err) {
+            showNotification('فشل نسخ الرابط', 'error');
+        }
+        document.body.removeChild(textArea);
+    });
+}
+
+// Quantity Functions
+function increaseQuantity() {
+    const quantityInput = document.getElementById('quantity');
+    const max = parseInt(quantityInput.getAttribute('max')) || 1000;
+    const current = parseInt(quantityInput.value) || 1;
+    
+    if (currentProduct && currentProduct.stock !== undefined && currentProduct.stock !== null) {
+        const maxQuantity = Math.min(max, currentProduct.stock);
+        if (current < maxQuantity) {
+            quantityInput.value = current + 1;
+        } else {
+            showNotification(`الكمية المتوفرة هي ${maxQuantity} قطعة فقط`, 'warning');
+        }
+    } else {
+        if (current < max) {
+            quantityInput.value = current + 1;
+        }
+    }
+}
+
+function decreaseQuantity() {
+    const quantityInput = document.getElementById('quantity');
+    const current = parseInt(quantityInput.value) || 1;
+    const min = parseInt(quantityInput.getAttribute('min')) || 1;
+    
+    if (current > min) {
+        quantityInput.value = current - 1;
+    }
+}
+
+// Contact Functions
+function setupContactButtons(product) {
+    // You can configure these phone numbers in admin panel or use default
+    const whatsappNumber = '1234567890'; // Replace with actual WhatsApp number
+    const phoneNumber = '1234567890'; // Replace with actual phone number
+    
+    const whatsappBtn = document.getElementById('whatsappBtn');
+    const phoneBtn = document.getElementById('phoneBtn');
+    
+    if (whatsappBtn) {
+        whatsappBtn.href = `https://wa.me/${whatsappNumber}?text=${encodeURIComponent(`مرحباً، أريد الاستفسار عن المنتج: ${product.name}`)}`;
+    }
+    
+    if (phoneBtn) {
+        phoneBtn.href = `tel:${phoneNumber}`;
+    }
+}
+
+function openWhatsApp() {
+    const whatsappBtn = document.getElementById('whatsappBtn');
+    if (whatsappBtn && whatsappBtn.href) {
+        window.open(whatsappBtn.href, '_blank');
+    }
+}
+
+function callPhone() {
+    const phoneBtn = document.getElementById('phoneBtn');
+    if (phoneBtn && phoneBtn.href) {
+        window.location.href = phoneBtn.href;
+    }
+}
+
+// Image Thumbnails
+function createImageThumbnails(imageUrls, productName) {
+    const thumbnailsContainer = document.getElementById('imageThumbnails');
+    if (!thumbnailsContainer) return;
+    
+    thumbnailsContainer.innerHTML = '';
+    thumbnailsContainer.classList.remove('hidden');
+    
+    imageUrls.forEach((url, index) => {
+        const thumbnail = document.createElement('div');
+        thumbnail.className = 'thumbnail-item';
+        if (index === 0) thumbnail.classList.add('active');
+        
+        const img = document.createElement('img');
+        img.src = url;
+        img.alt = escapeHtml(productName) + ` - صورة ${index + 1}`;
+        img.loading = 'lazy';
+        
+        thumbnail.onclick = () => {
+            // Remove active class from all thumbnails
+            document.querySelectorAll('.thumbnail-item').forEach(item => {
+                item.classList.remove('active');
+            });
+            // Add active class to clicked thumbnail
+            thumbnail.classList.add('active');
+            // Change main slider to this image
+            goToSlide(index);
+        };
+        
+        thumbnail.appendChild(img);
+        thumbnailsContainer.appendChild(thumbnail);
+    });
+}
+
+// Notification function
+function showNotification(message, type = 'info') {
+    const notification = document.createElement('div');
+    notification.className = `notification notification-${type}`;
+    notification.style.cssText = `
+        position: fixed;
+        top: 20px;
+        right: 20px;
+        background: ${type === 'success' ? 'var(--success)' : type === 'error' ? 'var(--danger)' : type === 'warning' ? 'var(--warning)' : 'var(--primary)'};
+        color: white;
+        padding: 1rem 1.5rem;
+        border-radius: 8px;
+        box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+        z-index: 10000;
+        animation: slideIn 0.3s ease-out;
+        max-width: 400px;
+    `;
+    notification.textContent = message;
+    
+    document.body.appendChild(notification);
+    
+    setTimeout(() => {
+        notification.style.animation = 'slideOut 0.3s ease-out';
+        setTimeout(() => notification.remove(), 300);
+    }, 3000);
 }

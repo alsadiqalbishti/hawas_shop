@@ -76,6 +76,7 @@
             gap: var(--space-2);
             cursor: help;
             position: relative;
+            overflow: visible;
         }
 
         .storage-bar {
@@ -96,9 +97,8 @@
 
         .storage-tooltip {
             position: absolute;
-            top: 100%;
+            top: calc(100% + 8px);
             right: 0;
-            margin-top: var(--space-2);
             background: var(--dark);
             color: var(--white);
             padding: var(--space-2) var(--space-3);
@@ -108,11 +108,21 @@
             opacity: 0;
             pointer-events: none;
             transition: opacity var(--transition-base);
-            z-index: var(--z-tooltip);
+            z-index: 10000;
+            box-shadow: var(--shadow-lg);
         }
 
         .storage-badge:hover .storage-tooltip {
             opacity: 1;
+        }
+        
+        /* Ensure header doesn't clip tooltip */
+        .header-actions {
+            overflow: visible !important;
+        }
+        
+        .admin-header {
+            overflow: visible !important;
         }
     </style>
 </head>

@@ -296,22 +296,33 @@ module.exports = async (req, res) => {
 
                 try {
                     const products = await safeRedisOperation(async (client) => {
-                        const productIds = await client.smembers('products');
-                        const productsList = [];
-                        for (const productId of productIds) {
-                            try {
-                                const productData = await client.get(`product:${productId}`);
-                                if (productData) {
-                                    productsList.push(JSON.parse(productData));
-                                }
-                            } catch (error) {
-                                console.error(`Error fetching product ${productId}:`, error);
+                        try {
+                            const productIds = await client.smembers('products');
+                            if (!Array.isArray(productIds)) {
+                                return [];
                             }
+                            const productsList = [];
+                            for (const productId of productIds) {
+                                try {
+                                    if (!productId) continue;
+                                    const productData = await client.get(`product:${productId}`);
+                                    if (productData) {
+                                        productsList.push(JSON.parse(productData));
+                                    }
+                                } catch (error) {
+                                    console.error(`Error fetching product ${productId}:`, error);
+                                    // Continue with other products
+                                }
+                            }
+                            return productsList;
+                        } catch (error) {
+                            console.error('Error in products safeRedisOperation:', error);
+                            throw error;
                         }
-                        return productsList;
                     }, 'Failed to fetch products', true);
                     return res.status(200).json(products || []);
                 } catch (error) {
+                    console.error('Error in GET /api/products:', error);
                     return res.status(200).json([]);
                 }
             }
@@ -676,34 +687,44 @@ module.exports = async (req, res) => {
                     dateTo = new Date().toISOString();
                 }
 
-                const redisClient = getRedis();
-                const orderIds = await redisClient.smembers('orders');
-                const productIds = await redisClient.smembers('products');
+                const analyticsData = await safeRedisOperation(async (client) => {
+                    const orderIds = await client.smembers('orders') || [];
+                    const productIds = await client.smembers('products') || [];
                 
-                const orders = [];
-                const products = [];
-                
-                for (const orderId of orderIds) {
-                    const orderData = await redisClient.get(`order:${orderId}`);
-                    if (orderData) {
-                        const order = JSON.parse(orderData);
-                        const orderDate = new Date(order.createdAt);
-                        if (dateFrom && orderDate < new Date(dateFrom)) continue;
-                        if (dateTo) {
-                            const toDate = new Date(dateTo);
-                            toDate.setHours(23, 59, 59, 999);
-                            if (orderDate > toDate) continue;
+                    const orders = [];
+                    const products = [];
+                    
+                    for (const orderId of orderIds) {
+                        try {
+                            if (!orderId) continue;
+                            const orderData = await client.get(`order:${orderId}`);
+                            if (orderData) {
+                                const order = JSON.parse(orderData);
+                                const orderDate = new Date(order.createdAt);
+                                if (dateFrom && orderDate < new Date(dateFrom)) continue;
+                                if (dateTo) {
+                                    const toDate = new Date(dateTo);
+                                    toDate.setHours(23, 59, 59, 999);
+                                    if (orderDate > toDate) continue;
+                                }
+                                orders.push(order);
+                            }
+                        } catch (error) {
+                            console.error(`Error fetching order ${orderId} for analytics:`, error);
                         }
-                        orders.push(order);
                     }
-                }
-                
-                for (const productId of productIds) {
-                    const productData = await redisClient.get(`product:${productId}`);
-                    if (productData) {
-                        products.push(JSON.parse(productData));
+                    
+                    for (const productId of productIds) {
+                        try {
+                            if (!productId) continue;
+                            const productData = await client.get(`product:${productId}`);
+                            if (productData) {
+                                products.push(JSON.parse(productData));
+                            }
+                        } catch (error) {
+                            console.error(`Error fetching product ${productId} for analytics:`, error);
+                        }
                     }
-                }
                 
                 const stats = {
                     orders: {
@@ -804,13 +825,32 @@ module.exports = async (req, res) => {
                     }
                 });
                 
-                stats.dailyTrends = Object.entries(dailyTrends)
-                    .map(([date, data]) => ({ date, ...data }))
-                    .sort((a, b) => a.date.localeCompare(b.date));
+                    stats.dailyTrends = Object.entries(dailyTrends)
+                        .map(([date, data]) => ({ date, ...data }))
+                        .sort((a, b) => a.date.localeCompare(b.date));
+                    
+                    return stats;
+                }, 'Failed to fetch analytics', true);
                 
-                return res.status(200).json(stats);
+                return res.status(200).json(analyticsData || {
+                    orders: { total: 0, byStatus: {}, today: 0, thisWeek: 0, thisMonth: 0 },
+                    products: { total: 0 },
+                    revenue: { total: 0, byStatus: {}, averageOrderValue: 0 },
+                    topProducts: [],
+                    deliveryMen: {},
+                    dailyTrends: []
+                });
             } catch (error) {
-                return res.status(500).json({ error: 'Server error', message: error.message });
+                console.error('Error in GET /api/analytics:', error);
+                // Return empty analytics instead of 500
+                return res.status(200).json({
+                    orders: { total: 0, byStatus: {}, today: 0, thisWeek: 0, thisMonth: 0 },
+                    products: { total: 0 },
+                    revenue: { total: 0, byStatus: {}, averageOrderValue: 0 },
+                    topProducts: [],
+                    deliveryMen: {},
+                    dailyTrends: []
+                });
             }
         }
 
@@ -821,94 +861,120 @@ module.exports = async (req, res) => {
             if (!requireAuth(req, res)) return;
 
             try {
-                const redisClient = getRedis();
-                const productIds = await redisClient.smembers('products');
-                const orderIds = await redisClient.smembers('orders');
-                const deliveryManIds = await redisClient.smembers('delivery-men');
-                
-                let totalSize = 0;
-                let productsSize = 0;
-                let ordersSize = 0;
-                let deliveryMenSize = 0;
-                let otherSize = 0;
-                
-                for (const productId of productIds) {
-                    const productData = await redisClient.get(`product:${productId}`);
-                    if (productData) {
-                        const size = Buffer.byteLength(productData, 'utf8');
-                        productsSize += size;
-                        totalSize += size;
-                    }
-                }
-                
-                for (const orderId of orderIds) {
-                    const orderData = await redisClient.get(`order:${orderId}`);
-                    if (orderData) {
-                        const size = Buffer.byteLength(orderData, 'utf8');
-                        ordersSize += size;
-                        totalSize += size;
-                    }
-                }
-                
-                const keys = await redisClient.keys('delivery:*');
-                for (const key of keys) {
-                    const data = await redisClient.get(key);
-                    if (data) {
-                        const deliveryMan = JSON.parse(data);
-                        if (deliveryManIds.includes(deliveryMan.id)) {
-                            const size = Buffer.byteLength(data, 'utf8');
-                            deliveryMenSize += size;
-                            totalSize += size;
-                        }
-                    }
-                }
-                
-                const allKeys = await redisClient.keys('*');
-                for (const key of allKeys) {
-                    if (!key.startsWith('product:') && !key.startsWith('order:') && !key.startsWith('delivery:')) {
-                        const type = await redisClient.type(key);
-                        if (type === 'string') {
-                            const data = await redisClient.get(key);
-                            if (data) {
-                                const size = Buffer.byteLength(data, 'utf8');
-                                otherSize += size;
+                const storageData = await safeRedisOperation(async (client) => {
+                    const productIds = await client.smembers('products') || [];
+                    const orderIds = await client.smembers('orders') || [];
+                    const deliveryManIds = await client.smembers('delivery-men') || [];
+                    
+                    let totalSize = 0;
+                    let productsSize = 0;
+                    let ordersSize = 0;
+                    let deliveryMenSize = 0;
+                    let otherSize = 0;
+                    
+                    // Calculate products size
+                    for (const productId of productIds) {
+                        try {
+                            if (!productId) continue;
+                            const productData = await client.get(`product:${productId}`);
+                            if (productData) {
+                                const size = Buffer.byteLength(productData, 'utf8');
+                                productsSize += size;
                                 totalSize += size;
                             }
-                        } else if (type === 'set') {
-                            const members = await redisClient.smembers(key);
-                            const size = Buffer.byteLength(JSON.stringify(members), 'utf8');
+                        } catch (error) {
+                            console.error(`Error calculating size for product ${productId}:`, error);
+                        }
+                    }
+                    
+                    // Calculate orders size
+                    for (const orderId of orderIds) {
+                        try {
+                            if (!orderId) continue;
+                            const orderData = await client.get(`order:${orderId}`);
+                            if (orderData) {
+                                const size = Buffer.byteLength(orderData, 'utf8');
+                                ordersSize += size;
+                                totalSize += size;
+                            }
+                        } catch (error) {
+                            console.error(`Error calculating size for order ${orderId}:`, error);
+                        }
+                    }
+                    
+                    // Calculate delivery men size
+                    try {
+                        const keys = await client.keys('delivery:*');
+                        for (const key of keys) {
+                            try {
+                                const data = await client.get(key);
+                                if (data) {
+                                    const deliveryMan = JSON.parse(data);
+                                    if (deliveryManIds.includes(deliveryMan.id)) {
+                                        const size = Buffer.byteLength(data, 'utf8');
+                                        deliveryMenSize += size;
+                                        totalSize += size;
+                                    }
+                                }
+                            } catch (error) {
+                                console.error(`Error calculating size for delivery key ${key}:`, error);
+                            }
+                        }
+                    } catch (error) {
+                        console.error('Error getting delivery keys:', error);
+                    }
+                    
+                    // Calculate other size (simplified - avoid expensive keys('*') operation)
+                    try {
+                        const settingsData = await client.get('store:settings');
+                        if (settingsData) {
+                            const size = Buffer.byteLength(settingsData, 'utf8');
                             otherSize += size;
                             totalSize += size;
                         }
+                    } catch (error) {
+                        console.error('Error calculating settings size:', error);
                     }
-                }
+                    
+                    const maxStorage = 30 * 1024 * 1024;
+                    const usedStorage = totalSize;
+                    const freeStorage = maxStorage - usedStorage;
+                    const usagePercent = (usedStorage / maxStorage) * 100;
+                    
+                    return {
+                        total: {
+                            used: usedStorage,
+                            free: freeStorage,
+                            max: maxStorage,
+                            percent: Math.round(usagePercent * 100) / 100
+                        },
+                        breakdown: {
+                            products: productsSize,
+                            orders: ordersSize,
+                            deliveryMen: deliveryMenSize,
+                            other: otherSize
+                        },
+                        counts: {
+                            products: productIds.length,
+                            orders: orderIds.length,
+                            deliveryMen: deliveryManIds.length
+                        }
+                    };
+                }, 'Failed to calculate storage usage', true);
                 
-                const maxStorage = 30 * 1024 * 1024;
-                const usedStorage = totalSize;
-                const freeStorage = maxStorage - usedStorage;
-                const usagePercent = (usedStorage / maxStorage) * 100;
-                
-                return res.status(200).json({
-                    total: {
-                        used: usedStorage,
-                        free: freeStorage,
-                        max: maxStorage,
-                        percent: Math.round(usagePercent * 100) / 100
-                    },
-                    breakdown: {
-                        products: productsSize,
-                        orders: ordersSize,
-                        deliveryMen: deliveryMenSize,
-                        other: otherSize
-                    },
-                    counts: {
-                        products: productIds.length,
-                        orders: orderIds.length,
-                        deliveryMen: deliveryManIds.length
-                    }
+                return res.status(200).json(storageData || {
+                    total: { used: 0, free: 30 * 1024 * 1024, max: 30 * 1024 * 1024, percent: 0 },
+                    breakdown: { products: 0, orders: 0, deliveryMen: 0, other: 0 },
+                    counts: { products: 0, orders: 0, deliveryMen: 0 }
                 });
             } catch (error) {
-                return res.status(500).json({ error: 'Failed to calculate storage usage', message: error.message });
+                console.error('Error in GET /api/storage:', error);
+                // Return default storage data instead of 500
+                return res.status(200).json({
+                    total: { used: 0, free: 30 * 1024 * 1024, max: 30 * 1024 * 1024, percent: 0 },
+                    breakdown: { products: 0, orders: 0, deliveryMen: 0, other: 0 },
+                    counts: { products: 0, orders: 0, deliveryMen: 0 }
+                });
             }
         }
 
@@ -1210,7 +1276,8 @@ module.exports = async (req, res) => {
 
                     return res.status(200).json(settings);
                 } catch (error) {
-                    return res.status(503).json({ error: 'Service temporarily unavailable' });
+                    console.error('Error in POST /api/settings:', error);
+                    return res.status(503).json({ error: 'Service temporarily unavailable', message: error.message });
                 }
             }
         }

@@ -323,10 +323,14 @@ function getStatusInfo(status) {
     const statusMap = {
         'pending': { label: 'قيد الانتظار', class: 'badge badge-warning' },
         'assigned': { label: 'مُسند', class: 'badge badge-info' },
+        'preparing': { label: 'قيد التحضير', class: 'badge badge-primary' },
         'in_transit': { label: 'قيد التوصيل', class: 'badge badge-primary' },
         'delivered': { label: 'تم التوصيل', class: 'badge badge-success' },
         'completed': { label: 'مكتمل', class: 'badge badge-success' },
-        'cancelled': { label: 'ملغي', class: 'badge badge-danger' }
+        'cancelled': { label: 'ملغي', class: 'badge badge-danger' },
+        'on_hold': { label: 'معلق', class: 'badge badge-secondary' },
+        'returned': { label: 'مرتجع', class: 'badge badge-warning' },
+        'refunded': { label: 'مسترد', class: 'badge badge-danger' }
     };
     return statusMap[status] || { label: status, class: 'badge badge-secondary' };
 }
@@ -414,10 +418,17 @@ async function loadOrders() {
             const product = currentProducts.find(p => p.id === order.productId);
             const row = document.createElement('tr');
             
-            // Order ID
+            // Order Number (professional format)
             const idCell = document.createElement('td');
             const idStrong = document.createElement('strong');
-            idStrong.textContent = `#${order.id.substring(0, 8)}`;
+            const orderNumber = order.orderNumber || order.id;
+            // Display full order number if it's in ORD-YYYY-XXXXX format, otherwise show shortened
+            if (orderNumber.startsWith('ORD-')) {
+                idStrong.textContent = orderNumber;
+                idStrong.style.color = '#2196F3';
+            } else {
+                idStrong.textContent = `#${orderNumber.substring(0, 8)}`;
+            }
             idCell.appendChild(idStrong);
             row.appendChild(idCell);
             
@@ -491,13 +502,19 @@ async function loadOrders() {
             const actionsDiv = document.createElement('div');
             actionsDiv.className = 'flex gap-1';
             
-            if (order.status !== 'completed' && order.status !== 'cancelled') {
-                const completeBtn = document.createElement('button');
-                completeBtn.className = 'btn btn-success btn-sm';
-                completeBtn.textContent = '✅ اكتمل';
-                completeBtn.onclick = () => markOrderComplete(order.id);
-                actionsDiv.appendChild(completeBtn);
-            }
+            // Status update button
+            const statusBtn = document.createElement('button');
+            statusBtn.className = 'btn btn-primary btn-sm';
+            statusBtn.textContent = '🔄 تحديث الحالة';
+            statusBtn.onclick = () => openOrderStatusModal(order);
+            actionsDiv.appendChild(statusBtn);
+            
+            // View details button
+            const viewBtn = document.createElement('button');
+            viewBtn.className = 'btn btn-info btn-sm';
+            viewBtn.textContent = '👁️ تفاصيل';
+            viewBtn.onclick = () => viewOrderDetails(order);
+            actionsDiv.appendChild(viewBtn);
             
             const deleteBtn = document.createElement('button');
             deleteBtn.className = 'btn btn-danger btn-sm';
@@ -814,8 +831,92 @@ function copyProductLink(productId) {
     });
 }
 
-// Mark order complete
-async function markOrderComplete(orderId) {
+// Open order status update modal
+function openOrderStatusModal(order) {
+    // Create modal if it doesn't exist
+    let modal = document.getElementById('orderStatusModal');
+    if (!modal) {
+        modal = document.createElement('div');
+        modal.id = 'orderStatusModal';
+        modal.className = 'modal';
+        modal.innerHTML = `
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h2>تحديث حالة الطلب</h2>
+                    <button class="close-btn" onclick="closeOrderStatusModal()">&times;</button>
+                </div>
+                <div class="modal-body">
+                    <p><strong>رقم الطلب:</strong> <span id="modalOrderNumber"></span></p>
+                    <p><strong>الحالة الحالية:</strong> <span id="modalCurrentStatus"></span></p>
+                    <div class="form-group">
+                        <label for="orderStatusSelect">الحالة الجديدة:</label>
+                        <select id="orderStatusSelect" class="form-control">
+                            <option value="pending">قيد الانتظار</option>
+                            <option value="assigned">مُسند</option>
+                            <option value="preparing">قيد التحضير</option>
+                            <option value="in_transit">قيد التوصيل</option>
+                            <option value="delivered">تم التوصيل</option>
+                            <option value="completed">مكتمل</option>
+                            <option value="on_hold">معلق</option>
+                            <option value="cancelled">ملغي</option>
+                            <option value="returned">مرتجع</option>
+                            <option value="refunded">مسترد</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="orderShippingPrice">سعر التوصيل (د.ع):</label>
+                        <input type="number" id="orderShippingPrice" class="form-control" step="0.01" placeholder="0.00">
+                    </div>
+                    <div class="form-group">
+                        <label for="orderPaymentReceived">المبلغ المستلم (د.ع):</label>
+                        <input type="number" id="orderPaymentReceived" class="form-control" step="0.01" placeholder="0.00">
+                    </div>
+                    <div class="form-group">
+                        <label for="orderNotes">ملاحظات:</label>
+                        <textarea id="orderNotes" class="form-control" rows="3" placeholder="ملاحظات إضافية..."></textarea>
+                    </div>
+                    <button class="btn btn-primary" onclick="updateOrderStatus()">💾 حفظ التغييرات</button>
+                </div>
+            </div>
+        `;
+        document.body.appendChild(modal);
+    }
+
+    // Populate modal with order data
+    const orderNumber = order.orderNumber || order.id;
+    document.getElementById('modalOrderNumber').textContent = orderNumber;
+    const currentStatusInfo = getStatusInfo(order.status);
+    document.getElementById('modalCurrentStatus').innerHTML = `<span class="${currentStatusInfo.class}">${currentStatusInfo.label}</span>`;
+    document.getElementById('orderStatusSelect').value = order.status;
+    document.getElementById('orderShippingPrice').value = order.shippingPrice || '';
+    document.getElementById('orderPaymentReceived').value = order.paymentReceived || '';
+    document.getElementById('orderNotes').value = '';
+
+    // Store current order ID
+    modal.dataset.orderId = order.id;
+
+    modal.classList.add('active');
+}
+
+// Close order status modal
+function closeOrderStatusModal() {
+    const modal = document.getElementById('orderStatusModal');
+    if (modal) {
+        modal.classList.remove('active');
+    }
+}
+
+// Update order status
+async function updateOrderStatus() {
+    const modal = document.getElementById('orderStatusModal');
+    if (!modal) return;
+
+    const orderId = modal.dataset.orderId;
+    const status = document.getElementById('orderStatusSelect').value;
+    const shippingPrice = document.getElementById('orderShippingPrice').value;
+    const paymentReceived = document.getElementById('orderPaymentReceived').value;
+    const notes = document.getElementById('orderNotes').value;
+
     try {
         const response = await fetch('/api/orders', {
             method: 'PUT',
@@ -823,12 +924,19 @@ async function markOrderComplete(orderId) {
                 'Content-Type': 'application/json',
                 'Authorization': `Bearer ${authToken}`
             },
-            body: JSON.stringify({ id: orderId, status: 'completed' })
+            body: JSON.stringify({
+                id: orderId,
+                status: status,
+                shippingPrice: shippingPrice || null,
+                paymentReceived: paymentReceived || null,
+                notes: notes
+            })
         });
 
         if (response.ok) {
+            closeOrderStatusModal();
             await loadOrders();
-            showNotification('تم تحديث حالة الطلب', 'success');
+            showNotification('تم تحديث حالة الطلب بنجاح!', 'success');
         } else {
             const errorData = await response.json().catch(() => ({}));
             showNotification(errorData.error || 'حدث خطأ في تحديث الطلب', 'error');
@@ -836,6 +944,35 @@ async function markOrderComplete(orderId) {
     } catch (error) {
         showNotification('حدث خطأ في الاتصال', 'error');
     }
+}
+
+// View order details
+function viewOrderDetails(order) {
+    const product = currentProducts.find(p => p.id === order.productId);
+    const statusInfo = getStatusInfo(order.status);
+    
+    let details = `رقم الطلب: ${order.orderNumber || order.id}\n\n`;
+    details += `المنتج: ${product ? product.name : 'غير معروف'}\n`;
+    details += `اسم العميل: ${order.customerName}\n`;
+    details += `رقم الهاتف: ${order.customerPhone}\n`;
+    details += `العنوان: ${order.customerAddress}\n`;
+    details += `الكمية: ${order.quantity}\n`;
+    details += `الحالة: ${statusInfo.label}\n`;
+    if (order.shippingPrice) details += `سعر التوصيل: ${parseFloat(order.shippingPrice).toFixed(2)} د.ع\n`;
+    if (order.paymentReceived) details += `المبلغ المستلم: ${parseFloat(order.paymentReceived).toFixed(2)} د.ع\n`;
+    details += `تاريخ الإنشاء: ${new Date(order.createdAt).toLocaleString('ar-EG')}\n`;
+    if (order.updatedAt) details += `آخر تحديث: ${new Date(order.updatedAt).toLocaleString('ar-EG')}\n`;
+    
+    if (order.statusHistory && order.statusHistory.length > 0) {
+        details += `\n--- تاريخ التغييرات ---\n`;
+        order.statusHistory.forEach((entry, index) => {
+            const statusInfo = getStatusInfo(entry.status);
+            details += `${index + 1}. ${statusInfo.label} - ${new Date(entry.timestamp).toLocaleString('ar-EG')}\n`;
+            if (entry.notes) details += `   ${entry.notes}\n`;
+        });
+    }
+    
+    alert(details);
 }
 
 // Delete order

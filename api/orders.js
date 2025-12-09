@@ -1,5 +1,12 @@
 const Redis = require('ioredis');
 const { requireAuth, validateOrder } = require('./utils/auth');
+const { 
+    generateOrderNumber, 
+    canTransitionStatus, 
+    addStatusHistory,
+    getStatusLabel,
+    getStatusColor
+} = require('./utils/orders');
 
 // Initialize Redis connection
 let redis;
@@ -103,10 +110,7 @@ module.exports = async (req, res) => {
         return;
     }
 
-    // Helper to generate unique ID
-    function generateId() {
-        return Date.now().toString(36) + Math.random().toString(36).substr(2);
-    }
+    // Order number generation is now handled by generateOrderNumber() from utils/orders.js
 
     try {
         // GET - List all orders (requires auth)
@@ -159,16 +163,24 @@ module.exports = async (req, res) => {
                         throw new Error('Product not found');
                     }
 
+                    // Generate professional order number
+                    const orderNumber = await generateOrderNumber();
+
                     const order = {
-                        id: generateId(),
+                        id: orderNumber,
+                        orderNumber: orderNumber, // Keep both for compatibility
                         ...validation.sanitized,
                         status: 'pending',
                         deliveryManId: null,
                         shippingPrice: null,
                         paymentReceived: null,
                         updatedBy: null,
+                        statusHistory: [],
                         createdAt: new Date().toISOString()
                     };
+
+                    // Add initial status history entry
+                    addStatusHistory(order, 'pending', 'system', 'Order created');
 
                     // Save order to Redis
                     await client.set(`order:${order.id}`, JSON.stringify(order));
@@ -190,11 +202,11 @@ module.exports = async (req, res) => {
             }
         }
 
-        // PUT - Update order (mark as completed) (requires auth)
+        // PUT - Update order (requires auth)
         if (req.method === 'PUT') {
             if (!requireAuth(req, res)) return;
             
-            const { id, status } = req.body;
+            const { id, status, deliveryManId, shippingPrice, paymentReceived, notes } = req.body;
             if (!id) {
                 return res.status(400).json({ error: 'Order ID is required' });
             }
@@ -206,20 +218,48 @@ module.exports = async (req, res) => {
                         throw new Error('Order not found');
                     }
 
-            const order = JSON.parse(orderData);
-            
-            // Validate status
-            const validStatuses = ['pending', 'assigned', 'in_transit', 'delivered', 'completed', 'cancelled'];
-            const newStatus = status || order.status;
-            if (!validStatuses.includes(newStatus)) {
-                throw new Error(`Invalid status. Valid statuses: ${validStatuses.join(', ')}`);
-            }
+                    const order = JSON.parse(orderData);
+                    const currentStatus = order.status;
+                    const newStatus = status || currentStatus;
+                    
+                    // Validate status transition (admin role for now)
+                    if (newStatus !== currentStatus && !canTransitionStatus(currentStatus, newStatus, 'admin')) {
+                        throw new Error(`Invalid status transition from ${currentStatus} to ${newStatus}`);
+                    }
 
-            const updated = {
-                ...order,
-                status: newStatus,
-                updatedAt: new Date().toISOString()
-            };
+                    // Validate status value
+                    const validStatuses = ['pending', 'assigned', 'preparing', 'in_transit', 'delivered', 'completed', 'cancelled', 'on_hold', 'returned', 'refunded'];
+                    if (!validStatuses.includes(newStatus)) {
+                        throw new Error(`Invalid status. Valid statuses: ${validStatuses.join(', ')}`);
+                    }
+
+                    // Build update object
+                    const updated = {
+                        ...order,
+                        status: newStatus,
+                        updatedAt: new Date().toISOString()
+                    };
+
+                    // Update delivery man if provided
+                    if (deliveryManId !== undefined) {
+                        updated.deliveryManId = deliveryManId || null;
+                    }
+
+                    // Update shipping price if provided
+                    if (shippingPrice !== undefined) {
+                        updated.shippingPrice = shippingPrice ? parseFloat(shippingPrice) : null;
+                    }
+
+                    // Update payment received if provided
+                    if (paymentReceived !== undefined) {
+                        updated.paymentReceived = paymentReceived ? parseFloat(paymentReceived) : null;
+                    }
+
+                    // Add status history entry if status changed
+                    if (newStatus !== currentStatus) {
+                        const changedBy = req.headers['x-user-id'] || 'admin'; // Could be extracted from JWT
+                        addStatusHistory(updated, newStatus, changedBy, notes || `Status changed to ${getStatusLabel(newStatus)}`);
+                    }
 
                     await client.set(`order:${id}`, JSON.stringify(updated));
                     return updated;

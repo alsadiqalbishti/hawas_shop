@@ -1,6 +1,7 @@
 // Delivery man orders API
 
 const { requireDeliveryAuth, getRedis } = require('../utils/delivery');
+const { canTransitionStatus, addStatusHistory, getStatusLabel } = require('../utils/orders');
 
 module.exports = async (req, res) => {
     // Enable CORS
@@ -62,12 +63,25 @@ module.exports = async (req, res) => {
             }
 
             const order = JSON.parse(orderData);
+            const currentStatus = order.status;
+            const newStatus = status || currentStatus;
             
-            // Validate status
-            const validStatuses = ['pending', 'assigned', 'in_transit', 'delivered', 'cancelled'];
-            const newStatus = status || order.status;
-            if (!validStatuses.includes(newStatus)) {
-                return res.status(400).json({ error: 'Invalid status', validStatuses });
+            // Validate status transition (delivery man role)
+            if (newStatus !== currentStatus && !canTransitionStatus(currentStatus, newStatus, 'delivery')) {
+                return res.status(400).json({ 
+                    error: `Invalid status transition from ${getStatusLabel(currentStatus)} to ${getStatusLabel(newStatus)}`,
+                    currentStatus: currentStatus,
+                    newStatus: newStatus
+                });
+            }
+
+            // Validate status value
+            const validStatuses = ['assigned', 'preparing', 'in_transit', 'delivered'];
+            if (newStatus && !validStatuses.includes(newStatus)) {
+                return res.status(400).json({ 
+                    error: 'Invalid status for delivery man', 
+                    validStatuses: validStatuses 
+                });
             }
 
             // Update order
@@ -75,11 +89,16 @@ module.exports = async (req, res) => {
                 ...order,
                 status: newStatus,
                 deliveryManId: deliveryManId,
-                shippingPrice: shippingPrice !== undefined ? parseFloat(shippingPrice) : order.shippingPrice,
-                paymentReceived: paymentReceived !== undefined ? parseFloat(paymentReceived) : order.paymentReceived,
+                shippingPrice: shippingPrice !== undefined ? (shippingPrice ? parseFloat(shippingPrice) : null) : order.shippingPrice,
+                paymentReceived: paymentReceived !== undefined ? (paymentReceived ? parseFloat(paymentReceived) : null) : order.paymentReceived,
                 updatedAt: new Date().toISOString(),
                 updatedBy: deliveryManId
             };
+
+            // Add status history entry if status changed
+            if (newStatus !== currentStatus) {
+                addStatusHistory(updatedOrder, newStatus, deliveryManId, `Status updated by delivery man`);
+            }
 
             await redisClient.set(`order:${id}`, JSON.stringify(updatedOrder));
             return res.status(200).json(updatedOrder);

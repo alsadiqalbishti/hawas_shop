@@ -44,10 +44,14 @@ function getStatusLabel(status) {
     const labels = {
         'pending': 'قيد الانتظار',
         'assigned': 'مُسند',
+        'preparing': 'قيد التحضير',
         'in_transit': 'قيد التوصيل',
         'delivered': 'تم التوصيل',
         'completed': 'مكتمل',
-        'cancelled': 'ملغي'
+        'cancelled': 'ملغي',
+        'on_hold': 'معلق',
+        'returned': 'مرتجع',
+        'refunded': 'مسترد'
     };
     return labels[status] || status;
 }
@@ -102,10 +106,13 @@ function renderOrders(orders) {
         const product = order.product || {};
         const statusClass = `status-${order.status}`;
         
+        const orderNumber = order.orderNumber || order.id;
+        const displayOrderNumber = orderNumber.startsWith('ORD-') ? orderNumber : `#${orderNumber.substring(0, 8)}`;
+        
         return `
             <div class="order-card" data-order-id="${order.id}">
                 <div class="order-header">
-                    <span class="order-id">طلب #${order.id.substring(0, 8)}</span>
+                    <span class="order-id">${displayOrderNumber}</span>
                     <span class="order-status ${statusClass}">${getStatusLabel(order.status)}</span>
                 </div>
                 <div class="order-info">
@@ -121,12 +128,10 @@ function renderOrders(orders) {
                     <div class="form-group">
                         <label for="status-${order.id}">حالة الطلب</label>
                         <select id="status-${order.id}" name="status" required>
-                            <option value="pending" ${order.status === 'pending' ? 'selected' : ''}>قيد الانتظار</option>
                             <option value="assigned" ${order.status === 'assigned' ? 'selected' : ''}>مُسند</option>
+                            <option value="preparing" ${order.status === 'preparing' ? 'selected' : ''}>قيد التحضير</option>
                             <option value="in_transit" ${order.status === 'in_transit' ? 'selected' : ''}>قيد التوصيل</option>
                             <option value="delivered" ${order.status === 'delivered' ? 'selected' : ''}>تم التوصيل</option>
-                            <option value="completed" ${order.status === 'completed' ? 'selected' : ''}>مكتمل</option>
-                            <option value="cancelled" ${order.status === 'cancelled' ? 'selected' : ''}>ملغي</option>
                         </select>
                     </div>
                     <div class="form-group">

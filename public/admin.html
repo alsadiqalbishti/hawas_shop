@@ -9,6 +9,7 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="/styles.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
 </head>
 
 <body>
@@ -56,6 +57,9 @@
                     </button>
                     <button class="tab" onclick="switchTab('orders', this)">
                         📋 الطلبات
+                    </button>
+                    <button class="tab" onclick="switchTab('analytics', this)">
+                        📊 الإحصائيات
                     </button>
                 </div>
 
@@ -151,6 +155,28 @@
                     </div>
 
                     <div id="ordersContainer">
+                        <div class="spinner"></div>
+                    </div>
+                </div>
+
+                <!-- Analytics Tab -->
+                <div id="analyticsTab" class="tab-content">
+                    <div class="flex justify-between items-center mb-3">
+                        <h2 style="font-size: 1.5rem; font-weight: 600;">لوحة الإحصائيات</h2>
+                        <div class="flex gap-2">
+                            <select id="analyticsPeriod" class="form-input" onchange="loadAnalytics()" style="width: auto;">
+                                <option value="all">الكل</option>
+                                <option value="today">اليوم</option>
+                                <option value="week">آخر 7 أيام</option>
+                                <option value="month">آخر 30 يوم</option>
+                            </select>
+                            <button onclick="loadAnalytics()" class="btn btn-success btn-sm">
+                                🔄 تحديث
+                            </button>
+                        </div>
+                    </div>
+
+                    <div id="analyticsContainer">
                         <div class="spinner"></div>
                     </div>
                 </div>

@@ -117,6 +117,224 @@ function logout() {
 }
 
 // Switch tabs
+// Load analytics dashboard
+async function loadAnalytics() {
+    const container = document.getElementById('analyticsContainer');
+    const period = document.getElementById('analyticsPeriod')?.value || 'all';
+    
+    try {
+        container.innerHTML = '<div class="spinner"></div>';
+        
+        const response = await fetch(`/api/analytics?period=${period}`, {
+            headers: {
+                'Authorization': `Bearer ${authToken}`
+            }
+        });
+
+        if (!response.ok) {
+            if (response.status === 401) {
+                logout();
+                return;
+            }
+            throw new Error(`HTTP error! status: ${response.status}`);
+        }
+
+        const stats = await response.json();
+        renderAnalyticsDashboard(stats);
+    } catch (error) {
+        console.error('Error loading analytics:', error);
+        container.innerHTML = `<div class="alert alert-error">حدث خطأ في تحميل الإحصائيات: ${error.message}</div>`;
+    }
+}
+
+// Render analytics dashboard
+function renderAnalyticsDashboard(stats) {
+    const container = document.getElementById('analyticsContainer');
+    
+    // Overview cards
+    const cardsHtml = `
+        <div class="analytics-grid" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1rem; margin-bottom: 2rem;">
+            <div class="analytics-card" style="background: var(--card-bg); padding: 1.5rem; border-radius: 8px; border: 1px solid var(--border);">
+                <h3 style="color: var(--text-light); font-size: 0.9rem; margin-bottom: 0.5rem;">إجمالي الطلبات</h3>
+                <p style="font-size: 2rem; font-weight: bold; color: var(--primary); margin: 0;">${stats.orders.total}</p>
+            </div>
+            <div class="analytics-card" style="background: var(--card-bg); padding: 1.5rem; border-radius: 8px; border: 1px solid var(--border);">
+                <h3 style="color: var(--text-light); font-size: 0.9rem; margin-bottom: 0.5rem;">طلبات اليوم</h3>
+                <p style="font-size: 2rem; font-weight: bold; color: var(--success); margin: 0;">${stats.orders.today}</p>
+            </div>
+            <div class="analytics-card" style="background: var(--card-bg); padding: 1.5rem; border-radius: 8px; border: 1px solid var(--border);">
+                <h3 style="color: var(--text-light); font-size: 0.9rem; margin-bottom: 0.5rem;">إجمالي الإيرادات</h3>
+                <p style="font-size: 2rem; font-weight: bold; color: var(--success); margin: 0;">${formatPrice(stats.revenue.total)} د.ع</p>
+            </div>
+            <div class="analytics-card" style="background: var(--card-bg); padding: 1.5rem; border-radius: 8px; border: 1px solid var(--border);">
+                <h3 style="color: var(--text-light); font-size: 0.9rem; margin-bottom: 0.5rem;">متوسط قيمة الطلب</h3>
+                <p style="font-size: 2rem; font-weight: bold; color: var(--primary); margin: 0;">${formatPrice(stats.revenue.averageOrderValue)} د.ع</p>
+            </div>
+        </div>
+    `;
+    
+    // Charts container
+    const chartsHtml = `
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(400px, 1fr)); gap: 1.5rem; margin-bottom: 2rem;">
+            <div style="background: var(--card-bg); padding: 1.5rem; border-radius: 8px; border: 1px solid var(--border);">
+                <h3 style="margin-bottom: 1rem;">توزيع الطلبات حسب الحالة</h3>
+                <canvas id="statusChart" style="max-height: 300px;"></canvas>
+            </div>
+            <div style="background: var(--card-bg); padding: 1.5rem; border-radius: 8px; border: 1px solid var(--border);">
+                <h3 style="margin-bottom: 1rem;">الاتجاه اليومي (آخر 30 يوم)</h3>
+                <canvas id="trendsChart" style="max-height: 300px;"></canvas>
+            </div>
+        </div>
+    `;
+    
+    // Top products
+    const topProductsHtml = `
+        <div style="background: var(--card-bg); padding: 1.5rem; border-radius: 8px; border: 1px solid var(--border); margin-bottom: 2rem;">
+            <h3 style="margin-bottom: 1rem;">أفضل المنتجات</h3>
+            <div class="table-container">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>المنتج</th>
+                            <th>عدد الطلبات</th>
+                            <th>الإيرادات</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        ${stats.topProducts.map(product => `
+                            <tr>
+                                <td>${escapeHtml(product.name)}</td>
+                                <td><strong>${product.orders}</strong></td>
+                                <td>${formatPrice(product.revenue)} د.ع</td>
+                            </tr>
+                        `).join('')}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    `;
+    
+    container.innerHTML = cardsHtml + chartsHtml + topProductsHtml;
+    
+    // Render charts
+    renderStatusChart(stats.orders.byStatus);
+    renderTrendsChart(stats.dailyTrends || []);
+}
+
+// Format price helper
+function formatPrice(price) {
+    if (!price || isNaN(price)) return '0.00';
+    return parseFloat(price).toFixed(2);
+}
+
+// Render status pie chart
+function renderStatusChart(statusData) {
+    const ctx = document.getElementById('statusChart');
+    if (!ctx) return;
+    
+    const statusLabels = {
+        'pending': 'قيد الانتظار',
+        'assigned': 'مُسند',
+        'preparing': 'قيد التحضير',
+        'in_transit': 'قيد التوصيل',
+        'delivered': 'تم التوصيل',
+        'completed': 'مكتمل',
+        'cancelled': 'ملغي',
+        'on_hold': 'معلق',
+        'returned': 'مرتجع',
+        'refunded': 'مسترد'
+    };
+    
+    const labels = Object.keys(statusData).map(key => statusLabels[key] || key);
+    const data = Object.values(statusData);
+    const colors = ['#FF6384', '#36A2EB', '#FFCE56', '#4BC0C0', '#9966FF', '#FF9F40', '#FF6384', '#C9CBCF', '#FF6384', '#FF6384'];
+    
+    new Chart(ctx, {
+        type: 'pie',
+        data: {
+            labels: labels,
+            datasets: [{
+                data: data,
+                backgroundColor: colors.slice(0, labels.length)
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: true,
+            plugins: {
+                legend: {
+                    position: 'bottom'
+                }
+            }
+        }
+    });
+}
+
+// Render trends line chart
+function renderTrendsChart(trendsData) {
+    const ctx = document.getElementById('trendsChart');
+    if (!ctx) return;
+    
+    const labels = trendsData.map(item => new Date(item.date).toLocaleDateString('ar-EG', { month: 'short', day: 'numeric' }));
+    const ordersData = trendsData.map(item => item.orders);
+    const revenueData = trendsData.map(item => item.revenue);
+    
+    new Chart(ctx, {
+        type: 'line',
+        data: {
+            labels: labels,
+            datasets: [
+                {
+                    label: 'الطلبات',
+                    data: ordersData,
+                    borderColor: '#36A2EB',
+                    backgroundColor: 'rgba(54, 162, 235, 0.1)',
+                    tension: 0.4
+                },
+                {
+                    label: 'الإيرادات (د.ع)',
+                    data: revenueData,
+                    borderColor: '#4BC0C0',
+                    backgroundColor: 'rgba(75, 192, 192, 0.1)',
+                    tension: 0.4,
+                    yAxisID: 'y1'
+                }
+            ]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: true,
+            scales: {
+                y: {
+                    beginAtZero: true,
+                    title: {
+                        display: true,
+                        text: 'الطلبات'
+                    }
+                },
+                y1: {
+                    type: 'linear',
+                    display: true,
+                    position: 'right',
+                    beginAtZero: true,
+                    title: {
+                        display: true,
+                        text: 'الإيرادات'
+                    },
+                    grid: {
+                        drawOnChartArea: false
+                    }
+                }
+            },
+            plugins: {
+                legend: {
+                    position: 'top'
+                }
+            }
+        }
+    });
+}
+
 function switchTab(tab, eventElement) {
     // Update tab buttons
     document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
@@ -129,6 +347,15 @@ function switchTab(tab, eventElement) {
     const tabContent = document.getElementById(tab + 'Tab');
     if (tabContent) {
         tabContent.classList.add('active');
+    }
+    
+    // Load data when switching tabs
+    if (tab === 'analytics') {
+        loadAnalytics();
+    } else if (tab === 'orders') {
+        loadOrders();
+    } else if (tab === 'products') {
+        loadProducts();
     }
 }
 

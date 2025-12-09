@@ -70,17 +70,11 @@ async function loadProduct() {
         
         console.log('Loading product with media URLs:', validMediaUrls.length, validMediaUrls);
         
-        // Check if we have multiple images
+        // Check if we have multiple images or videos
         if (validMediaUrls.length > 0) {
-            if (product.mediaType === 'video') {
-                const video = document.createElement('video');
-                video.src = validMediaUrls[0];
-                video.controls = true;
-                video.className = 'product-video';
-                video.muted = true;
-                video.loop = true;
-                video.textContent = 'متصفحك لا يدعم تشغيل الفيديو';
-                mediaContainer.appendChild(video);
+            if (product.mediaType === 'video' || validMediaUrls.some(url => url.includes('data:video') || url.includes('.mp4') || url.includes('.webm'))) {
+                // Handle multiple videos or mixed media
+                createVideoGallery(validMediaUrls, product.name, mediaContainer);
             } else {
                 // Create image slider using DOM methods
                 const sliderContainer = document.createElement('div');

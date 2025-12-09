@@ -998,6 +998,197 @@
             transform: scale(1.05);
             cursor: zoom-in;
         }
+
+        /* Product Variants */
+        .product-variants {
+            margin: var(--space-4) 0;
+            padding: var(--space-4);
+            background: var(--light);
+            border-radius: var(--radius-md);
+            border: 1px solid var(--border-light);
+        }
+
+        .variants-title {
+            font-size: var(--font-size-lg);
+            font-weight: var(--font-weight-bold);
+            color: var(--dark);
+            margin-bottom: var(--space-3);
+        }
+
+        .variants-container {
+            display: flex;
+            flex-direction: column;
+            gap: var(--space-3);
+        }
+
+        .variant-group {
+            display: flex;
+            flex-direction: column;
+            gap: var(--space-2);
+        }
+
+        .variant-label {
+            font-size: var(--font-size-sm);
+            font-weight: var(--font-weight-medium);
+            color: var(--text);
+        }
+
+        .variant-options {
+            display: flex;
+            flex-wrap: wrap;
+            gap: var(--space-2);
+        }
+
+        .variant-option {
+            padding: var(--space-2) var(--space-4);
+            border: 2px solid var(--border);
+            border-radius: var(--radius-md);
+            background: var(--white);
+            cursor: pointer;
+            transition: all var(--transition-base);
+            font-size: var(--font-size-sm);
+            font-weight: var(--font-weight-medium);
+        }
+
+        .variant-option:hover {
+            border-color: var(--primary);
+            background: var(--primary-light);
+        }
+
+        .variant-option.selected {
+            border-color: var(--primary);
+            background: var(--primary);
+            color: var(--white);
+        }
+
+        .variant-option.disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+            text-decoration: line-through;
+        }
+
+        /* Size Chart */
+        .size-chart-section {
+            margin: var(--space-4) 0;
+        }
+
+        .size-chart-btn {
+            width: 100%;
+            padding: var(--space-3);
+            background: var(--light);
+            border: 2px dashed var(--border);
+            border-radius: var(--radius-md);
+            color: var(--text);
+            font-size: var(--font-size-base);
+            font-weight: var(--font-weight-medium);
+            cursor: pointer;
+            transition: all var(--transition-base);
+        }
+
+        .size-chart-btn:hover {
+            background: var(--primary-light);
+            border-color: var(--primary);
+            color: var(--primary);
+        }
+
+        /* Modal Styles */
+        .modal {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.7);
+            z-index: 10001;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: var(--space-4);
+            animation: fadeIn 0.3s ease-out;
+        }
+
+        .modal-content {
+            background: var(--white);
+            border-radius: var(--radius-xl);
+            max-width: 800px;
+            width: 100%;
+            max-height: 90vh;
+            overflow-y: auto;
+            box-shadow: var(--shadow-xl);
+            animation: scaleIn 0.3s ease-out;
+        }
+
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: var(--space-4);
+            border-bottom: 2px solid var(--border-light);
+        }
+
+        .modal-header h2 {
+            font-size: var(--font-size-2xl);
+            font-weight: var(--font-weight-bold);
+            color: var(--dark);
+            margin: 0;
+        }
+
+        .modal-close {
+            width: 40px;
+            height: 40px;
+            border-radius: var(--radius-full);
+            border: none;
+            background: var(--light);
+            color: var(--text);
+            font-size: var(--font-size-xl);
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all var(--transition-base);
+        }
+
+        .modal-close:hover {
+            background: var(--danger);
+            color: var(--white);
+        }
+
+        .modal-body {
+            padding: var(--space-4);
+        }
+
+        /* Size Chart Table */
+        .size-chart-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-bottom: var(--space-4);
+        }
+
+        .size-chart-table th,
+        .size-chart-table td {
+            padding: var(--space-3);
+            text-align: center;
+            border: 1px solid var(--border-light);
+        }
+
+        .size-chart-table th {
+            background: var(--primary);
+            color: var(--white);
+            font-weight: var(--font-weight-bold);
+        }
+
+        .size-chart-table tr:nth-child(even) {
+            background: var(--light);
+        }
+
+        .size-chart-note {
+            padding: var(--space-3);
+            background: var(--info-light);
+            border-radius: var(--radius-md);
+            color: var(--info-dark);
+            font-size: var(--font-size-sm);
+            line-height: 1.6;
+        }
     </style>
 </head>
 
@@ -1058,6 +1249,21 @@
                     <div class="description-section">
                         <h2 class="section-heading">📝 الوصف</h2>
                         <div class="product-description" id="productDescription"></div>
+                    </div>
+
+                    <!-- Product Variants (if available) -->
+                    <div id="productVariants" class="product-variants hidden">
+                        <h3 class="variants-title">الخيارات المتاحة</h3>
+                        <div id="variantsContainer" class="variants-container">
+                            <!-- Will be populated from product data -->
+                        </div>
+                    </div>
+
+                    <!-- Size Chart Button (if applicable) -->
+                    <div id="sizeChartSection" class="size-chart-section hidden">
+                        <button onclick="openSizeChart()" class="size-chart-btn">
+                            📏 دليل المقاسات
+                        </button>
                     </div>
 
                     <!-- Features -->
@@ -1261,6 +1467,61 @@
             <img id="lightboxImage" src="" alt="">
             <div class="lightbox-counter">
                 <span id="lightboxCounter">1 / 1</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- Size Chart Modal -->
+    <div id="sizeChartModal" class="modal hidden">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>📏 دليل المقاسات</h2>
+                <button class="modal-close" onclick="closeSizeChart()">✕</button>
+            </div>
+            <div class="modal-body">
+                <div id="sizeChartContent">
+                    <!-- Default size chart table -->
+                    <table class="size-chart-table">
+                        <thead>
+                            <tr>
+                                <th>المقاس</th>
+                                <th>الصدر (سم)</th>
+                                <th>الخصر (سم)</th>
+                                <th>الطول (سم)</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td>صغير (S)</td>
+                                <td>90-95</td>
+                                <td>75-80</td>
+                                <td>65-70</td>
+                            </tr>
+                            <tr>
+                                <td>متوسط (M)</td>
+                                <td>95-100</td>
+                                <td>80-85</td>
+                                <td>70-75</td>
+                            </tr>
+                            <tr>
+                                <td>كبير (L)</td>
+                                <td>100-105</td>
+                                <td>85-90</td>
+                                <td>75-80</td>
+                            </tr>
+                            <tr>
+                                <td>كبير جداً (XL)</td>
+                                <td>105-110</td>
+                                <td>90-95</td>
+                                <td>80-85</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                    <p class="size-chart-note">
+                        💡 <strong>ملاحظة:</strong> المقاسات تقريبية وقد تختلف حسب نوع القماش والتصميم. 
+                        للاستفسار عن مقاس محدد، يرجى التواصل معنا.
+                    </p>
+                </div>
             </div>
         </div>
     </div>

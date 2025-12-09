@@ -91,32 +91,38 @@ module.exports = async (req, res) => {
     // Fallback to parsing from req.url if query.path is not available
     let pathParts = [];
     
-    if (req.query && req.query.path) {
+    // Try req.query.path first (Vercel's catch-all format)
+    if (req.query && req.query.path !== undefined) {
         const pathArray = req.query.path;
         if (Array.isArray(pathArray)) {
-            pathParts = pathArray.filter(p => p);
+            pathParts = pathArray.filter(p => p && p.length > 0);
         } else if (typeof pathArray === 'string') {
-            pathParts = pathArray.split('/').filter(p => p);
+            pathParts = pathArray.split('/').filter(p => p && p.length > 0);
         }
     }
     
     // If pathParts is still empty, parse from req.url
     if (pathParts.length === 0 && req.url) {
-        // Parse from URL: /api/products -> ['products']
-        // Handle both /api/products and api/products
+        // Parse from URL
         const urlPath = req.url.split('?')[0]; // Remove query string
-        // Remove leading/trailing slashes and /api prefix
+        // Remove leading/trailing slashes
         let cleanPath = urlPath.replace(/^\/+/, '').replace(/\/+$/, '');
-        if (cleanPath.startsWith('api/')) {
+        
+        // Remove /api prefix if present
+        if (cleanPath.toLowerCase().startsWith('api/')) {
             cleanPath = cleanPath.substring(4);
-        } else if (cleanPath.startsWith('api')) {
-            cleanPath = cleanPath.substring(3);
+        } else if (cleanPath.toLowerCase() === 'api') {
+            cleanPath = '';
         }
-        pathParts = cleanPath.split('/').filter(p => p && p.length > 0);
+        
+        // Split into parts
+        if (cleanPath) {
+            pathParts = cleanPath.split('/').filter(p => p && p.length > 0);
+        }
     }
     
-    const endpoint = pathParts[0] || '';
-    const subEndpoint = pathParts[1] || '';
+    const endpoint = (pathParts[0] || '').toLowerCase();
+    const subEndpoint = (pathParts[1] || '').toLowerCase();
     
     // Debug logging (remove in production if needed)
     console.log('API Request:', {

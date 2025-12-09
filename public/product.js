@@ -68,8 +68,6 @@ async function loadProduct() {
             })
             .map(url => typeof url === 'string' ? url.trim() : String(url));
         
-        // Debug: Only log in development
-        // console.log('Loading product with media URLs:', validMediaUrls.length, validMediaUrls);
         
         // Check if we have multiple images or videos
         if (validMediaUrls.length > 0) {
@@ -740,7 +738,13 @@ async function loadStoreSettings() {
         }
         if (settings.returnContact) {
             const el = document.getElementById('returnContact');
-            if (el) el.textContent = settings.returnContact;
+            if (el) {
+                // Use textContent to prevent HTML/phone auto-linking
+                el.textContent = settings.returnContact;
+                // Ensure no phone number auto-linking
+                el.style.userSelect = 'none';
+                el.style.webkitTouchCallout = 'none';
+            }
         }
     } catch (error) {
         console.error('Error loading store settings:', error);

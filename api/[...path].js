@@ -459,6 +459,12 @@ module.exports = async (req, res) => {
                 } catch (error) {
                     console.error('Error in GET /api/orders:', error);
                     // Return empty array on error instead of 500
+                    // Log full error details for debugging
+                    console.error('Full error details:', {
+                        message: error.message,
+                        stack: error.stack,
+                        name: error.name
+                    });
                     return res.status(200).json([]);
                 }
             }

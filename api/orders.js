@@ -223,29 +223,24 @@ module.exports = async (req, res) => {
                     const newStatus = status || currentStatus;
                     
                     // Determine final status (may be changed by delivery man assignment)
-                    let finalStatusForValidation = newStatus;
-                    if (deliveryManId !== undefined && deliveryManId && order.status === 'pending' && !status) {
-                        finalStatusForValidation = 'assigned';
-                    }
-                    
-                    // Validate status transition (admin role for now)
-                    if (finalStatusForValidation !== currentStatus && !canTransitionStatus(currentStatus, finalStatusForValidation, 'admin')) {
-                        throw new Error(`Invalid status transition from ${currentStatus} to ${finalStatusForValidation}`);
-                    }
-
-                    // Validate status value
-                    const validStatuses = ['pending', 'assigned', 'preparing', 'in_transit', 'delivered', 'completed', 'cancelled', 'on_hold', 'returned', 'refunded'];
-                    if (!validStatuses.includes(newStatus)) {
-                        throw new Error(`Invalid status. Valid statuses: ${validStatuses.join(', ')}`);
-                    }
-
-                    // Build update object
                     let finalStatus = newStatus;
-                    
                     // If assigning a delivery man to a pending order, automatically set status to "assigned"
                     if (deliveryManId !== undefined && deliveryManId && order.status === 'pending' && !status) {
                         finalStatus = 'assigned';
                     }
+                    
+                    // Validate status transition (admin role for now)
+                    if (finalStatus !== currentStatus && !canTransitionStatus(currentStatus, finalStatus, 'admin')) {
+                        throw new Error(`Invalid status transition from ${currentStatus} to ${finalStatus}`);
+                    }
+
+                    // Validate status value
+                    const validStatuses = ['pending', 'assigned', 'preparing', 'in_transit', 'delivered', 'completed', 'cancelled', 'on_hold', 'returned', 'refunded'];
+                    if (!validStatuses.includes(finalStatus)) {
+                        throw new Error(`Invalid status. Valid statuses: ${validStatuses.join(', ')}`);
+                    }
+
+                    // Build update object
                     
                     const updated = {
                         ...order,

@@ -108,6 +108,7 @@ function showAdminPanel() {
     document.getElementById('adminPanel').classList.remove('hidden');
     loadProducts();
     loadOrders();
+    loadStorageUsage();
 }
 
 // Logout

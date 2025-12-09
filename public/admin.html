@@ -44,9 +44,14 @@
                             <h1 class="card-title">📦 لوحة التحكم</h1>
                             <p style="color: var(--text-light);">إدارة المنتجات والطلبات</p>
                         </div>
-                        <button onclick="logout()" class="btn btn-danger">
-                            تسجيل الخروج
-                        </button>
+                        <div class="flex items-center gap-2">
+                            <div id="storageUsage" style="background: var(--card-bg); padding: 0.5rem 1rem; border-radius: 8px; border: 1px solid var(--border); font-size: 0.85rem;">
+                                <span id="storageText">جاري التحميل...</span>
+                            </div>
+                            <button onclick="logout()" class="btn btn-danger">
+                                تسجيل الخروج
+                            </button>
+                        </div>
                     </div>
                 </div>
 

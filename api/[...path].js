@@ -1070,7 +1070,8 @@ module.exports = async (req, res) => {
                         orders.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
                         return res.status(200).json(orders);
                     } catch (error) {
-                        return res.status(500).json({ error: 'Server error', message: error.message });
+                        console.error('Error in delivery orders GET:', error);
+                        return res.status(200).json([]);
                     }
                 }
 
@@ -1123,7 +1124,8 @@ module.exports = async (req, res) => {
                         await redisClient.set(`order:${id}`, JSON.stringify(updatedOrder));
                         return res.status(200).json(updatedOrder);
                     } catch (error) {
-                        return res.status(500).json({ error: 'Server error', message: error.message });
+                        console.error('Error in delivery orders PUT:', error);
+                        return res.status(400).json({ error: 'Failed to update order', message: error.message });
                     }
                 }
             }
@@ -1217,7 +1219,8 @@ module.exports = async (req, res) => {
                     const { password, ...safeInfo } = deliveryMan;
                     return res.status(200).json(safeInfo);
                 } catch (error) {
-                    return res.status(500).json({ error: 'Server error', message: error.message });
+                    console.error('Error in delivery info GET:', error);
+                    return res.status(404).json({ error: 'Delivery man not found' });
                 }
             }
         }

@@ -7,10 +7,6 @@
     },
     "rewrites": [
         {
-            "source": "/api/:path*",
-            "destination": "/api/:path*"
-        },
-        {
             "source": "/product.html",
             "destination": "/product.html"
         }

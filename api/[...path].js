@@ -88,10 +88,39 @@ module.exports = async (req, res) => {
 
     // Parse the path from the catch-all route
     // In Vercel, [...path] gives us req.query.path as an array
-    const pathArray = req.query.path;
-    const pathParts = Array.isArray(pathArray) ? pathArray : (pathArray ? pathArray.split('/').filter(p => p) : []);
+    // Fallback to parsing from req.url if query.path is not available
+    let pathParts = [];
+    
+    if (req.query && req.query.path) {
+        const pathArray = req.query.path;
+        if (Array.isArray(pathArray)) {
+            pathParts = pathArray.filter(p => p);
+        } else if (typeof pathArray === 'string') {
+            pathParts = pathArray.split('/').filter(p => p);
+        }
+    }
+    
+    // If pathParts is still empty, parse from req.url
+    if (pathParts.length === 0 && req.url) {
+        // Parse from URL: /api/products -> ['products']
+        // Handle both /api/products and api/products
+        const urlPath = req.url.split('?')[0]; // Remove query string
+        const cleanPath = urlPath.replace(/^\/?api\/?/, ''); // Remove /api or api/ prefix
+        pathParts = cleanPath.split('/').filter(p => p);
+    }
+    
     const endpoint = pathParts[0] || '';
     const subEndpoint = pathParts[1] || '';
+
+    // Debug logging (remove in production if needed)
+    console.log('API Request:', {
+        method: req.method,
+        url: req.url,
+        query: req.query,
+        pathParts: pathParts,
+        endpoint: endpoint,
+        subEndpoint: subEndpoint
+    });
 
     try {
         // ============================================
@@ -963,7 +992,19 @@ module.exports = async (req, res) => {
         // ============================================
         // 404 - Endpoint not found
         // ============================================
-        return res.status(404).json({ error: 'Endpoint not found', path: endpoint });
+        console.log('404 - Endpoint not found:', {
+            endpoint,
+            subEndpoint,
+            pathParts,
+            url: req.url,
+            method: req.method
+        });
+        return res.status(404).json({ 
+            error: 'Endpoint not found', 
+            endpoint: endpoint,
+            pathParts: pathParts,
+            url: req.url
+        });
 
     } catch (error) {
         console.error('API Router error:', error);

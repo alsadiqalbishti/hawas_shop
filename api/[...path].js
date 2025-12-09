@@ -137,13 +137,10 @@ module.exports = async (req, res) => {
         }
     }
     
-    // Extract endpoint and subEndpoint from pathParts
-    let endpoint = (pathParts[0] || '').toLowerCase().trim();
-    let subEndpoint = (pathParts[1] || '').toLowerCase().trim();
-    
-    // DIRECT URL MATCHING (Primary method for delivery endpoints)
+    // DIRECT URL MATCHING FIRST (before pathParts parsing)
     // Vercel's path parsing can be inconsistent, so we check the URL directly first
-    const urlLower = (req.url || '').toLowerCase();
+    const rawUrl = (req.url || '').toLowerCase();
+    const urlLower = rawUrl;
     let urlPath = urlLower.split('?')[0]; // Remove query string
     
     // Normalize URL path - remove /api prefix if present
@@ -151,27 +148,36 @@ module.exports = async (req, res) => {
         urlPath = urlPath.substring(5);
     } else if (urlPath.startsWith('api/')) {
         urlPath = urlPath.substring(4);
+    } else if (urlPath.startsWith('/')) {
+        urlPath = urlPath.substring(1);
     }
     
-    // Explicit checks for delivery endpoints (check these FIRST before pathParts)
-    // Check both normalized path and original URL (case-insensitive)
-    const checkUrl = (urlPath + ' ' + urlLower).toLowerCase();
+    // Extract endpoint and subEndpoint from pathParts (fallback)
+    let endpoint = (pathParts[0] || '').toLowerCase().trim();
+    let subEndpoint = (pathParts[1] || '').toLowerCase().trim();
     
-    if (checkUrl.includes('delivery/list') && req.method === 'GET') {
+    // Explicit checks for delivery endpoints (check these FIRST - highest priority)
+    // Check raw URL, normalized path, and pathParts - whichever matches first
+    const allUrlChecks = (rawUrl + ' ' + urlPath + ' ' + urlLower).toLowerCase();
+    
+    if (allUrlChecks.includes('delivery/list') && req.method === 'GET') {
         endpoint = 'delivery';
         subEndpoint = 'list';
-    } else if (checkUrl.includes('delivery/auth') && req.method === 'POST') {
+    } else if (allUrlChecks.includes('delivery/auth') && req.method === 'POST') {
         endpoint = 'delivery';
         subEndpoint = 'auth';
-    } else if (checkUrl.includes('delivery/orders')) {
+    } else if (allUrlChecks.includes('delivery/orders')) {
         endpoint = 'delivery';
         subEndpoint = 'orders';
-    } else if (checkUrl.includes('delivery/info') && req.method === 'GET') {
+    } else if (allUrlChecks.includes('delivery/info') && req.method === 'GET') {
         endpoint = 'delivery';
         subEndpoint = 'info';
-    } else if (checkUrl.includes('delivery/')) {
-        // Generic delivery endpoint extraction
-        const deliveryMatch = checkUrl.match(/delivery\/([^\/\?\s]+)/);
+    } else if (allUrlChecks.includes('delivery/')) {
+        // Generic delivery endpoint extraction - try multiple patterns
+        let deliveryMatch = allUrlChecks.match(/delivery\/([^\/\?\s]+)/);
+        if (!deliveryMatch) {
+            deliveryMatch = rawUrl.match(/delivery[\/\-_]([^\/\?\s]+)/i);
+        }
         if (deliveryMatch) {
             endpoint = 'delivery';
             subEndpoint = deliveryMatch[1].toLowerCase().trim();

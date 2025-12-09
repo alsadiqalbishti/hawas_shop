@@ -1,0 +1,284 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>لوحة التحكم - إدارة المتجر</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="/styles.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+</head>
+
+<body>
+    <!-- Login Screen -->
+    <div id="loginScreen" class="container">
+        <div class="card" style="max-width: 400px; margin: 5rem auto;">
+            <div class="card-header text-center">
+                <h1 class="card-title">🔐 لوحة التحكم</h1>
+                <p style="color: var(--text-light);">أدخل كلمة المرور للدخول</p>
+            </div>
+            <div id="loginError" class="alert alert-error hidden"></div>
+            <form id="loginForm">
+                <div class="form-group">
+                    <label class="form-label">كلمة المرور</label>
+                    <input type="password" id="passwordInput" class="form-input" required
+                        autocomplete="current-password">
+                </div>
+                <button type="submit" class="btn btn-primary" style="width: 100%;">
+                    دخول
+                </button>
+            </form>
+        </div>
+    </div>
+
+    <!-- Admin Panel -->
+    <div id="adminPanel" class="hidden">
+        <div class="container">
+            <div class="card">
+                <div class="card-header">
+                    <div class="flex justify-between items-center">
+                        <div>
+                            <h1 class="card-title">📦 لوحة التحكم</h1>
+                            <p style="color: var(--text-light);">إدارة المنتجات والطلبات</p>
+                        </div>
+                        <button onclick="logout()" class="btn btn-danger">
+                            تسجيل الخروج
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Tabs -->
+                <div class="tabs">
+                    <button class="tab active" onclick="switchTab('products', this)">
+                        🛍️ المنتجات
+                    </button>
+                    <button class="tab" onclick="switchTab('orders', this)">
+                        📋 الطلبات
+                    </button>
+                    <button class="tab" onclick="switchTab('analytics', this)">
+                        📊 الإحصائيات
+                    </button>
+                    <button class="tab" onclick="switchTab('delivery-men', this)">
+                        🚚 مندوبو التوصيل
+                    </button>
+                </div>
+
+                <!-- Products Tab -->
+                <div id="productsTab" class="tab-content active">
+                    <div class="flex justify-between items-center mb-3">
+                        <h2 style="font-size: 1.5rem; font-weight: 600;">قائمة المنتجات</h2>
+                        <button onclick="openProductModal()" class="btn btn-primary">
+                            ➕ إضافة منتج جديد
+                        </button>
+                    </div>
+
+                    <!-- Product Search -->
+                    <div class="filter-panel" style="background: var(--card-bg); padding: 1rem; border-radius: 8px; margin-bottom: 1rem; border: 1px solid var(--border);">
+                        <div class="form-group">
+                            <label class="form-label">🔍 بحث في المنتجات</label>
+                            <input type="text" id="productSearch" class="form-input" placeholder="اسم المنتج، الوصف..." 
+                                oninput="filterProducts()">
+                        </div>
+                    </div>
+
+                    <div id="productsContainer">
+                        <div class="spinner"></div>
+                    </div>
+                </div>
+
+                <!-- Orders Tab -->
+                <div id="ordersTab" class="tab-content">
+                    <div class="flex justify-between items-center mb-3">
+                        <h2 style="font-size: 1.5rem; font-weight: 600;">قائمة الطلبات</h2>
+                        <div class="flex gap-2">
+                            <button onclick="exportOrders()" class="btn btn-info btn-sm">
+                                📥 تصدير
+                            </button>
+                            <button onclick="loadOrders()" class="btn btn-success btn-sm">
+                                🔄 تحديث
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Filter Panel -->
+                    <div class="filter-panel" style="background: var(--card-bg); padding: 1rem; border-radius: 8px; margin-bottom: 1rem; border: 1px solid var(--border);">
+                        <div class="flex flex-wrap gap-2 items-end">
+                            <!-- Search -->
+                            <div class="form-group" style="flex: 1; min-width: 200px;">
+                                <label class="form-label" style="font-size: 0.85rem;">🔍 بحث</label>
+                                <input type="text" id="orderSearch" class="form-input" placeholder="رقم الطلب، اسم العميل، رقم الهاتف..." 
+                                    oninput="filterOrders()">
+                            </div>
+                            
+                            <!-- Status Filter -->
+                            <div class="form-group" style="min-width: 150px;">
+                                <label class="form-label" style="font-size: 0.85rem;">الحالة</label>
+                                <select id="statusFilter" class="form-input" onchange="filterOrders()">
+                                    <option value="">الكل</option>
+                                    <option value="pending">قيد الانتظار</option>
+                                    <option value="assigned">مُسند</option>
+                                    <option value="preparing">قيد التحضير</option>
+                                    <option value="in_transit">قيد التوصيل</option>
+                                    <option value="delivered">تم التوصيل</option>
+                                    <option value="completed">مكتمل</option>
+                                    <option value="cancelled">ملغي</option>
+                                    <option value="on_hold">معلق</option>
+                                </select>
+                            </div>
+                            
+                            <!-- Date From -->
+                            <div class="form-group" style="min-width: 150px;">
+                                <label class="form-label" style="font-size: 0.85rem;">من تاريخ</label>
+                                <input type="date" id="dateFrom" class="form-input" onchange="filterOrders()">
+                            </div>
+                            
+                            <!-- Date To -->
+                            <div class="form-group" style="min-width: 150px;">
+                                <label class="form-label" style="font-size: 0.85rem;">إلى تاريخ</label>
+                                <input type="date" id="dateTo" class="form-input" onchange="filterOrders()">
+                            </div>
+                            
+                            <!-- Sort By -->
+                            <div class="form-group" style="min-width: 150px;">
+                                <label class="form-label" style="font-size: 0.85rem;">ترتيب حسب</label>
+                                <select id="orderSortBy" class="form-input" onchange="applyFilters()">
+                                    <option value="date-desc">التاريخ (الأحدث)</option>
+                                    <option value="date-asc">التاريخ (الأقدم)</option>
+                                    <option value="status">الحالة</option>
+                                    <option value="customer">اسم العميل</option>
+                                    <option value="orderNumber">رقم الطلب</option>
+                                </select>
+                            </div>
+                            
+                            <!-- Clear Filters -->
+                            <button onclick="clearFilters()" class="btn btn-secondary btn-sm" style="height: fit-content;">
+                                🗑️ مسح
+                            </button>
+                        </div>
+                        
+                        <!-- Bulk Actions -->
+                        <div class="flex justify-between items-center mt-2" style="padding-top: 0.5rem; border-top: 1px solid var(--border);">
+                            <div class="flex items-center gap-2">
+                                <input type="checkbox" id="selectAllOrders" onchange="toggleSelectAll()">
+                                <label for="selectAllOrders" style="margin: 0; cursor: pointer;">
+                                    تحديد الكل (<span id="selectedCount">0</span>)
+                                </label>
+                            </div>
+                            <div class="flex gap-2">
+                                <button onclick="bulkUpdateStatus()" class="btn btn-primary btn-sm" id="bulkStatusBtn" disabled>
+                                    🔄 تحديث الحالة
+                                </button>
+                                <button onclick="bulkDelete()" class="btn btn-danger btn-sm" id="bulkDeleteBtn" disabled>
+                                    🗑️ حذف المحدد
+                                </button>
+                                <button onclick="bulkExport()" class="btn btn-info btn-sm" id="bulkExportBtn" disabled>
+                                    📥 تصدير المحدد
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div id="ordersContainer">
+                        <div class="spinner"></div>
+                    </div>
+                </div>
+
+                <!-- Analytics Tab -->
+                <div id="analyticsTab" class="tab-content">
+                    <div class="flex justify-between items-center mb-3">
+                        <h2 style="font-size: 1.5rem; font-weight: 600;">لوحة الإحصائيات</h2>
+                        <div class="flex gap-2">
+                            <select id="analyticsPeriod" class="form-input" onchange="loadAnalytics()" style="width: auto;">
+                                <option value="all">الكل</option>
+                                <option value="today">اليوم</option>
+                                <option value="week">آخر 7 أيام</option>
+                                <option value="month">آخر 30 يوم</option>
+                            </select>
+                            <button onclick="loadAnalytics()" class="btn btn-success btn-sm">
+                                🔄 تحديث
+                            </button>
+                        </div>
+                    </div>
+
+                    <div id="analyticsContainer">
+                        <div class="spinner"></div>
+                    </div>
+                </div>
+
+                <!-- Delivery Men Tab -->
+                <div id="delivery-menTab" class="tab-content">
+                    <div class="flex justify-between items-center mb-3">
+                        <h2 style="font-size: 1.5rem; font-weight: 600;">إدارة مندوبي التوصيل</h2>
+                        <button onclick="loadDeliveryMenList()" class="btn btn-success btn-sm">
+                            🔄 تحديث
+                        </button>
+                    </div>
+
+                    <div id="deliveryMenContainer">
+                        <div class="spinner"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Product Modal -->
+    <div id="productModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2 class="modal-title" id="modalTitle">إضافة منتج جديد</h2>
+                <button class="modal-close" onclick="closeProductModal()">✕</button>
+            </div>
+
+            <form id="productForm">
+                <input type="hidden" id="productId">
+
+                <div class="form-group">
+                    <label class="form-label">اسم المنتج</label>
+                    <input type="text" id="productName" class="form-input" required>
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label">السعر (دينار ليبي)</label>
+                    <input type="number" id="productPrice" class="form-input" required min="0" step="0.01">
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label">السعر بعد الخصم (اختياري)</label>
+                    <input type="number" id="productDiscountPrice" class="form-input" min="0" step="0.01"
+                        placeholder="اتركه فارغاً إذا لم يكن هناك خصم">
+                    <small style="color: var(--text-light); font-size: 0.85rem;">💡 سيظهر السعر الأصلي مشطوباً مع نسبة
+                        الخصم</small>
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label">الوصف (اختياري)</label>
+                    <textarea id="productDescription" class="form-textarea"></textarea>
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label">صور أو فيديو المنتج</label>
+                    <input type="file" id="productMedia" class="form-input" accept="image/*,video/*" multiple>
+                    <small style="color: var(--text-light); font-size: 0.85rem;">📸 يمكنك اختيار عدة صور</small>
+                    <div id="currentMedia" class="mt-2"></div>
+                </div>
+
+                <div class="flex gap-2">
+                    <button type="submit" class="btn btn-primary" style="flex: 1;">
+                        💾 حفظ
+                    </button>
+                    <button type="button" onclick="closeProductModal()" class="btn btn-danger">
+                        إلغاء
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <script src="/admin.js"></script>
+</body>
+
+</html>

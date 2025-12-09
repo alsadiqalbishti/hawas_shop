@@ -1,0 +1,467 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title id="pageTitle">منتج</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="/styles.css">
+    <style>
+        body {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 0;
+            margin: 0;
+        }
+
+        .product-wrapper {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 2rem 1rem;
+        }
+
+        /* Image Gallery Section - Full Width Top */
+        .product-gallery {
+            background: white;
+            border-radius: 20px;
+            padding: 2rem;
+            margin-bottom: 2rem;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.15);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .product-gallery::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 5px;
+            background: linear-gradient(90deg, #6366f1, #8b5cf6, #ec4899);
+        }
+
+        #productMedia {
+            width: 100%;
+            min-height: 400px;
+            max-height: 600px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        .product-gallery {
+            min-height: 500px;
+        }
+
+        /* Product Info Section */
+        .product-info-card {
+            background: white;
+            border-radius: 20px;
+            padding: 2.5rem;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.15);
+            margin-bottom: 2rem;
+        }
+
+        .product-header {
+            margin-bottom: 2rem;
+        }
+
+        .product-badge {
+            display: inline-block;
+            background: linear-gradient(135deg, #6366f1, #8b5cf6);
+            color: white;
+            padding: 0.5rem 1.2rem;
+            border-radius: 25px;
+            font-size: 0.85rem;
+            font-weight: 600;
+            margin-bottom: 1rem;
+            box-shadow: 0 4px 12px rgba(99, 102, 241, 0.3);
+        }
+
+        .product-title {
+            font-size: 2.5rem;
+            font-weight: 700;
+            color: #1e293b;
+            margin: 0.5rem 0;
+            line-height: 1.3;
+        }
+
+        /* Price Section - Modern Design */
+        .price-section {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            padding: 2rem;
+            border-radius: 16px;
+            margin: 2rem 0;
+            text-align: center;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .price-section::before {
+            content: '';
+            position: absolute;
+            top: -50%;
+            right: -50%;
+            width: 200%;
+            height: 200%;
+            background: radial-gradient(circle, rgba(255,255,255,0.1) 0%, transparent 70%);
+            animation: pulse 3s ease-in-out infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% { transform: scale(1); opacity: 0.5; }
+            50% { transform: scale(1.1); opacity: 0.8; }
+        }
+
+        .price-label {
+            color: rgba(255, 255, 255, 0.9);
+            font-size: 1rem;
+            margin-bottom: 0.5rem;
+            font-weight: 500;
+        }
+
+        .price-container {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 1rem;
+            flex-wrap: wrap;
+        }
+
+        .current-price {
+            color: white;
+            font-size: 3rem;
+            font-weight: 700;
+            text-shadow: 0 2px 10px rgba(0, 0, 0, 0.2);
+        }
+
+        .original-price {
+            color: rgba(255, 255, 255, 0.7);
+            font-size: 1.5rem;
+            text-decoration: line-through;
+        }
+
+        .discount-badge {
+            background: #ef4444;
+            color: white;
+            padding: 0.5rem 1rem;
+            border-radius: 20px;
+            font-size: 1rem;
+            font-weight: 700;
+            box-shadow: 0 4px 12px rgba(239, 68, 68, 0.4);
+            animation: bounce 2s ease-in-out infinite;
+        }
+
+        @keyframes bounce {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-5px); }
+        }
+
+        /* Description Section */
+        .description-section {
+            margin: 2rem 0;
+        }
+
+        .section-heading {
+            font-size: 1.3rem;
+            font-weight: 700;
+            color: #1e293b;
+            margin-bottom: 1rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .section-heading::before {
+            content: '';
+            width: 4px;
+            height: 24px;
+            background: linear-gradient(135deg, #6366f1, #8b5cf6);
+            border-radius: 2px;
+        }
+
+        .product-description {
+            color: #64748b;
+            line-height: 2;
+            font-size: 1.1rem;
+            padding: 1.5rem;
+            background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
+            border-radius: 12px;
+            border-right: 4px solid #6366f1;
+            word-wrap: break-word;
+            overflow-wrap: break-word;
+            white-space: pre-wrap;
+            max-width: 100%;
+            overflow: hidden;
+        }
+
+        /* Features Section */
+        .features-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 1rem;
+            margin: 2rem 0;
+        }
+
+        .feature-item {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            padding: 1rem;
+            background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
+            border-radius: 12px;
+            transition: all 0.3s ease;
+        }
+
+        .feature-item:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 4px 12px rgba(99, 102, 241, 0.2);
+        }
+
+        .feature-icon {
+            width: 40px;
+            height: 40px;
+            background: linear-gradient(135deg, #10b981, #059669);
+            color: white;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.2rem;
+            font-weight: bold;
+            flex-shrink: 0;
+        }
+
+        .feature-text {
+            font-weight: 600;
+            color: #334155;
+        }
+
+        /* Order Form Section */
+        .order-section {
+            background: white;
+            border-radius: 20px;
+            padding: 2.5rem;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.15);
+            margin-top: 2rem;
+        }
+
+        .form-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 1.5rem;
+            margin-bottom: 1.5rem;
+        }
+
+        .help-text {
+            background: linear-gradient(135deg, #dbeafe 0%, #bfdbfe 100%);
+            padding: 1.2rem;
+            border-radius: 12px;
+            margin-bottom: 2rem;
+            color: #1e40af;
+            font-size: 1rem;
+            border-right: 4px solid #3b82f6;
+            line-height: 1.8;
+        }
+
+        .form-input, .form-textarea {
+            border: 2px solid #e2e8f0;
+            transition: all 0.3s ease;
+        }
+
+        .form-input:focus, .form-textarea:focus {
+            border-color: #6366f1;
+            box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.1);
+        }
+
+        .submit-btn {
+            width: 100%;
+            font-size: 1.3rem;
+            padding: 1.2rem;
+            background: linear-gradient(135deg, #6366f1, #8b5cf6);
+            border: none;
+            border-radius: 12px;
+            color: white;
+            font-weight: 700;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 15px rgba(99, 102, 241, 0.4);
+        }
+
+        .submit-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(99, 102, 241, 0.5);
+        }
+
+        .submit-btn:active {
+            transform: translateY(0);
+        }
+
+        /* Responsive */
+        @media (max-width: 768px) {
+            .product-wrapper {
+                padding: 1rem 0.5rem;
+            }
+
+            .product-gallery, .product-info-card, .order-section {
+                padding: 1.5rem;
+                border-radius: 16px;
+            }
+
+            .product-title {
+                font-size: 1.8rem;
+            }
+
+            .current-price {
+                font-size: 2.2rem;
+            }
+
+            .features-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .form-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        /* Loading and Error States */
+        .hidden {
+            display: none !important;
+        }
+
+        #productNotFound {
+            background: white;
+            border-radius: 20px;
+            padding: 4rem 2rem;
+            text-align: center;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.15);
+        }
+
+        #productNotFound h2 {
+            font-size: 4rem;
+            margin-bottom: 1rem;
+        }
+
+        #productNotFound h3 {
+            font-size: 1.5rem;
+            color: #64748b;
+            margin-bottom: 0.5rem;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="product-wrapper">
+        <div id="loadingSpinner" class="spinner"></div>
+
+        <div id="productContent" class="hidden">
+            <!-- Image Gallery - Full Width Top -->
+            <div class="product-gallery">
+                <div id="productMedia"></div>
+            </div>
+
+            <!-- Product Info Card -->
+            <div class="product-info-card">
+                <div class="product-header">
+                    <span class="product-badge">✨ منتج مميز</span>
+                    <h1 class="product-title" id="productName"></h1>
+                </div>
+
+                <!-- Price Section -->
+                <div class="price-section">
+                    <div class="price-label">السعر</div>
+                    <div class="price-container">
+                        <span class="current-price" id="productPrice"></span>
+                        <div id="originalPrice" class="original-price hidden"></div>
+                        <div id="discountBadge" class="discount-badge hidden"></div>
+                    </div>
+                </div>
+
+                <!-- Description -->
+                <div class="description-section">
+                    <h2 class="section-heading">📝 الوصف</h2>
+                    <div class="product-description" id="productDescription"></div>
+                </div>
+
+                <!-- Features -->
+                <div class="features-grid">
+                    <div class="feature-item">
+                        <div class="feature-icon">🚚</div>
+                        <div class="feature-text">توصيل سريع لجميع المدن</div>
+                    </div>
+                    <div class="feature-item">
+                        <div class="feature-icon">✅</div>
+                        <div class="feature-text">ضمان الجودة والأصالة</div>
+                    </div>
+                    <div class="feature-item">
+                        <div class="feature-icon">💳</div>
+                        <div class="feature-text">الدفع عند الاستلام</div>
+                    </div>
+                    <div class="feature-item">
+                        <div class="feature-icon">🎯</div>
+                        <div class="feature-text">خدمة عملاء متميزة</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Order Form Section -->
+            <div class="order-section">
+                <h2 class="section-heading">🛒 اطلب الآن</h2>
+
+                <div class="help-text">
+                    💡 <strong>للطلب:</strong> املأ البيانات التالية وسنتواصل معك خلال 24 ساعة لتأكيد الطلب وترتيب التوصيل
+                </div>
+
+                <div id="orderSuccess" class="alert alert-success hidden">
+                    ✅ تم إرسال طلبك بنجاح! سنتواصل معك قريباً.
+                </div>
+
+                <div id="orderError" class="alert alert-error hidden"></div>
+
+                <form id="orderForm">
+                    <div class="form-grid">
+                        <div class="form-group">
+                            <label class="form-label">الاسم الكامل *</label>
+                            <input type="text" id="customerName" class="form-input" required placeholder="أدخل اسمك الكامل">
+                        </div>
+
+                        <div class="form-group">
+                            <label class="form-label">رقم الهاتف *</label>
+                            <input type="tel" id="customerPhone" class="form-input" required placeholder="مثال: 0912345678">
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label">العنوان الكامل *</label>
+                        <textarea id="customerAddress" class="form-textarea" required rows="4"
+                            placeholder="المدينة، الحي، الشارع، رقم المنزل"></textarea>
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label">الكمية *</label>
+                        <input type="number" id="quantity" class="form-input" required min="1" max="1000" value="1" style="max-width: 200px;">
+                    </div>
+
+                    <button type="submit" class="submit-btn">
+                        🛒 تأكيد الطلب
+                    </button>
+                </form>
+            </div>
+        </div>
+
+        <div id="productNotFound" class="hidden text-center">
+            <h2>❌</h2>
+            <h3>المنتج غير موجود</h3>
+            <p style="color: var(--text-light); margin-top: 1rem;">عذراً، هذا المنتج غير متوفر حالياً</p>
+        </div>
+    </div>
+
+    <script src="/product.js"></script>
+</body>
+
+</html>

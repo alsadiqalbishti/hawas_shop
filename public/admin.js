@@ -681,9 +681,6 @@ function renderProductsTable() {
     
     container.innerHTML = '';
     container.appendChild(grid);
-        tableContainer.appendChild(table);
-        container.innerHTML = '';
-        container.appendChild(tableContainer);
 }
 
 // Get status info

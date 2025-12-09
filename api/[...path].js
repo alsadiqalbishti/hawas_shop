@@ -105,13 +105,19 @@ module.exports = async (req, res) => {
         // Parse from URL: /api/products -> ['products']
         // Handle both /api/products and api/products
         const urlPath = req.url.split('?')[0]; // Remove query string
-        const cleanPath = urlPath.replace(/^\/?api\/?/, ''); // Remove /api or api/ prefix
-        pathParts = cleanPath.split('/').filter(p => p);
+        // Remove leading/trailing slashes and /api prefix
+        let cleanPath = urlPath.replace(/^\/+/, '').replace(/\/+$/, '');
+        if (cleanPath.startsWith('api/')) {
+            cleanPath = cleanPath.substring(4);
+        } else if (cleanPath.startsWith('api')) {
+            cleanPath = cleanPath.substring(3);
+        }
+        pathParts = cleanPath.split('/').filter(p => p && p.length > 0);
     }
     
     const endpoint = pathParts[0] || '';
     const subEndpoint = pathParts[1] || '';
-
+    
     // Debug logging (remove in production if needed)
     console.log('API Request:', {
         method: req.method,

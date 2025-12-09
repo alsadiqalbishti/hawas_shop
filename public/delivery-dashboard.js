@@ -101,7 +101,7 @@ function renderOrders(orders) {
     const container = document.getElementById('ordersList');
     
     if (orders.length === 0) {
-        container.innerHTML = '<div class="empty-state">لا توجد طلبات متاحة</div>';
+        container.innerHTML = '<div class="empty-state" style="text-align: center; padding: 3rem; color: #666;"><p style="font-size: 1.2rem; margin-bottom: 1rem;">لا توجد طلبات مُسندة إليك</p><p style="color: #999;">سيتم إظهار الطلبات هنا بعد أن يقوم المدير بإسنادها إليك من لوحة التحكم</p></div>';
         return;
     }
 

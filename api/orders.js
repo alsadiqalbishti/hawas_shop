@@ -222,9 +222,15 @@ module.exports = async (req, res) => {
                     const currentStatus = order.status;
                     const newStatus = status || currentStatus;
                     
+                    // Determine final status (may be changed by delivery man assignment)
+                    let finalStatusForValidation = newStatus;
+                    if (deliveryManId !== undefined && deliveryManId && order.status === 'pending' && !status) {
+                        finalStatusForValidation = 'assigned';
+                    }
+                    
                     // Validate status transition (admin role for now)
-                    if (newStatus !== currentStatus && !canTransitionStatus(currentStatus, newStatus, 'admin')) {
-                        throw new Error(`Invalid status transition from ${currentStatus} to ${newStatus}`);
+                    if (finalStatusForValidation !== currentStatus && !canTransitionStatus(currentStatus, finalStatusForValidation, 'admin')) {
+                        throw new Error(`Invalid status transition from ${currentStatus} to ${finalStatusForValidation}`);
                     }
 
                     // Validate status value
@@ -234,9 +240,16 @@ module.exports = async (req, res) => {
                     }
 
                     // Build update object
+                    let finalStatus = newStatus;
+                    
+                    // If assigning a delivery man to a pending order, automatically set status to "assigned"
+                    if (deliveryManId !== undefined && deliveryManId && order.status === 'pending' && !status) {
+                        finalStatus = 'assigned';
+                    }
+                    
                     const updated = {
                         ...order,
-                        status: newStatus,
+                        status: finalStatus,
                         updatedAt: new Date().toISOString()
                     };
 
@@ -256,9 +269,12 @@ module.exports = async (req, res) => {
                     }
 
                     // Add status history entry if status changed
-                    if (newStatus !== currentStatus) {
+                    if (finalStatus !== currentStatus) {
                         const changedBy = req.headers['x-user-id'] || 'admin'; // Could be extracted from JWT
-                        addStatusHistory(updated, newStatus, changedBy, notes || `Status changed to ${getStatusLabel(newStatus)}`);
+                        const historyNote = notes || (deliveryManId && currentStatus === 'pending' && finalStatus === 'assigned' 
+                            ? 'تم إسناد الطلب إلى مندوب التوصيل' 
+                            : `Status changed to ${getStatusLabel(finalStatus)}`);
+                        addStatusHistory(updated, finalStatus, changedBy, historyNote);
                     }
 
                     await client.set(`order:${id}`, JSON.stringify(updated));

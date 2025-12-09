@@ -29,8 +29,8 @@ module.exports = async (req, res) => {
                 const orderData = await redisClient.get(`order:${orderId}`);
                 if (orderData) {
                     const order = JSON.parse(orderData);
-                    // Get orders assigned to this delivery man or unassigned orders
-                    if (!order.deliveryManId || order.deliveryManId === deliveryManId) {
+                    // Only show orders assigned to this specific delivery man
+                    if (order.deliveryManId === deliveryManId) {
                         // Get product info
                         const productData = await redisClient.get(`product:${order.productId}`);
                         if (productData) {

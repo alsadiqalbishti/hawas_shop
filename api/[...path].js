@@ -86,9 +86,76 @@ module.exports = async (req, res) => {
         return res.status(200).end();
     }
 
+    // IMMEDIATE CHECK: Handle delivery/list endpoint directly if detected
+    const queryPath = req.query?.path;
+    if (queryPath && Array.isArray(queryPath) && queryPath.length >= 2) {
+        const first = String(queryPath[0] || '').toLowerCase().trim();
+        const second = String(queryPath[1] || '').toLowerCase().trim();
+        if (first === 'delivery' && second === 'list' && req.method === 'GET') {
+            // Directly handle delivery/list endpoint
+            if (!requireAuth(req, res)) return;
+            try {
+                const deliveryMen = await safeRedisOperation(async (client) => {
+                    const deliveryManIds = await client.smembers('delivery-men') || [];
+                    const deliveryMenList = [];
+                    for (const id of deliveryManIds) {
+                        try {
+                            if (!id) continue;
+                            const keys = await client.keys('delivery:*');
+                            for (const key of keys) {
+                                try {
+                                    const data = await client.get(key);
+                                    if (data) {
+                                        const deliveryMan = JSON.parse(data);
+                                        if (deliveryMan.id === id) {
+                                            const { password, ...safeInfo } = deliveryMan;
+                                            deliveryMenList.push(safeInfo);
+                                            break;
+                                        }
+                                    }
+                                } catch (error) {
+                                    console.error(`Error parsing delivery man from key ${key}:`, error);
+                                }
+                            }
+                        } catch (error) {
+                            console.error(`Error processing delivery man ID ${id}:`, error);
+                        }
+                    }
+                    try {
+                        const phoneKeys = await client.keys('delivery:*');
+                        for (const key of phoneKeys) {
+                            try {
+                                if (key.startsWith('delivery:') && key.split(':').length === 2) {
+                                    const data = await client.get(key);
+                                    if (data) {
+                                        const deliveryMan = JSON.parse(data);
+                                        if (!deliveryMenList.find(dm => dm.id === deliveryMan.id)) {
+                                            const { password, ...safeInfo } = deliveryMan;
+                                            deliveryMenList.push(safeInfo);
+                                        }
+                                    }
+                                }
+                            } catch (error) {
+                                console.error(`Error processing delivery key ${key}:`, error);
+                            }
+                        }
+                    } catch (error) {
+                        console.error('Error getting delivery phone keys:', error);
+                    }
+                    return deliveryMenList.filter((dm, index, self) =>
+                        index === self.findIndex(d => d.id === dm.id)
+                    );
+                }, 'Failed to fetch delivery men', true);
+                return res.status(200).json(deliveryMen || []);
+            } catch (error) {
+                console.error('Error in GET /api/delivery/list:', error);
+                return res.status(200).json([]);
+            }
+        }
+    }
+
     // ULTRA-AGGRESSIVE URL MATCHING FOR DELIVERY ENDPOINTS (check FIRST, before anything else)
     const rawUrl = String(req.url || '').toLowerCase();
-    const queryPath = req.query?.path;
     
     // Check if this is a delivery endpoint request - multiple ways
     let isDeliveryEndpoint = false;
@@ -203,13 +270,14 @@ module.exports = async (req, res) => {
     // - req.url might be '/api/delivery/list' or '/delivery/list'
     let pathParts = [];
     
-    // Method 1: Try req.query.path (Vercel's catch-all format)
+    // Method 1: Try req.query.path (Vercel's catch-all format) - PRIORITY
     if (req.query && req.query.path !== undefined && req.query.path !== null) {
         const pathArray = req.query.path;
         if (Array.isArray(pathArray)) {
-            pathParts = pathArray.filter(p => p && String(p).trim().length > 0).map(p => String(p).trim());
+            // Filter and map, but preserve all parts
+            pathParts = pathArray.map(p => String(p || '').trim()).filter(p => p.length > 0);
         } else if (typeof pathArray === 'string' && pathArray.trim().length > 0) {
-            pathParts = pathArray.split('/').filter(p => p && p.trim().length > 0).map(p => p.trim());
+            pathParts = pathArray.split('/').map(p => p.trim()).filter(p => p.length > 0);
         }
     }
     
@@ -306,6 +374,40 @@ module.exports = async (req, res) => {
         }
     }
     
+    // FINAL OVERRIDE: If endpoint still not set correctly, do one more aggressive check
+    if (endpoint !== 'delivery' || !subEndpoint) {
+        // Check pathParts one more time (most reliable)
+        if (pathParts.length >= 2 && pathParts[0].toLowerCase() === 'delivery') {
+            endpoint = 'delivery';
+            subEndpoint = pathParts[1].toLowerCase().trim();
+        }
+        // Check query.path one more time
+        else if (queryPath) {
+            if (Array.isArray(queryPath) && queryPath.length >= 2) {
+                const first = String(queryPath[0] || '').toLowerCase().trim();
+                const second = String(queryPath[1] || '').toLowerCase().trim();
+                if (first === 'delivery' && second) {
+                    endpoint = 'delivery';
+                    subEndpoint = second;
+                }
+            }
+        }
+        // Check rawUrl one more time as absolute last resort
+        else if (rawUrl.includes('delivery/list') && req.method === 'GET') {
+            endpoint = 'delivery';
+            subEndpoint = 'list';
+        } else if (rawUrl.includes('delivery/auth') && req.method === 'POST') {
+            endpoint = 'delivery';
+            subEndpoint = 'auth';
+        } else if (rawUrl.includes('delivery/orders')) {
+            endpoint = 'delivery';
+            subEndpoint = 'orders';
+        } else if (rawUrl.includes('delivery/info') && req.method === 'GET') {
+            endpoint = 'delivery';
+            subEndpoint = 'info';
+        }
+    }
+    
     // Debug logging
     console.log('API Request Debug:', {
         method: req.method,
@@ -315,6 +417,8 @@ module.exports = async (req, res) => {
         pathParts: pathParts,
         endpoint: endpoint,
         subEndpoint: subEndpoint,
+        isDeliveryEndpoint: isDeliveryEndpoint,
+        deliverySubEndpoint: deliverySubEndpoint,
         urlLower: (req.url || '').toLowerCase()
     });
 

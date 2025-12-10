@@ -89,9 +89,10 @@ function renderStats(orders) {
     const total = orders.length;
     const inTransit = orders.filter(o => o.status === 'in_transit').length;
     const delivered = orders.filter(o => o.status === 'delivered' || o.status === 'completed').length;
+    // Delivery man profit is only the shipping price (delivery fee)
     const totalEarnings = orders
-        .filter(o => o.paymentReceived)
-        .reduce((sum, o) => sum + parseFloat(o.paymentReceived || 0), 0);
+        .filter(o => o.shippingPrice)
+        .reduce((sum, o) => sum + parseFloat(o.shippingPrice || 0), 0);
     
     statsContainer.innerHTML = `
         <div class="stat-card">

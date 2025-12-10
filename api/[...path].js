@@ -1090,7 +1090,9 @@ module.exports = async (req, res) => {
                     const product = products.find(p => p.id === order.productId);
                     if (product) {
                         const price = product.discountPrice || product.price;
-                        const orderValue = price * order.quantity;
+                        const productValue = price * order.quantity;
+                        // Admin revenue = product value + shipping price (total order value)
+                        const orderValue = productValue + (parseFloat(order.shippingPrice) || 0);
                         stats.revenue.total += orderValue;
                         stats.revenue.byStatus[order.status] = (stats.revenue.byStatus[order.status] || 0) + orderValue;
                     }
@@ -1152,11 +1154,13 @@ module.exports = async (req, res) => {
                         dailyTrends[date] = { orders: 0, revenue: 0 };
                     }
                     dailyTrends[date].orders++;
-                    const product = products.find(p => p.id === order.productId);
-                    if (product) {
-                        const price = product.discountPrice || product.price;
-                        dailyTrends[date].revenue += price * order.quantity;
-                    }
+                        const product = products.find(p => p.id === order.productId);
+                        if (product) {
+                            const price = product.discountPrice || product.price;
+                            // Admin revenue = product value + shipping price (total order value)
+                            const orderValue = (price * order.quantity) + (parseFloat(order.shippingPrice) || 0);
+                            dailyTrends[date].revenue += orderValue;
+                        }
                 });
                 
                     stats.dailyTrends = Object.entries(dailyTrends)

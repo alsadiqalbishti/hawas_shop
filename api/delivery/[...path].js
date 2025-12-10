@@ -2,13 +2,13 @@
 // This is a separate function to ensure proper routing for multi-segment paths
 
 const Redis = require('ioredis');
-const { requireAuth, requireDeliveryAuth } = require('../utils/auth');
+const { requireAuth } = require('../utils/auth');
 const { 
     canTransitionStatus, 
     addStatusHistory,
     getStatusLabel
 } = require('../utils/orders');
-const { getDeliveryManById, generateId: generateDeliveryId } = require('../utils/delivery');
+const { getDeliveryManById, generateId: generateDeliveryId, requireDeliveryAuth } = require('../utils/delivery');
 
 // Shared Redis connection
 let redis;

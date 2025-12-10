@@ -133,14 +133,26 @@ module.exports = async (req, res) => {
     console.log('🔍 DELIVERY/LIST CHECK - isDeliveryListRequest (URL):', isDeliveryListRequest);
     console.log('🔍 DELIVERY/LIST CHECK - rawUrlForCheck:', rawUrlForCheck);
     
-    // Also check queryPath
-    if (!isDeliveryListRequest && queryPath && Array.isArray(queryPath) && queryPath.length >= 2) {
-        const first = String(queryPath[0] || '').toLowerCase().trim();
-        const second = String(queryPath[1] || '').toLowerCase().trim();
-        console.log('Immediate check - first:', first, 'second:', second);
-        if (first === 'delivery' && second === 'list' && req.method === 'GET') {
-            isDeliveryListRequest = true;
-            console.log('✅ IMMEDIATE HANDLER TRIGGERED for delivery/list (queryPath match)');
+    // Check queryPath - handle both array and string formats
+    if (!isDeliveryListRequest && queryPath) {
+        if (Array.isArray(queryPath) && queryPath.length >= 2) {
+            const first = String(queryPath[0] || '').toLowerCase().trim();
+            const second = String(queryPath[1] || '').toLowerCase().trim();
+            console.log('Immediate check - first:', first, 'second:', second);
+            if (first === 'delivery' && second === 'list' && req.method === 'GET') {
+                isDeliveryListRequest = true;
+                console.log('✅ IMMEDIATE HANDLER TRIGGERED for delivery/list (queryPath array match)');
+            }
+        } else if (typeof queryPath === 'string') {
+            // Handle string format like "delivery/list"
+            const pathLower = queryPath.toLowerCase();
+            console.log('Immediate check - queryPath string:', pathLower);
+            if (pathLower === 'delivery/list' || pathLower.includes('delivery/list')) {
+                if (req.method === 'GET') {
+                    isDeliveryListRequest = true;
+                    console.log('✅ IMMEDIATE HANDLER TRIGGERED for delivery/list (queryPath string match)');
+                }
+            }
         }
     }
     

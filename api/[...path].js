@@ -102,18 +102,35 @@ module.exports = async (req, res) => {
 
     // IMMEDIATE CHECK: Handle delivery/list endpoint directly if detected
     const queryPath = req.query?.path;
+    const rawUrlForCheck = String(req.url || '').toLowerCase();
     console.log('Immediate check - queryPath:', queryPath);
     console.log('Immediate check - isArray:', Array.isArray(queryPath));
     console.log('Immediate check - length:', Array.isArray(queryPath) ? queryPath.length : 'N/A');
+    console.log('Immediate check - rawUrl:', rawUrlForCheck);
     
-    if (queryPath && Array.isArray(queryPath) && queryPath.length >= 2) {
+    // Check if URL contains delivery/list (most direct check)
+    let isDeliveryListRequest = req.method === 'GET' && (
+        rawUrlForCheck.includes('/api/delivery/list') || 
+        rawUrlForCheck.includes('delivery/list') ||
+        rawUrlForCheck === '/api/delivery/list' ||
+        rawUrlForCheck.endsWith('/delivery/list')
+    );
+    
+    // Also check queryPath
+    if (!isDeliveryListRequest && queryPath && Array.isArray(queryPath) && queryPath.length >= 2) {
         const first = String(queryPath[0] || '').toLowerCase().trim();
         const second = String(queryPath[1] || '').toLowerCase().trim();
         console.log('Immediate check - first:', first, 'second:', second);
         if (first === 'delivery' && second === 'list' && req.method === 'GET') {
-            console.log('IMMEDIATE HANDLER TRIGGERED for delivery/list');
-            // Directly handle delivery/list endpoint
-            if (!requireAuth(req, res)) return;
+            isDeliveryListRequest = true;
+            console.log('IMMEDIATE HANDLER TRIGGERED for delivery/list (queryPath match)');
+        }
+    }
+    
+    if (isDeliveryListRequest) {
+        console.log('IMMEDIATE HANDLER TRIGGERED for delivery/list');
+        // Directly handle delivery/list endpoint
+        if (!requireAuth(req, res)) return;
             try {
                 const deliveryMen = await safeRedisOperation(async (client) => {
                     const deliveryManIds = await client.smembers('delivery-men') || [];
@@ -172,11 +189,8 @@ module.exports = async (req, res) => {
                 console.error('IMMEDIATE HANDLER ERROR:', error);
                 return res.status(200).json([]);
             }
-        } else {
-            console.log('Immediate check - conditions not met:', { first, second, method: req.method });
-        }
     } else {
-        console.log('Immediate check - queryPath check failed:', { queryPath, isArray: Array.isArray(queryPath), length: Array.isArray(queryPath) ? queryPath.length : 'N/A' });
+        console.log('Immediate check - delivery/list request not detected');
     }
 
     // ULTRA-AGGRESSIVE URL MATCHING FOR DELIVERY ENDPOINTS (check FIRST, before anything else)

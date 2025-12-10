@@ -94,8 +94,22 @@ module.exports = async (req, res) => {
     let isDeliveryEndpoint = false;
     let deliverySubEndpoint = '';
     
-    // Method 1: Check raw URL
-    if (rawUrl.includes('delivery/list') && req.method === 'GET') {
+    // Method 1: Check raw URL (handle both /api/delivery/list and /delivery/list formats)
+    const normalizedRawUrl = rawUrl.replace(/^\/api\//, '/').replace(/^\/+/, '/');
+    if (normalizedRawUrl.includes('/delivery/list') && req.method === 'GET') {
+        isDeliveryEndpoint = true;
+        deliverySubEndpoint = 'list';
+    } else if (normalizedRawUrl.includes('/delivery/auth') && req.method === 'POST') {
+        isDeliveryEndpoint = true;
+        deliverySubEndpoint = 'auth';
+    } else if (normalizedRawUrl.includes('/delivery/orders')) {
+        isDeliveryEndpoint = true;
+        deliverySubEndpoint = 'orders';
+    } else if (normalizedRawUrl.includes('/delivery/info') && req.method === 'GET') {
+        isDeliveryEndpoint = true;
+        deliverySubEndpoint = 'info';
+    } else if (rawUrl.includes('delivery/list') && req.method === 'GET') {
+        // Fallback: check original rawUrl
         isDeliveryEndpoint = true;
         deliverySubEndpoint = 'list';
     } else if (rawUrl.includes('delivery/auth') && req.method === 'POST') {
@@ -208,31 +222,37 @@ module.exports = async (req, res) => {
         endpoint = 'delivery';
         subEndpoint = deliverySubEndpoint;
     } else {
-        // Explicit checks for delivery endpoints (fallback if early detection didn't work)
-        // Check raw URL, normalized path, and pathParts - whichever matches first
-        const allUrlChecks = (rawUrl + ' ' + urlPath + ' ' + urlLower).toLowerCase();
-        
-        if (allUrlChecks.includes('delivery/list') && req.method === 'GET') {
+        // Check pathParts directly (most reliable for Vercel catch-all routes)
+        if (pathParts.length >= 2 && pathParts[0].toLowerCase() === 'delivery') {
             endpoint = 'delivery';
-            subEndpoint = 'list';
-        } else if (allUrlChecks.includes('delivery/auth') && req.method === 'POST') {
-            endpoint = 'delivery';
-            subEndpoint = 'auth';
-        } else if (allUrlChecks.includes('delivery/orders')) {
-            endpoint = 'delivery';
-            subEndpoint = 'orders';
-        } else if (allUrlChecks.includes('delivery/info') && req.method === 'GET') {
-            endpoint = 'delivery';
-            subEndpoint = 'info';
-        } else if (allUrlChecks.includes('delivery/')) {
-            // Generic delivery endpoint extraction - try multiple patterns
-            let deliveryMatch = allUrlChecks.match(/delivery\/([^\/\?\s]+)/);
-            if (!deliveryMatch) {
-                deliveryMatch = rawUrl.match(/delivery[\/\-_]([^\/\?\s]+)/i);
-            }
-            if (deliveryMatch) {
+            subEndpoint = pathParts[1].toLowerCase().trim();
+        } else {
+            // Explicit checks for delivery endpoints (fallback if early detection didn't work)
+            // Check raw URL, normalized path, and pathParts - whichever matches first
+            const allUrlChecks = (rawUrl + ' ' + urlPath + ' ' + urlLower).toLowerCase();
+            
+            if (allUrlChecks.includes('delivery/list') && req.method === 'GET') {
                 endpoint = 'delivery';
-                subEndpoint = deliveryMatch[1].toLowerCase().trim();
+                subEndpoint = 'list';
+            } else if (allUrlChecks.includes('delivery/auth') && req.method === 'POST') {
+                endpoint = 'delivery';
+                subEndpoint = 'auth';
+            } else if (allUrlChecks.includes('delivery/orders')) {
+                endpoint = 'delivery';
+                subEndpoint = 'orders';
+            } else if (allUrlChecks.includes('delivery/info') && req.method === 'GET') {
+                endpoint = 'delivery';
+                subEndpoint = 'info';
+            } else if (allUrlChecks.includes('delivery/')) {
+                // Generic delivery endpoint extraction - try multiple patterns
+                let deliveryMatch = allUrlChecks.match(/delivery\/([^\/\?\s]+)/);
+                if (!deliveryMatch) {
+                    deliveryMatch = rawUrl.match(/delivery[\/\-_]([^\/\?\s]+)/i);
+                }
+                if (deliveryMatch) {
+                    endpoint = 'delivery';
+                    subEndpoint = deliveryMatch[1].toLowerCase().trim();
+                }
             }
         }
     }

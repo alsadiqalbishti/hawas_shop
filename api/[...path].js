@@ -187,7 +187,6 @@ module.exports = async (req, res) => {
     
     // DIRECT URL MATCHING FIRST (before pathParts parsing)
     // Vercel's path parsing can be inconsistent, so we check the URL directly first
-    const rawUrl = (req.url || '').toLowerCase();
     const urlLower = rawUrl;
     let urlPath = urlLower.split('?')[0]; // Remove query string
     

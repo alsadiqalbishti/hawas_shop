@@ -67,6 +67,18 @@ window.addEventListener('DOMContentLoaded', () => {
     loadOrders();
     // Refresh every 30 seconds
     setInterval(loadOrders, 30000);
+    
+    // Handle window resize to re-render orders
+    let resizeTimer;
+    window.addEventListener('resize', function() {
+        clearTimeout(resizeTimer);
+        resizeTimer = setTimeout(function() {
+            // Re-render if orders are loaded
+            if (typeof currentOrders !== 'undefined' && currentOrders && currentOrders.length > 0) {
+                renderOrders(currentOrders);
+            }
+        }, 250);
+    });
 });
 
 // Load stats
@@ -128,6 +140,9 @@ async function loadOrders() {
             throw new Error('Invalid response format');
         }
 
+        // Store orders globally for resize handler
+        window.currentOrders = orders;
+        
         renderStats(orders);
         renderOrders(orders);
     } catch (error) {
@@ -154,7 +169,7 @@ function getStatusBadgeClass(status) {
     return classes[status] || 'badge';
 }
 
-// Render orders - Compact list view
+// Render orders - Compact list view (responsive)
 function renderOrders(orders) {
     const container = document.getElementById('ordersList');
     
@@ -169,7 +184,108 @@ function renderOrders(orders) {
         return;
     }
 
-    // Create compact table view
+    // Check if mobile view
+    const isMobile = window.innerWidth <= 768;
+    
+    if (isMobile) {
+        // Mobile: Card view
+        const cardsContainer = document.createElement('div');
+        cardsContainer.className = 'orders-table-mobile';
+        
+        orders.forEach(order => {
+            const product = order.product || {};
+            const statusBadgeClass = getStatusBadgeClass(order.status);
+            const orderNumber = order.orderNumber || order.id;
+            const displayOrderNumber = orderNumber.startsWith('ORD-') ? orderNumber : `#${orderNumber.substring(0, 8)}`;
+            
+            const card = document.createElement('div');
+            card.className = 'mobile-order-card';
+            card.onclick = (e) => {
+                if (e.target.closest('button')) return;
+                openDeliveryOrderDetailModal(order);
+            };
+            
+            const header = document.createElement('div');
+            header.className = 'mobile-order-card-header';
+            header.innerHTML = `
+                <span style="font-weight: 600; color: var(--primary);">${displayOrderNumber}</span>
+                <span class="${statusBadgeClass}">${getStatusLabel(order.status)}</span>
+            `;
+            
+            const body = document.createElement('div');
+            body.className = 'mobile-order-card-body';
+            body.innerHTML = `
+                <div class="mobile-card-row">
+                    <span class="mobile-card-label">العميل:</span>
+                    <span class="mobile-card-value">${escapeHtml(order.customerName)}</span>
+                </div>
+                <div class="mobile-card-row">
+                    <span class="mobile-card-label">الهاتف:</span>
+                    <a href="tel:${order.customerPhone}" class="mobile-card-value" style="color: var(--primary);" onclick="event.stopPropagation();">${order.customerPhone}</a>
+                </div>
+                <div class="mobile-card-row">
+                    <span class="mobile-card-label">المنتج:</span>
+                    <span class="mobile-card-value">${escapeHtml(product.name || 'غير معروف')}</span>
+                </div>
+            `;
+            
+            const actions = document.createElement('div');
+            actions.className = 'mobile-card-actions';
+            
+            if (order.status === 'assigned') {
+                const quickBtn = document.createElement('button');
+                quickBtn.className = 'btn btn-info btn-sm';
+                quickBtn.style.flex = '1';
+                quickBtn.textContent = '⏳ بدء التحضير';
+                quickBtn.onclick = (e) => {
+                    e.stopPropagation();
+                    quickUpdate(order.id, 'preparing');
+                };
+                actions.appendChild(quickBtn);
+            } else if (order.status === 'preparing') {
+                const quickBtn = document.createElement('button');
+                quickBtn.className = 'btn btn-primary btn-sm';
+                quickBtn.style.flex = '1';
+                quickBtn.textContent = '🚚 بدء التوصيل';
+                quickBtn.onclick = (e) => {
+                    e.stopPropagation();
+                    quickUpdate(order.id, 'in_transit');
+                };
+                actions.appendChild(quickBtn);
+            } else if (order.status === 'in_transit') {
+                const quickBtn = document.createElement('button');
+                quickBtn.className = 'btn btn-success btn-sm';
+                quickBtn.style.flex = '1';
+                quickBtn.textContent = '✅ تم التوصيل';
+                quickBtn.onclick = (e) => {
+                    e.stopPropagation();
+                    quickUpdate(order.id, 'delivered');
+                };
+                actions.appendChild(quickBtn);
+            }
+            
+            const viewBtn = document.createElement('button');
+            viewBtn.className = 'btn btn-info btn-sm';
+            viewBtn.textContent = '👁️';
+            viewBtn.onclick = (e) => {
+                e.stopPropagation();
+                openDeliveryOrderDetailModal(order);
+            };
+            actions.appendChild(viewBtn);
+            
+            card.appendChild(header);
+            card.appendChild(body);
+            card.appendChild(actions);
+            
+            cardsContainer.appendChild(card);
+        });
+        
+        container.innerHTML = '';
+        container.appendChild(cardsContainer);
+        return;
+    }
+
+    // Desktop: Table view
     const table = document.createElement('table');
     table.style.cssText = 'width: 100%; border-collapse: collapse; background: var(--white); border-radius: var(--radius-lg); overflow: hidden;';
     

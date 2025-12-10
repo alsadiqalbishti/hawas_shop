@@ -521,7 +521,7 @@ function filterProducts() {
     applyProductFilters();
 }
 
-// Render products table - Compact list view
+// Render products table - Compact list view (responsive)
 function renderProductsTable() {
     const container = document.getElementById('productsContainer');
     
@@ -539,7 +539,119 @@ function renderProductsTable() {
         return;
     }
 
-    // Create compact table view
+    // Check if mobile view
+    const isMobile = window.innerWidth <= 768;
+    
+    if (isMobile) {
+        // Mobile: Card view
+        const cardsContainer = document.createElement('div');
+        cardsContainer.className = 'products-table-mobile';
+        
+        filteredProducts.forEach(product => {
+            const mediaUrls = product.mediaUrls && product.mediaUrls.length > 0 
+                ? product.mediaUrls 
+                : (product.mediaUrl ? [product.mediaUrl] : []);
+            
+            const card = document.createElement('div');
+            card.className = 'mobile-product-card';
+            card.onclick = (e) => {
+                if (e.target.closest('button')) return;
+                openProductDetailModal(product);
+            };
+            
+            let imageHtml = '<div style="width: 60px; height: 60px; display: flex; align-items: center; justify-content: center; background: var(--light); border-radius: var(--radius-md); font-size: 1.5rem;">📦</div>';
+            if (mediaUrls.length > 0) {
+                const firstMedia = mediaUrls[0];
+                imageHtml = `<img src="${firstMedia}" alt="${escapeHtml(product.name)}" style="width: 60px; height: 60px; object-fit: cover; border-radius: var(--radius-md);">`;
+            }
+            
+            let priceHtml = `<span style="color: var(--success); font-weight: 600;">${product.price} د.ع</span>`;
+            if (product.discountPrice && product.discountPrice < product.price) {
+                priceHtml = `
+                    <div>
+                        <div style="color: var(--success); font-weight: 600;">${product.discountPrice} د.ع</div>
+                        <div style="font-size: var(--font-size-sm); color: var(--text-light); text-decoration: line-through;">${product.price} د.ع</div>
+                    </div>
+                `;
+            }
+            
+            let stockHtml = '<span style="color: var(--text-light);">غير محدود</span>';
+            if (product.stock !== null && product.stock !== undefined) {
+                if (product.stock === 0) {
+                    stockHtml = '<span style="color: var(--danger);">نفد المخزون</span>';
+                } else if (product.stock <= 5) {
+                    stockHtml = `<span style="color: var(--warning);">${product.stock} (منخفض)</span>`;
+                } else {
+                    stockHtml = `<span style="color: var(--success);">${product.stock}</span>`;
+                }
+            }
+            
+            const header = document.createElement('div');
+            header.className = 'mobile-product-card-header';
+            header.innerHTML = `
+                <div style="display: flex; align-items: center; gap: var(--space-3);">
+                    ${imageHtml}
+                    <span style="font-weight: 600; flex: 1;">${escapeHtml(product.name)}</span>
+                </div>
+            `;
+            
+            const body = document.createElement('div');
+            body.className = 'mobile-product-card-body';
+            body.innerHTML = `
+                <div class="mobile-card-row">
+                    <span class="mobile-card-label">السعر:</span>
+                    <div class="mobile-card-value">${priceHtml}</div>
+                </div>
+                <div class="mobile-card-row">
+                    <span class="mobile-card-label">المخزون:</span>
+                    <span class="mobile-card-value">${stockHtml}</span>
+                </div>
+            `;
+            
+            const actions = document.createElement('div');
+            actions.className = 'mobile-card-actions';
+            
+            const copyBtn = document.createElement('button');
+            copyBtn.className = 'btn btn-success btn-sm';
+            copyBtn.textContent = '📋';
+            copyBtn.onclick = (e) => {
+                e.stopPropagation();
+                copyProductLink(product.id);
+            };
+            
+            const editBtn = document.createElement('button');
+            editBtn.className = 'btn btn-warning btn-sm';
+            editBtn.textContent = '✏️';
+            editBtn.onclick = (e) => {
+                e.stopPropagation();
+                editProduct(product.id);
+            };
+            
+            const deleteBtn = document.createElement('button');
+            deleteBtn.className = 'btn btn-danger btn-sm';
+            deleteBtn.textContent = '🗑️';
+            deleteBtn.onclick = (e) => {
+                e.stopPropagation();
+                deleteProduct(product.id);
+            };
+            
+            actions.appendChild(copyBtn);
+            actions.appendChild(editBtn);
+            actions.appendChild(deleteBtn);
+            
+            card.appendChild(header);
+            card.appendChild(body);
+            card.appendChild(actions);
+            
+            cardsContainer.appendChild(card);
+        });
+        
+        container.innerHTML = '';
+        container.appendChild(cardsContainer);
+        return;
+    }
+
+    // Desktop: Table view
     const table = document.createElement('table');
     table.className = 'products-table';
     table.style.cssText = 'width: 100%; border-collapse: collapse; background: var(--white); border-radius: var(--radius-lg); overflow: hidden;';
@@ -830,7 +942,7 @@ function clearFilters() {
     applyFilters();
 }
 
-// Render orders table - Compact list view
+// Render orders table - Compact list view (responsive)
 function renderOrdersTable() {
     const container = document.getElementById('ordersContainer');
     
@@ -849,7 +961,105 @@ function renderOrdersTable() {
         return;
     }
 
-    // Create compact table view
+    // Check if mobile view
+    const isMobile = window.innerWidth <= 768;
+    
+    if (isMobile) {
+        // Mobile: Card view
+        const cardsContainer = document.createElement('div');
+        cardsContainer.className = 'orders-table-mobile';
+        
+        filteredOrders.forEach(order => {
+            const product = currentProducts.find(p => p.id === order.productId);
+            const statusInfo = getStatusInfo(order.status);
+            const orderNumber = order.orderNumber || order.id;
+            const displayOrderNumber = orderNumber.startsWith('ORD-') ? orderNumber : `#${orderNumber.substring(0, 8)}`;
+            
+            const card = document.createElement('div');
+            card.className = 'mobile-order-card';
+            card.onclick = (e) => {
+                if (e.target.closest('button') || e.target.closest('input[type="checkbox"]')) return;
+                openOrderDetailModal(order);
+            };
+            
+            card.dataset.orderId = order.id;
+            
+            const header = document.createElement('div');
+            header.className = 'mobile-order-card-header';
+            header.innerHTML = `
+                <div style="display: flex; align-items: center; gap: var(--space-2);">
+                    <input type="checkbox" class="order-checkbox" value="${order.id}" onchange="updateSelectedCount()" onclick="event.stopPropagation();">
+                    <span style="font-weight: 600; color: var(--primary);">${displayOrderNumber}</span>
+                </div>
+                <span class="${statusInfo.class}">${statusInfo.label}</span>
+            `;
+            
+            const body = document.createElement('div');
+            body.className = 'mobile-order-card-body';
+            body.innerHTML = `
+                <div class="mobile-card-row">
+                    <span class="mobile-card-label">العميل:</span>
+                    <span class="mobile-card-value">${escapeHtml(order.customerName)}</span>
+                </div>
+                <div class="mobile-card-row">
+                    <span class="mobile-card-label">الهاتف:</span>
+                    <a href="tel:${order.customerPhone}" class="mobile-card-value" style="color: var(--primary);" onclick="event.stopPropagation();">${order.customerPhone}</a>
+                </div>
+                <div class="mobile-card-row">
+                    <span class="mobile-card-label">المنتج:</span>
+                    <span class="mobile-card-value">${escapeHtml(product ? product.name : 'غير معروف')}</span>
+                </div>
+                <div class="mobile-card-row">
+                    <span class="mobile-card-label">التاريخ:</span>
+                    <span class="mobile-card-value">${new Date(order.createdAt).toLocaleDateString('ar-EG')}</span>
+                </div>
+            `;
+            
+            const actions = document.createElement('div');
+            actions.className = 'mobile-card-actions';
+            
+            const statusBtn = document.createElement('button');
+            statusBtn.className = 'btn btn-primary btn-sm';
+            statusBtn.textContent = '🔄';
+            statusBtn.onclick = (e) => {
+                e.stopPropagation();
+                openOrderStatusModal(order);
+            };
+            
+            const viewBtn = document.createElement('button');
+            viewBtn.className = 'btn btn-info btn-sm';
+            viewBtn.textContent = '👁️';
+            viewBtn.onclick = (e) => {
+                e.stopPropagation();
+                openOrderDetailModal(order);
+            };
+            
+            const deleteBtn = document.createElement('button');
+            deleteBtn.className = 'btn btn-danger btn-sm';
+            deleteBtn.textContent = '🗑️';
+            deleteBtn.onclick = (e) => {
+                e.stopPropagation();
+                deleteOrder(order.id);
+            };
+            
+            actions.appendChild(statusBtn);
+            actions.appendChild(viewBtn);
+            actions.appendChild(deleteBtn);
+            
+            card.appendChild(header);
+            card.appendChild(body);
+            card.appendChild(actions);
+            
+            cardsContainer.appendChild(card);
+        });
+        
+        container.innerHTML = '';
+        container.appendChild(cardsContainer);
+        updateSelectedCount();
+        return;
+    }
+
+    // Desktop: Table view
     const table = document.createElement('table');
     table.className = 'orders-table';
     table.style.cssText = 'width: 100%; border-collapse: collapse; background: var(--white); border-radius: var(--radius-lg); overflow: hidden;';

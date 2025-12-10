@@ -560,8 +560,40 @@
         // Sidebar toggle for mobile
         function toggleSidebar() {
             const sidebar = document.querySelector('.admin-sidebar');
-            sidebar.classList.toggle('open');
+            const overlay = document.getElementById('sidebarOverlay');
+            sidebar.classList.toggle('active');
+            if (overlay) {
+                overlay.classList.toggle('active');
+            }
         }
+        
+        // Close sidebar when clicking overlay
+        document.addEventListener('DOMContentLoaded', function() {
+            // Create overlay if it doesn't exist
+            let overlay = document.getElementById('sidebarOverlay');
+            if (!overlay) {
+                overlay = document.createElement('div');
+                overlay.id = 'sidebarOverlay';
+                overlay.className = 'sidebar-overlay';
+                overlay.onclick = toggleSidebar;
+                document.body.appendChild(overlay);
+            }
+            
+            // Handle window resize to re-render tables
+            let resizeTimer;
+            window.addEventListener('resize', function() {
+                clearTimeout(resizeTimer);
+                resizeTimer = setTimeout(function() {
+                    // Re-render current tab if orders or products are loaded
+                    if (typeof renderOrdersTable === 'function' && typeof filteredOrders !== 'undefined' && filteredOrders) {
+                        renderOrdersTable();
+                    }
+                    if (typeof renderProductsTable === 'function' && typeof filteredProducts !== 'undefined' && filteredProducts) {
+                        renderProductsTable();
+                    }
+                }, 250);
+            });
+        });
 
         // Update page title when switching tabs
         const tabTitles = {

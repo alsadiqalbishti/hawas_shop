@@ -348,19 +348,89 @@ module.exports = async (req, res) => {
 
     // Parse the path from the catch-all route
     // In Vercel, api/[...path].js receives paths like:
-    // - req.query.path as array: ['delivery', 'list'] for /api/delivery/list
+    // - req.query["...path"] as array: ['delivery', 'list'] for /api/delivery/list
+    // - req.query["...path"] as string: "delivery/list" for /api/delivery/list
     // - req.url might be '/api/delivery/list' or '/delivery/list'
     let pathParts = [];
     
     // Method 1: Try req.query["...path"] (Vercel's catch-all format) - PRIORITY
     // Vercel uses "...path" as the query parameter name for catch-all routes
     const queryPathArray = req.query?.['...path'] || req.query?.path;
+    console.log('🔍 PATH PARSING - queryPathArray:', queryPathArray, 'type:', typeof queryPathArray, 'isArray:', Array.isArray(queryPathArray));
+    
     if (queryPathArray !== undefined && queryPathArray !== null) {
         if (Array.isArray(queryPathArray)) {
             // Filter and map, but preserve all parts
             pathParts = queryPathArray.map(p => String(p || '').trim()).filter(p => p.length > 0);
+            console.log('🔍 PATH PARSING - Extracted from array:', pathParts);
         } else if (typeof queryPathArray === 'string' && queryPathArray.trim().length > 0) {
+            // Handle both "delivery/list" and "delivery" formats
             pathParts = queryPathArray.split('/').map(p => p.trim()).filter(p => p.length > 0);
+            console.log('🔍 PATH PARSING - Extracted from string:', pathParts);
+        }
+    }
+    
+    // CRITICAL: If pathParts has delivery and list, handle it immediately
+    if (pathParts.length >= 2 && pathParts[0].toLowerCase() === 'delivery' && pathParts[1].toLowerCase() === 'list' && req.method === 'GET') {
+        console.log('🚨🚨🚨 CRITICAL PATH MATCH: delivery/list detected in pathParts 🚨🚨🚨');
+        if (!requireAuth(req, res)) return;
+        try {
+            const deliveryMen = await safeRedisOperation(async (client) => {
+                const deliveryManIds = await client.smembers('delivery-men') || [];
+                const deliveryMenList = [];
+                for (const id of deliveryManIds) {
+                    try {
+                        if (!id) continue;
+                        const keys = await client.keys('delivery:*');
+                        for (const key of keys) {
+                            try {
+                                const data = await client.get(key);
+                                if (data) {
+                                    const deliveryMan = JSON.parse(data);
+                                    if (deliveryMan.id === id) {
+                                        const { password, ...safeInfo } = deliveryMan;
+                                        deliveryMenList.push(safeInfo);
+                                        break;
+                                    }
+                                }
+                            } catch (error) {
+                                console.error(`Error parsing delivery man from key ${key}:`, error);
+                            }
+                        }
+                    } catch (error) {
+                        console.error(`Error processing delivery man ID ${id}:`, error);
+                    }
+                }
+                try {
+                    const phoneKeys = await client.keys('delivery:*');
+                    for (const key of phoneKeys) {
+                        try {
+                            if (key.startsWith('delivery:') && key.split(':').length === 2) {
+                                const data = await client.get(key);
+                                if (data) {
+                                    const deliveryMan = JSON.parse(data);
+                                    if (!deliveryMenList.find(dm => dm.id === deliveryMan.id)) {
+                                        const { password, ...safeInfo } = deliveryMan;
+                                        deliveryMenList.push(safeInfo);
+                                    }
+                                }
+                            }
+                        } catch (error) {
+                            console.error(`Error processing delivery key ${key}:`, error);
+                        }
+                    }
+                } catch (error) {
+                    console.error('Error getting delivery phone keys:', error);
+                }
+                return deliveryMenList.filter((dm, index, self) =>
+                    index === self.findIndex(d => d.id === dm.id)
+                );
+            }, 'Failed to fetch delivery men', true);
+            console.log('✅✅✅ CRITICAL PATH HANDLER SUCCESS - returning', deliveryMen?.length || 0, 'delivery men');
+            return res.status(200).json(deliveryMen || []);
+        } catch (error) {
+            console.error('❌❌❌ CRITICAL PATH HANDLER ERROR:', error);
+            return res.status(200).json([]);
         }
     }
     

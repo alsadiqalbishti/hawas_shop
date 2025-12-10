@@ -85,8 +85,18 @@ module.exports = async (req, res) => {
     console.log('Method:', req.method);
     console.log('URL:', req.url);
     console.log('Full URL string:', String(req.url || ''));
-    console.log('Contains delivery:', String(req.url || '').includes('delivery') ? 'YES' : 'NO');
-    console.log('Contains delivery/list:', String(req.url || '').includes('delivery/list') ? 'YES' : 'NO');
+    const urlStr = String(req.url || '').toLowerCase();
+    const hasDelivery = urlStr.includes('delivery');
+    const hasDeliveryList = urlStr.includes('delivery/list');
+    console.log('Contains delivery:', hasDelivery ? 'YES ✅' : 'NO');
+    console.log('Contains delivery/list:', hasDeliveryList ? 'YES ✅✅✅' : 'NO');
+    
+    // ULTRA-EARLY CHECK: If URL contains delivery/list, handle it immediately
+    if (hasDeliveryList && req.method === 'GET') {
+        console.log('🚨🚨🚨 ULTRA-EARLY DELIVERY/LIST DETECTED 🚨🚨🚨');
+        console.log('URL:', req.url);
+        console.log('Query:', JSON.stringify(req.query));
+    }
     
     setCORS(res);
     

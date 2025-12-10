@@ -521,7 +521,7 @@ function filterProducts() {
     applyProductFilters();
 }
 
-// Render products table
+// Render products table - Compact list view
 function renderProductsTable() {
     const container = document.getElementById('productsContainer');
     
@@ -539,151 +539,128 @@ function renderProductsTable() {
         return;
     }
 
-    // Create modern grid layout
-    const grid = document.createElement('div');
-    grid.className = 'products-grid';
+    // Create compact table view
+    const table = document.createElement('table');
+    table.className = 'products-table';
+    table.style.cssText = 'width: 100%; border-collapse: collapse; background: var(--white); border-radius: var(--radius-lg); overflow: hidden;';
+    
+    // Table header
+    const thead = document.createElement('thead');
+    thead.style.cssText = 'background: var(--light);';
+    thead.innerHTML = `
+        <tr>
+            <th style="padding: var(--space-3); text-align: right; font-weight: 600; width: 80px;">الصورة</th>
+            <th style="padding: var(--space-3); text-align: right; font-weight: 600;">اسم المنتج</th>
+            <th style="padding: var(--space-3); text-align: right; font-weight: 600;">السعر</th>
+            <th style="padding: var(--space-3); text-align: right; font-weight: 600;">المخزون</th>
+            <th style="padding: var(--space-3); text-align: center; font-weight: 600;">الإجراءات</th>
+        </tr>
+    `;
+    table.appendChild(thead);
+    
+    // Table body
+    const tbody = document.createElement('tbody');
     
     filteredProducts.forEach(product => {
-        const card = document.createElement('div');
-        card.className = 'product-card';
-        
-        // Image section
-        const imageSection = document.createElement('div');
-        imageSection.style.cssText = 'position: relative; width: 100%; height: 200px; background: var(--light); overflow: hidden;';
+        const row = document.createElement('tr');
+        row.style.cssText = 'border-bottom: 1px solid var(--border-light); cursor: pointer; transition: background 0.2s;';
+        row.onmouseenter = () => row.style.background = 'var(--light)';
+        row.onmouseleave = () => row.style.background = '';
+        row.onclick = (e) => {
+            if (e.target.closest('button')) return;
+            openProductDetailModal(product);
+        };
         
         const mediaUrls = product.mediaUrls && product.mediaUrls.length > 0 
             ? product.mediaUrls 
             : (product.mediaUrl ? [product.mediaUrl] : []);
         
+        // Image cell
+        const imageCell = document.createElement('td');
+        imageCell.style.cssText = 'padding: var(--space-3); width: 80px;';
         if (mediaUrls.length > 0) {
             const firstMedia = mediaUrls[0];
-            if (product.mediaType === 'video' || firstMedia.includes('data:video')) {
-                const video = document.createElement('video');
-                video.src = firstMedia;
-                video.style.cssText = 'width: 100%; height: 100%; object-fit: cover;';
-                imageSection.appendChild(video);
-            } else {
-                const img = document.createElement('img');
-                img.src = firstMedia;
-                img.alt = escapeHtml(product.name);
-                img.className = 'product-card-image';
-                imageSection.appendChild(img);
-            }
-            
-            // Show count badge if multiple images
-            if (mediaUrls.length > 1) {
-                const countBadge = document.createElement('div');
-                countBadge.style.cssText = 'position: absolute; top: 8px; left: 8px; background: rgba(0,0,0,0.7); color: white; font-size: 0.75rem; padding: 0.25rem 0.5rem; border-radius: var(--radius-full); font-weight: 600;';
-                countBadge.textContent = `+${mediaUrls.length - 1}`;
-                imageSection.appendChild(countBadge);
-            }
+            const img = document.createElement('img');
+            img.src = firstMedia;
+            img.alt = escapeHtml(product.name);
+            img.style.cssText = 'width: 60px; height: 60px; object-fit: cover; border-radius: var(--radius-md);';
+            imageCell.appendChild(img);
         } else {
-            const placeholder = document.createElement('div');
-            placeholder.style.cssText = 'width: 100%; height: 100%; display: flex; align-items: center; justify-content: center; font-size: 4rem; color: var(--text-lighter);';
-            placeholder.textContent = '📦';
-            imageSection.appendChild(placeholder);
+            imageCell.innerHTML = '<div style="width: 60px; height: 60px; display: flex; align-items: center; justify-content: center; background: var(--light); border-radius: var(--radius-md); font-size: 1.5rem;">📦</div>';
         }
         
-        card.appendChild(imageSection);
+        // Name cell
+        const nameCell = document.createElement('td');
+        nameCell.style.cssText = 'padding: var(--space-3); font-weight: 600;';
+        nameCell.textContent = product.name;
         
-        // Body section
-        const body = document.createElement('div');
-        body.className = 'product-card-body';
-        
-        // Product name
-        const name = document.createElement('h3');
-        name.className = 'product-card-title';
-        name.textContent = product.name;
-        body.appendChild(name);
-        
-        // Price section
-        const priceSection = document.createElement('div');
-        priceSection.style.cssText = 'margin: var(--space-2) 0;';
-        
+        // Price cell
+        const priceCell = document.createElement('td');
+        priceCell.style.cssText = 'padding: var(--space-3);';
         if (product.discountPrice && product.discountPrice < product.price) {
-            const discountPrice = document.createElement('div');
-            discountPrice.className = 'product-card-price';
-            discountPrice.style.color = 'var(--success)';
-            discountPrice.textContent = `${product.discountPrice} د.ل`;
-            priceSection.appendChild(discountPrice);
-            
-            const originalPrice = document.createElement('div');
-            originalPrice.style.cssText = 'font-size: var(--font-size-sm); color: var(--text-light); text-decoration: line-through; margin-bottom: 0.25rem;';
-            originalPrice.textContent = `${product.price} د.ل`;
-            priceSection.appendChild(originalPrice);
-            
-            const discountPercent = Math.round(((product.price - product.discountPrice) / product.price) * 100);
-            const discountBadge = document.createElement('span');
-            discountBadge.className = 'badge badge-danger';
-            discountBadge.textContent = `خصم ${discountPercent}%`;
-            priceSection.appendChild(discountBadge);
+            const priceDiv = document.createElement('div');
+            priceDiv.innerHTML = `
+                <div style="color: var(--success); font-weight: 600;">${product.discountPrice} د.ع</div>
+                <div style="font-size: var(--font-size-sm); color: var(--text-light); text-decoration: line-through;">${product.price} د.ع</div>
+            `;
+            priceCell.appendChild(priceDiv);
         } else {
-            const price = document.createElement('div');
-            price.className = 'product-card-price';
-            price.textContent = `${product.price} د.ل`;
-            priceSection.appendChild(price);
+            priceCell.textContent = `${product.price} د.ع`;
         }
         
-        body.appendChild(priceSection);
-        
-        // Stock section
+        // Stock cell
+        const stockCell = document.createElement('td');
+        stockCell.style.cssText = 'padding: var(--space-3);';
         if (product.stock !== null && product.stock !== undefined) {
-            const stockSection = document.createElement('div');
-            stockSection.style.cssText = 'margin: var(--space-2) 0; padding: var(--space-2); background: var(--light); border-radius: var(--radius-md);';
-            
-            const stockLabel = document.createElement('div');
-            stockLabel.style.cssText = 'font-size: var(--font-size-sm); color: var(--text-light); margin-bottom: 0.25rem;';
-            stockLabel.textContent = 'الكمية المتوفرة:';
-            
-            const stockValue = document.createElement('div');
-            stockValue.style.cssText = 'font-size: var(--font-size-lg); font-weight: var(--font-weight-bold);';
-            
             if (product.stock === 0) {
-                stockValue.style.color = 'var(--danger)';
-                stockValue.textContent = 'نفد المخزون';
+                stockCell.innerHTML = '<span style="color: var(--danger);">نفد المخزون</span>';
             } else if (product.stock <= 5) {
-                stockValue.style.color = 'var(--warning)';
-                stockValue.textContent = `${product.stock} (مخزون منخفض)`;
+                stockCell.innerHTML = `<span style="color: var(--warning);">${product.stock} (منخفض)</span>`;
             } else {
-                stockValue.style.color = 'var(--success)';
-                stockValue.textContent = product.stock;
+                stockCell.innerHTML = `<span style="color: var(--success);">${product.stock}</span>`;
             }
-            
-            stockSection.appendChild(stockLabel);
-            stockSection.appendChild(stockValue);
-            body.appendChild(stockSection);
+        } else {
+            stockCell.innerHTML = '<span style="color: var(--text-light);">غير محدود</span>';
         }
         
-        // Actions
-        const actions = document.createElement('div');
-        actions.className = 'product-card-actions';
+        // Actions cell
+        const actionsCell = document.createElement('td');
+        actionsCell.style.cssText = 'padding: var(--space-3); text-align: center;';
+        actionsCell.onclick = (e) => e.stopPropagation();
         
         const copyBtn = document.createElement('button');
         copyBtn.className = 'btn btn-success btn-sm';
-        copyBtn.style.flex = '1';
-        copyBtn.textContent = '📋 نسخ';
+        copyBtn.style.cssText = 'margin: 0 2px;';
+        copyBtn.textContent = '📋';
         copyBtn.onclick = () => copyProductLink(product.id);
-        actions.appendChild(copyBtn);
+        actionsCell.appendChild(copyBtn);
         
         const editBtn = document.createElement('button');
         editBtn.className = 'btn btn-warning btn-sm';
+        editBtn.style.cssText = 'margin: 0 2px;';
         editBtn.textContent = '✏️';
         editBtn.onclick = () => editProduct(product.id);
-        actions.appendChild(editBtn);
+        actionsCell.appendChild(editBtn);
         
         const deleteBtn = document.createElement('button');
         deleteBtn.className = 'btn btn-danger btn-sm';
+        deleteBtn.style.cssText = 'margin: 0 2px;';
         deleteBtn.textContent = '🗑️';
         deleteBtn.onclick = () => deleteProduct(product.id);
-        actions.appendChild(deleteBtn);
+        actionsCell.appendChild(deleteBtn);
         
-        body.appendChild(actions);
-        card.appendChild(body);
-        grid.appendChild(card);
+        row.appendChild(imageCell);
+        row.appendChild(nameCell);
+        row.appendChild(priceCell);
+        row.appendChild(stockCell);
+        row.appendChild(actionsCell);
+        
+        tbody.appendChild(row);
     });
     
+    table.appendChild(tbody);
     container.innerHTML = '';
-    container.appendChild(grid);
+    container.appendChild(table);
 }
 
 // Get status info
@@ -853,7 +830,7 @@ function clearFilters() {
     applyFilters();
 }
 
-// Render orders table
+// Render orders table - Compact list view
 function renderOrdersTable() {
     const container = document.getElementById('ordersContainer');
     
@@ -872,212 +849,133 @@ function renderOrdersTable() {
         return;
     }
 
-    // Create modern grid layout
-    const grid = document.createElement('div');
-    grid.className = 'orders-grid';
+    // Create compact table view
+    const table = document.createElement('table');
+    table.className = 'orders-table';
+    table.style.cssText = 'width: 100%; border-collapse: collapse; background: var(--white); border-radius: var(--radius-lg); overflow: hidden;';
+    
+    // Table header
+    const thead = document.createElement('thead');
+    thead.style.cssText = 'background: var(--light);';
+    thead.innerHTML = `
+        <tr>
+            <th style="padding: var(--space-3); text-align: right; width: 40px;">
+                <input type="checkbox" id="selectAllOrders" onchange="toggleSelectAll()">
+            </th>
+            <th style="padding: var(--space-3); text-align: right; font-weight: 600;">رقم الطلب</th>
+            <th style="padding: var(--space-3); text-align: right; font-weight: 600;">العميل</th>
+            <th style="padding: var(--space-3); text-align: right; font-weight: 600;">الهاتف</th>
+            <th style="padding: var(--space-3); text-align: right; font-weight: 600;">المنتج</th>
+            <th style="padding: var(--space-3); text-align: right; font-weight: 600;">الحالة</th>
+            <th style="padding: var(--space-3); text-align: right; font-weight: 600;">التاريخ</th>
+            <th style="padding: var(--space-3); text-align: center; font-weight: 600;">الإجراءات</th>
+        </tr>
+    `;
+    table.appendChild(thead);
+    
+    // Table body
+    const tbody = document.createElement('tbody');
     
     filteredOrders.forEach(order => {
         const product = currentProducts.find(p => p.id === order.productId);
-        const card = document.createElement('div');
-        card.className = 'order-card';
-        card.dataset.orderId = order.id;
+        const statusInfo = getStatusInfo(order.status);
+        const orderNumber = order.orderNumber || order.id;
+        const displayOrderNumber = orderNumber.startsWith('ORD-') ? orderNumber : `#${orderNumber.substring(0, 8)}`;
         
-        // Header with checkbox and order number
-        const header = document.createElement('div');
-        header.className = 'order-card-header';
+        const row = document.createElement('tr');
+        row.style.cssText = 'border-bottom: 1px solid var(--border-light); cursor: pointer; transition: background 0.2s;';
+        row.onmouseenter = () => row.style.background = 'var(--light)';
+        row.onmouseleave = () => row.style.background = '';
+        row.onclick = (e) => {
+            // Don't open modal if clicking on checkbox or action buttons
+            if (e.target.type === 'checkbox' || e.target.closest('button')) return;
+            openOrderDetailModal(order);
+        };
         
-        const leftSection = document.createElement('div');
-        leftSection.className = 'flex items-center gap-2';
+        row.dataset.orderId = order.id;
         
+        const checkboxCell = document.createElement('td');
+        checkboxCell.style.cssText = 'padding: var(--space-3); text-align: center;';
+        checkboxCell.onclick = (e) => e.stopPropagation();
         const checkbox = document.createElement('input');
         checkbox.type = 'checkbox';
         checkbox.className = 'order-checkbox';
         checkbox.value = order.id;
         checkbox.onchange = updateSelectedCount;
-        leftSection.appendChild(checkbox);
+        checkboxCell.appendChild(checkbox);
         
-        const orderNumber = order.orderNumber || order.id;
-        const orderNumDiv = document.createElement('div');
-        orderNumDiv.className = 'order-number';
-        if (orderNumber.startsWith('ORD-')) {
-            orderNumDiv.textContent = orderNumber;
-        } else {
-            orderNumDiv.textContent = `#${orderNumber.substring(0, 8)}`;
-        }
-        leftSection.appendChild(orderNumDiv);
+        const orderNumCell = document.createElement('td');
+        orderNumCell.style.cssText = 'padding: var(--space-3); font-weight: 600; color: var(--primary);';
+        orderNumCell.textContent = displayOrderNumber;
         
-        header.appendChild(leftSection);
+        const customerCell = document.createElement('td');
+        customerCell.style.cssText = 'padding: var(--space-3);';
+        customerCell.textContent = order.customerName;
         
-        const dateDiv = document.createElement('div');
-        dateDiv.className = 'order-date';
-        dateDiv.textContent = new Date(order.createdAt).toLocaleDateString('ar-EG');
-        header.appendChild(dateDiv);
+        const phoneCell = document.createElement('td');
+        phoneCell.style.cssText = 'padding: var(--space-3);';
+        const phoneLink = document.createElement('a');
+        phoneLink.href = `tel:${order.customerPhone}`;
+        phoneLink.style.cssText = 'color: var(--primary); text-decoration: none;';
+        phoneLink.textContent = order.customerPhone;
+        phoneLink.onclick = (e) => e.stopPropagation();
+        phoneCell.appendChild(phoneLink);
         
-        card.appendChild(header);
+        const productCell = document.createElement('td');
+        productCell.style.cssText = 'padding: var(--space-3); color: var(--text-light);';
+        productCell.textContent = product ? product.name : 'غير معروف';
         
-        // Order info
-        const info = document.createElement('div');
-        info.className = 'order-info';
-        
-        // Status badge at top
-        const statusInfo = getStatusInfo(order.status);
+        const statusCell = document.createElement('td');
+        statusCell.style.cssText = 'padding: var(--space-3);';
         const statusBadge = document.createElement('span');
         statusBadge.className = statusInfo.class;
-        statusBadge.style.cssText = 'display: inline-block; margin-bottom: var(--space-3);';
         statusBadge.textContent = statusInfo.label;
-        info.appendChild(statusBadge);
+        statusCell.appendChild(statusBadge);
         
-        // Product
-        const productItem = document.createElement('div');
-        productItem.className = 'order-info-item';
-        const productLabel = document.createElement('span');
-        productLabel.className = 'order-info-label';
-        productLabel.textContent = 'المنتج:';
-        const productValue = document.createElement('span');
-        productValue.className = 'order-info-value';
-        productValue.textContent = product ? product.name : 'غير معروف';
-        productItem.appendChild(productLabel);
-        productItem.appendChild(productValue);
-        info.appendChild(productItem);
+        const dateCell = document.createElement('td');
+        dateCell.style.cssText = 'padding: var(--space-3); color: var(--text-light); font-size: var(--font-size-sm);';
+        dateCell.textContent = new Date(order.createdAt).toLocaleDateString('ar-EG');
         
-        // Customer
-        const customerItem = document.createElement('div');
-        customerItem.className = 'order-info-item';
-        const customerLabel = document.createElement('span');
-        customerLabel.className = 'order-info-label';
-        customerLabel.textContent = 'العميل:';
-        const customerValue = document.createElement('span');
-        customerValue.className = 'order-info-value';
-        customerValue.textContent = order.customerName;
-        customerItem.appendChild(customerLabel);
-        customerItem.appendChild(customerValue);
-        info.appendChild(customerItem);
-        
-        // Phone
-        const phoneItem = document.createElement('div');
-        phoneItem.className = 'order-info-item';
-        const phoneLabel = document.createElement('span');
-        phoneLabel.className = 'order-info-label';
-        phoneLabel.textContent = 'الهاتف:';
-        const phoneValue = document.createElement('a');
-        phoneValue.href = `tel:${order.customerPhone}`;
-        phoneValue.className = 'order-info-value';
-        phoneValue.style.color = 'var(--primary)';
-        phoneValue.textContent = order.customerPhone;
-        phoneItem.appendChild(phoneLabel);
-        phoneItem.appendChild(phoneValue);
-        info.appendChild(phoneItem);
-        
-        // Address
-        const addressItem = document.createElement('div');
-        addressItem.className = 'order-info-item';
-        const addressLabel = document.createElement('span');
-        addressLabel.className = 'order-info-label';
-        addressLabel.textContent = 'العنوان:';
-        const addressValue = document.createElement('span');
-        addressValue.className = 'order-info-value';
-        addressValue.textContent = order.customerAddress;
-        addressValue.style.cssText += 'word-break: break-word;';
-        addressItem.appendChild(addressLabel);
-        addressItem.appendChild(addressValue);
-        info.appendChild(addressItem);
-        
-        // Quantity
-        const qtyItem = document.createElement('div');
-        qtyItem.className = 'order-info-item';
-        const qtyLabel = document.createElement('span');
-        qtyLabel.className = 'order-info-label';
-        qtyLabel.textContent = 'الكمية:';
-        const qtyValue = document.createElement('span');
-        qtyValue.className = 'order-info-value';
-        qtyValue.textContent = order.quantity;
-        qtyItem.appendChild(qtyLabel);
-        qtyItem.appendChild(qtyValue);
-        info.appendChild(qtyItem);
-        
-        // Delivery Man
-        const deliveryItem = document.createElement('div');
-        deliveryItem.className = 'order-info-item';
-        const deliveryLabel = document.createElement('span');
-        deliveryLabel.className = 'order-info-label';
-        deliveryLabel.textContent = 'مندوب التوصيل:';
-        const deliveryValue = document.createElement('span');
-        deliveryValue.className = 'order-info-value';
-        if (order.deliveryManId) {
-            deliveryValue.innerHTML = '<span style="color: var(--text-light);">جاري التحميل...</span>';
-            loadDeliveryManInfo(order.deliveryManId, deliveryValue);
-        } else {
-            deliveryValue.textContent = 'غير مُسند';
-            deliveryValue.style.color = 'var(--text-light)';
-        }
-        deliveryItem.appendChild(deliveryLabel);
-        deliveryItem.appendChild(deliveryValue);
-        info.appendChild(deliveryItem);
-        
-        // Shipping & Payment
-        if (order.shippingPrice || order.paymentReceived) {
-            const financialItem = document.createElement('div');
-            financialItem.className = 'order-info-item';
-            financialItem.style.cssText = 'padding-top: var(--space-2); border-top: 1px solid var(--border-light); margin-top: var(--space-2);';
-            const financialText = [];
-            if (order.shippingPrice) {
-                financialText.push(`شحن: ${parseFloat(order.shippingPrice).toFixed(2)} د.ع`);
-            }
-            if (order.paymentReceived) {
-                financialText.push(`مستلم: ${parseFloat(order.paymentReceived).toFixed(2)} د.ع`);
-            }
-            financialItem.innerHTML = `<span class="order-info-value" style="color: var(--success); font-weight: 600;">${financialText.join(' | ')}</span>`;
-            info.appendChild(financialItem);
-        }
-        
-        // Notes
-        if (order.notes && order.notes.trim()) {
-            const notesItem = document.createElement('div');
-            notesItem.className = 'order-info-item';
-            notesItem.style.cssText = 'padding-top: var(--space-2); border-top: 1px solid var(--border-light); margin-top: var(--space-2);';
-            const notesLabel = document.createElement('span');
-            notesLabel.className = 'order-info-label';
-            notesLabel.textContent = 'ملاحظات:';
-            const notesValue = document.createElement('span');
-            notesValue.className = 'order-info-value';
-            notesValue.style.cssText = 'font-style: italic; color: var(--text); word-break: break-word;';
-            notesValue.textContent = order.notes;
-            notesItem.appendChild(notesLabel);
-            notesItem.appendChild(notesValue);
-            info.appendChild(notesItem);
-        }
-        
-        card.appendChild(info);
-        
-        // Actions
-        const actions = document.createElement('div');
-        actions.className = 'order-actions';
+        const actionsCell = document.createElement('td');
+        actionsCell.style.cssText = 'padding: var(--space-3); text-align: center;';
+        actionsCell.onclick = (e) => e.stopPropagation();
         
         const statusBtn = document.createElement('button');
         statusBtn.className = 'btn btn-primary btn-sm';
-        statusBtn.style.flex = '1';
-        statusBtn.textContent = '🔄 تحديث';
+        statusBtn.style.cssText = 'margin: 0 2px;';
+        statusBtn.textContent = '🔄';
         statusBtn.onclick = () => openOrderStatusModal(order);
-        actions.appendChild(statusBtn);
+        actionsCell.appendChild(statusBtn);
         
         const viewBtn = document.createElement('button');
         viewBtn.className = 'btn btn-info btn-sm';
+        viewBtn.style.cssText = 'margin: 0 2px;';
         viewBtn.textContent = '👁️';
-        viewBtn.onclick = () => viewOrderDetails(order);
-        actions.appendChild(viewBtn);
+        viewBtn.onclick = () => openOrderDetailModal(order);
+        actionsCell.appendChild(viewBtn);
         
         const deleteBtn = document.createElement('button');
         deleteBtn.className = 'btn btn-danger btn-sm';
+        deleteBtn.style.cssText = 'margin: 0 2px;';
         deleteBtn.textContent = '🗑️';
         deleteBtn.onclick = () => deleteOrder(order.id);
-        actions.appendChild(deleteBtn);
+        actionsCell.appendChild(deleteBtn);
         
-        card.appendChild(actions);
-        grid.appendChild(card);
+        row.appendChild(checkboxCell);
+        row.appendChild(orderNumCell);
+        row.appendChild(customerCell);
+        row.appendChild(phoneCell);
+        row.appendChild(productCell);
+        row.appendChild(statusCell);
+        row.appendChild(dateCell);
+        row.appendChild(actionsCell);
+        
+        tbody.appendChild(row);
     });
     
+    table.appendChild(tbody);
     container.innerHTML = '';
-    container.appendChild(grid);
+    container.appendChild(table);
     updateSelectedCount();
 }
 
@@ -1545,6 +1443,126 @@ function editProduct(productId) {
 }
 
 // Delete product
+// Open product detail modal
+function openProductDetailModal(product) {
+    // Create modal if it doesn't exist
+    let modal = document.getElementById('productDetailModal');
+    if (!modal) {
+        modal = document.createElement('div');
+        modal.id = 'productDetailModal';
+        modal.className = 'modal';
+        modal.innerHTML = `
+            <div class="modal-content" style="max-width: 800px; max-height: 90vh; overflow-y: auto;">
+                <div class="modal-header">
+                    <h2>تفاصيل المنتج</h2>
+                    <button class="modal-close" onclick="closeProductDetailModal()">✕</button>
+                </div>
+                <div class="modal-body" id="productDetailContent">
+                    <!-- Content will be populated here -->
+                </div>
+                <div class="modal-footer" style="padding: var(--space-4); border-top: 1px solid var(--border-light); display: flex; gap: var(--space-2); justify-content: flex-end;">
+                    <button class="btn btn-success" onclick="copyProductLink('${product.id}'); closeProductDetailModal();">📋 نسخ الرابط</button>
+                    <button class="btn btn-warning" onclick="editProduct('${product.id}'); closeProductDetailModal();">✏️ تعديل</button>
+                    <button class="btn btn-secondary" onclick="closeProductDetailModal()">إغلاق</button>
+                </div>
+            </div>
+        `;
+        document.body.appendChild(modal);
+    }
+    
+    const content = document.getElementById('productDetailContent');
+    const mediaUrls = product.mediaUrls && product.mediaUrls.length > 0 
+        ? product.mediaUrls 
+        : (product.mediaUrl ? [product.mediaUrl] : []);
+    
+    let html = `
+        <div style="display: grid; gap: var(--space-4);">
+            ${mediaUrls.length > 0 ? `
+            <div style="background: var(--light); padding: var(--space-4); border-radius: var(--radius-lg);">
+                <h3 style="margin-bottom: var(--space-3); color: var(--primary);">الصور / الفيديو</h3>
+                <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: var(--space-3);">
+                    ${mediaUrls.map((url, index) => {
+                        const isVideo = product.mediaType === 'video' || url.includes('data:video');
+                        return `
+                            <div style="position: relative; aspect-ratio: 1; background: var(--white); border-radius: var(--radius-md); overflow: hidden;">
+                                ${isVideo ? `
+                                    <video src="${url}" style="width: 100%; height: 100%; object-fit: cover;" controls></video>
+                                ` : `
+                                    <img src="${url}" alt="${escapeHtml(product.name)} ${index + 1}" style="width: 100%; height: 100%; object-fit: cover;">
+                                `}
+                            </div>
+                        `;
+                    }).join('')}
+                </div>
+            </div>
+            ` : ''}
+            
+            <div style="background: var(--light); padding: var(--space-4); border-radius: var(--radius-lg);">
+                <h3 style="margin-bottom: var(--space-3); color: var(--primary);">معلومات المنتج</h3>
+                <div style="display: grid; gap: var(--space-2);">
+                    <div style="display: flex; justify-content: space-between;">
+                        <span style="font-weight: 600;">الاسم:</span>
+                        <span>${escapeHtml(product.name)}</span>
+                    </div>
+                    <div style="display: flex; justify-content: space-between;">
+                        <span style="font-weight: 600;">السعر:</span>
+                        <span>${parseFloat(product.price).toFixed(2)} د.ع</span>
+                    </div>
+                    ${product.discountPrice ? `
+                    <div style="display: flex; justify-content: space-between;">
+                        <span style="font-weight: 600;">السعر بعد الخصم:</span>
+                        <span style="color: var(--success); font-weight: 600;">${parseFloat(product.discountPrice).toFixed(2)} د.ع</span>
+                    </div>
+                    <div style="display: flex; justify-content: space-between;">
+                        <span style="font-weight: 600;">نسبة الخصم:</span>
+                        <span style="color: var(--danger); font-weight: 600;">${Math.round(((product.price - product.discountPrice) / product.price) * 100)}%</span>
+                    </div>
+                    ` : ''}
+                    <div style="display: flex; justify-content: space-between;">
+                        <span style="font-weight: 600;">المخزون:</span>
+                        <span>${product.stock !== null && product.stock !== undefined ? product.stock : 'غير محدود'}</span>
+                    </div>
+                    ${product.description ? `
+                    <div style="margin-top: var(--space-2); padding-top: var(--space-2); border-top: 1px solid var(--border-light);">
+                        <span style="font-weight: 600; display: block; margin-bottom: var(--space-2);">الوصف:</span>
+                        <p style="color: var(--text); word-break: break-word; white-space: pre-wrap;">${escapeHtml(product.description)}</p>
+                    </div>
+                    ` : ''}
+                </div>
+            </div>
+        </div>
+    `;
+    
+    content.innerHTML = html;
+    
+    // Update buttons
+    const copyBtn = modal.querySelector('.modal-footer button.btn-success');
+    if (copyBtn) {
+        copyBtn.onclick = () => {
+            copyProductLink(product.id);
+            closeProductDetailModal();
+        };
+    }
+    
+    const editBtn = modal.querySelector('.modal-footer button.btn-warning');
+    if (editBtn) {
+        editBtn.onclick = () => {
+            closeProductDetailModal();
+            editProduct(product.id);
+        };
+    }
+    
+    modal.classList.add('active');
+}
+
+// Close product detail modal
+function closeProductDetailModal() {
+    const modal = document.getElementById('productDetailModal');
+    if (modal) {
+        modal.classList.remove('active');
+    }
+}
+
 async function deleteProduct(productId) {
     if (!confirm('هل أنت متأكد من حذف هذا المنتج؟')) return;
 
@@ -1765,33 +1783,178 @@ async function updateOrderStatus() {
     }
 }
 
-// View order details
-function viewOrderDetails(order) {
+// Open order detail modal
+function openOrderDetailModal(order) {
     const product = currentProducts.find(p => p.id === order.productId);
     const statusInfo = getStatusInfo(order.status);
     
-    let details = `رقم الطلب: ${order.orderNumber || order.id}\n\n`;
-    details += `المنتج: ${product ? product.name : 'غير معروف'}\n`;
-    details += `اسم العميل: ${order.customerName}\n`;
-    details += `رقم الهاتف: ${order.customerPhone}\n`;
-    details += `العنوان: ${order.customerAddress}\n`;
-    details += `الكمية: ${order.quantity}\n`;
-    details += `الحالة: ${statusInfo.label}\n`;
-    if (order.shippingPrice) details += `سعر التوصيل: ${parseFloat(order.shippingPrice).toFixed(2)} د.ع\n`;
-    if (order.paymentReceived) details += `المبلغ المستلم: ${parseFloat(order.paymentReceived).toFixed(2)} د.ع\n`;
-    details += `تاريخ الإنشاء: ${new Date(order.createdAt).toLocaleString('ar-EG')}\n`;
-    if (order.updatedAt) details += `آخر تحديث: ${new Date(order.updatedAt).toLocaleString('ar-EG')}\n`;
-    
-    if (order.statusHistory && order.statusHistory.length > 0) {
-        details += `\n--- تاريخ التغييرات ---\n`;
-        order.statusHistory.forEach((entry, index) => {
-            const statusInfo = getStatusInfo(entry.status);
-            details += `${index + 1}. ${statusInfo.label} - ${new Date(entry.timestamp).toLocaleString('ar-EG')}\n`;
-            if (entry.notes) details += `   ${entry.notes}\n`;
-        });
+    // Create modal if it doesn't exist
+    let modal = document.getElementById('orderDetailModal');
+    if (!modal) {
+        modal = document.createElement('div');
+        modal.id = 'orderDetailModal';
+        modal.className = 'modal';
+        modal.innerHTML = `
+            <div class="modal-content" style="max-width: 700px; max-height: 90vh; overflow-y: auto;">
+                <div class="modal-header">
+                    <h2>تفاصيل الطلب</h2>
+                    <button class="modal-close" onclick="closeOrderDetailModal()">✕</button>
+                </div>
+                <div class="modal-body" id="orderDetailContent">
+                    <!-- Content will be populated here -->
+                </div>
+                <div class="modal-footer" style="padding: var(--space-4); border-top: 1px solid var(--border-light); display: flex; gap: var(--space-2); justify-content: flex-end;">
+                    <button class="btn btn-primary" onclick="openOrderStatusModal(${JSON.stringify(order).replace(/"/g, '&quot;')})">🔄 تحديث الحالة</button>
+                    <button class="btn btn-secondary" onclick="closeOrderDetailModal()">إغلاق</button>
+                </div>
+            </div>
+        `;
+        document.body.appendChild(modal);
     }
     
-    alert(details);
+    const content = document.getElementById('orderDetailContent');
+    const orderNumber = order.orderNumber || order.id;
+    const displayOrderNumber = orderNumber.startsWith('ORD-') ? orderNumber : `#${orderNumber.substring(0, 8)}`;
+    
+    let html = `
+        <div style="display: grid; gap: var(--space-4);">
+            <div style="background: var(--light); padding: var(--space-4); border-radius: var(--radius-lg);">
+                <h3 style="margin-bottom: var(--space-3); color: var(--primary);">معلومات الطلب</h3>
+                <div style="display: grid; gap: var(--space-2);">
+                    <div style="display: flex; justify-content: space-between;">
+                        <span style="font-weight: 600;">رقم الطلب:</span>
+                        <span>${displayOrderNumber}</span>
+                    </div>
+                    <div style="display: flex; justify-content: space-between;">
+                        <span style="font-weight: 600;">الحالة:</span>
+                        <span class="${statusInfo.class}">${statusInfo.label}</span>
+                    </div>
+                    <div style="display: flex; justify-content: space-between;">
+                        <span style="font-weight: 600;">تاريخ الإنشاء:</span>
+                        <span>${new Date(order.createdAt).toLocaleString('ar-EG')}</span>
+                    </div>
+                    ${order.updatedAt ? `
+                    <div style="display: flex; justify-content: space-between;">
+                        <span style="font-weight: 600;">آخر تحديث:</span>
+                        <span>${new Date(order.updatedAt).toLocaleString('ar-EG')}</span>
+                    </div>
+                    ` : ''}
+                </div>
+            </div>
+            
+            <div style="background: var(--light); padding: var(--space-4); border-radius: var(--radius-lg);">
+                <h3 style="margin-bottom: var(--space-3); color: var(--primary);">معلومات العميل</h3>
+                <div style="display: grid; gap: var(--space-2);">
+                    <div style="display: flex; justify-content: space-between;">
+                        <span style="font-weight: 600;">الاسم:</span>
+                        <span>${escapeHtml(order.customerName)}</span>
+                    </div>
+                    <div style="display: flex; justify-content: space-between;">
+                        <span style="font-weight: 600;">الهاتف:</span>
+                        <a href="tel:${order.customerPhone}" style="color: var(--primary);">${order.customerPhone} 📞</a>
+                    </div>
+                    <div style="display: flex; justify-content: space-between; align-items: flex-start;">
+                        <span style="font-weight: 600;">العنوان:</span>
+                        <span style="text-align: left; max-width: 60%; word-break: break-word;">${escapeHtml(order.customerAddress)}</span>
+                    </div>
+                </div>
+            </div>
+            
+            <div style="background: var(--light); padding: var(--space-4); border-radius: var(--radius-lg);">
+                <h3 style="margin-bottom: var(--space-3); color: var(--primary);">معلومات المنتج</h3>
+                <div style="display: grid; gap: var(--space-2);">
+                    <div style="display: flex; justify-content: space-between;">
+                        <span style="font-weight: 600;">المنتج:</span>
+                        <span>${escapeHtml(product ? product.name : 'غير معروف')}</span>
+                    </div>
+                    <div style="display: flex; justify-content: space-between;">
+                        <span style="font-weight: 600;">الكمية:</span>
+                        <span>${order.quantity}</span>
+                    </div>
+                    ${product ? `
+                    <div style="display: flex; justify-content: space-between;">
+                        <span style="font-weight: 600;">السعر:</span>
+                        <span>${parseFloat(product.price).toFixed(2)} د.ع</span>
+                    </div>
+                    ${product.discountPrice ? `
+                    <div style="display: flex; justify-content: space-between;">
+                        <span style="font-weight: 600;">السعر بعد الخصم:</span>
+                        <span style="color: var(--success); font-weight: 600;">${parseFloat(product.discountPrice).toFixed(2)} د.ع</span>
+                    </div>
+                    ` : ''}
+                    ` : ''}
+                </div>
+            </div>
+            
+            ${order.shippingPrice || order.paymentReceived ? `
+            <div style="background: var(--light); padding: var(--space-4); border-radius: var(--radius-lg);">
+                <h3 style="margin-bottom: var(--space-3); color: var(--primary);">المعلومات المالية</h3>
+                <div style="display: grid; gap: var(--space-2);">
+                    ${order.shippingPrice ? `
+                    <div style="display: flex; justify-content: space-between;">
+                        <span style="font-weight: 600;">سعر التوصيل:</span>
+                        <span>${parseFloat(order.shippingPrice).toFixed(2)} د.ع</span>
+                    </div>
+                    ` : ''}
+                    ${order.paymentReceived ? `
+                    <div style="display: flex; justify-content: space-between;">
+                        <span style="font-weight: 600;">المبلغ المستلم:</span>
+                        <span style="color: var(--success); font-weight: 600;">${parseFloat(order.paymentReceived).toFixed(2)} د.ع</span>
+                    </div>
+                    ` : ''}
+                </div>
+            </div>
+            ` : ''}
+            
+            ${order.notes && order.notes.trim() ? `
+            <div style="background: var(--light); padding: var(--space-4); border-radius: var(--radius-lg);">
+                <h3 style="margin-bottom: var(--space-3); color: var(--primary);">ملاحظات</h3>
+                <p style="color: var(--text); word-break: break-word;">${escapeHtml(order.notes)}</p>
+            </div>
+            ` : ''}
+            
+            ${order.statusHistory && order.statusHistory.length > 0 ? `
+            <div style="background: var(--light); padding: var(--space-4); border-radius: var(--radius-lg);">
+                <h3 style="margin-bottom: var(--space-3); color: var(--primary);">تاريخ التغييرات</h3>
+                <div style="display: grid; gap: var(--space-2);">
+                    ${order.statusHistory.map((entry, index) => {
+                        const entryStatusInfo = getStatusInfo(entry.status);
+                        return `
+                            <div style="padding: var(--space-2); background: var(--white); border-radius: var(--radius-md); border-right: 3px solid var(--primary);">
+                                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: var(--space-1);">
+                                    <span class="${entryStatusInfo.class}">${entryStatusInfo.label}</span>
+                                    <span style="font-size: var(--font-size-sm); color: var(--text-light);">${new Date(entry.timestamp).toLocaleString('ar-EG')}</span>
+                                </div>
+                                ${entry.notes ? `<p style="margin: 0; color: var(--text-light); font-size: var(--font-size-sm);">${escapeHtml(entry.notes)}</p>` : ''}
+                            </div>
+                        `;
+                    }).join('')}
+                </div>
+            </div>
+            ` : ''}
+        </div>
+    `;
+    
+    content.innerHTML = html;
+    
+    // Update the update button to use the order object
+    const updateBtn = modal.querySelector('.modal-footer button.btn-primary');
+    if (updateBtn) {
+        updateBtn.onclick = () => {
+            closeOrderDetailModal();
+            openOrderStatusModal(order);
+        };
+    }
+    
+    modal.classList.add('active');
+}
+
+// Close order detail modal
+function closeOrderDetailModal() {
+    const modal = document.getElementById('orderDetailModal');
+    if (modal) {
+        modal.classList.remove('active');
+    }
 }
 
 // Delete order

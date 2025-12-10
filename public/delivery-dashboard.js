@@ -154,7 +154,7 @@ function getStatusBadgeClass(status) {
     return classes[status] || 'badge';
 }
 
-// Render orders
+// Render orders - Compact list view
 function renderOrders(orders) {
     const container = document.getElementById('ordersList');
     
@@ -169,98 +169,125 @@ function renderOrders(orders) {
         return;
     }
 
-    container.innerHTML = orders.map(order => {
+    // Create compact table view
+    const table = document.createElement('table');
+    table.style.cssText = 'width: 100%; border-collapse: collapse; background: var(--white); border-radius: var(--radius-lg); overflow: hidden;';
+    
+    // Table header
+    const thead = document.createElement('thead');
+    thead.style.cssText = 'background: var(--light);';
+    thead.innerHTML = `
+        <tr>
+            <th style="padding: var(--space-3); text-align: right; font-weight: 600;">رقم الطلب</th>
+            <th style="padding: var(--space-3); text-align: right; font-weight: 600;">العميل</th>
+            <th style="padding: var(--space-3); text-align: right; font-weight: 600;">الهاتف</th>
+            <th style="padding: var(--space-3); text-align: right; font-weight: 600;">المنتج</th>
+            <th style="padding: var(--space-3); text-align: right; font-weight: 600;">الحالة</th>
+            <th style="padding: var(--space-3); text-align: center; font-weight: 600;">الإجراءات</th>
+        </tr>
+    `;
+    table.appendChild(thead);
+    
+    // Table body
+    const tbody = document.createElement('tbody');
+    
+    orders.forEach(order => {
         const product = order.product || {};
         const statusBadgeClass = getStatusBadgeClass(order.status);
-        
         const orderNumber = order.orderNumber || order.id;
         const displayOrderNumber = orderNumber.startsWith('ORD-') ? orderNumber : `#${orderNumber.substring(0, 8)}`;
         
-        // Quick action buttons based on status
-        let quickActions = '';
+        const row = document.createElement('tr');
+        row.style.cssText = 'border-bottom: 1px solid var(--border-light); cursor: pointer; transition: background 0.2s;';
+        row.onmouseenter = () => row.style.background = 'var(--light)';
+        row.onmouseleave = () => row.style.background = '';
+        row.onclick = (e) => {
+            if (e.target.closest('button') || e.target.closest('form')) return;
+            openDeliveryOrderDetailModal(order);
+        };
+        
+        // Order number cell
+        const orderNumCell = document.createElement('td');
+        orderNumCell.style.cssText = 'padding: var(--space-3); font-weight: 600; color: var(--primary);';
+        orderNumCell.textContent = displayOrderNumber;
+        
+        // Customer cell
+        const customerCell = document.createElement('td');
+        customerCell.style.cssText = 'padding: var(--space-3);';
+        customerCell.textContent = order.customerName;
+        
+        // Phone cell
+        const phoneCell = document.createElement('td');
+        phoneCell.style.cssText = 'padding: var(--space-3);';
+        const phoneLink = document.createElement('a');
+        phoneLink.href = `tel:${order.customerPhone}`;
+        phoneLink.style.cssText = 'color: var(--primary); text-decoration: none;';
+        phoneLink.textContent = order.customerPhone;
+        phoneLink.onclick = (e) => e.stopPropagation();
+        phoneCell.appendChild(phoneLink);
+        
+        // Product cell
+        const productCell = document.createElement('td');
+        productCell.style.cssText = 'padding: var(--space-3); color: var(--text-light);';
+        productCell.textContent = product.name || 'غير معروف';
+        
+        // Status cell
+        const statusCell = document.createElement('td');
+        statusCell.style.cssText = 'padding: var(--space-3);';
+        const statusBadge = document.createElement('span');
+        statusBadge.className = statusBadgeClass;
+        statusBadge.textContent = getStatusLabel(order.status);
+        statusCell.appendChild(statusBadge);
+        
+        // Actions cell
+        const actionsCell = document.createElement('td');
+        actionsCell.style.cssText = 'padding: var(--space-3); text-align: center;';
+        actionsCell.onclick = (e) => e.stopPropagation();
+        
+        // Quick action button based on status
         if (order.status === 'assigned') {
-            quickActions = `<button onclick="quickUpdate('${order.id}', 'preparing')" class="btn-quick" style="background: var(--info);">⏳ بدء التحضير</button>`;
+            const quickBtn = document.createElement('button');
+            quickBtn.className = 'btn btn-info btn-sm';
+            quickBtn.style.cssText = 'margin: 0 2px;';
+            quickBtn.textContent = '⏳ بدء التحضير';
+            quickBtn.onclick = () => quickUpdate(order.id, 'preparing');
+            actionsCell.appendChild(quickBtn);
         } else if (order.status === 'preparing') {
-            quickActions = `<button onclick="quickUpdate('${order.id}', 'in_transit')" class="btn-quick" style="background: var(--primary);">🚚 بدء التوصيل</button>`;
+            const quickBtn = document.createElement('button');
+            quickBtn.className = 'btn btn-primary btn-sm';
+            quickBtn.style.cssText = 'margin: 0 2px;';
+            quickBtn.textContent = '🚚 بدء التوصيل';
+            quickBtn.onclick = () => quickUpdate(order.id, 'in_transit');
+            actionsCell.appendChild(quickBtn);
         } else if (order.status === 'in_transit') {
-            quickActions = `<button onclick="quickUpdate('${order.id}', 'delivered')" class="btn-quick" style="background: var(--success);">✅ تم التوصيل</button>`;
+            const quickBtn = document.createElement('button');
+            quickBtn.className = 'btn btn-success btn-sm';
+            quickBtn.style.cssText = 'margin: 0 2px;';
+            quickBtn.textContent = '✅ تم التوصيل';
+            quickBtn.onclick = () => quickUpdate(order.id, 'delivered');
+            actionsCell.appendChild(quickBtn);
         }
         
-        return `
-            <div class="order-card" data-order-id="${order.id}">
-                <div class="order-header">
-                    <span class="order-id">${displayOrderNumber}</span>
-                    <span class="${statusBadgeClass}">${getStatusLabel(order.status)}</span>
-                </div>
-                <div class="order-info">
-                    <div class="order-info-item">
-                        <span class="order-info-label">العميل:</span>
-                        <span class="order-info-value">${escapeHtml(order.customerName)}</span>
-                    </div>
-                    <div class="order-info-item">
-                        <span class="order-info-label">الهاتف:</span>
-                        <span class="order-info-value"><a href="tel:${escapeHtml(order.customerPhone)}">${escapeHtml(order.customerPhone)} 📞</a></span>
-                    </div>
-                    <div class="order-info-item">
-                        <span class="order-info-label">العنوان:</span>
-                        <span class="order-info-value">${escapeHtml(order.customerAddress)}</span>
-                    </div>
-                    <div class="order-info-item">
-                        <span class="order-info-label">المنتج:</span>
-                        <span class="order-info-value">${escapeHtml(product.name || 'غير معروف')}</span>
-                    </div>
-                    <div class="order-info-item">
-                        <span class="order-info-label">الكمية:</span>
-                        <span class="order-info-value">${order.quantity || 1}</span>
-                    </div>
-                    <div class="order-info-item">
-                        <span class="order-info-label">السعر:</span>
-                        <span class="order-info-value">${formatPrice(product.price)} د.ع</span>
-                    </div>
-                    ${product.discountPrice ? `
-                    <div class="order-info-item">
-                        <span class="order-info-label">السعر بعد الخصم:</span>
-                        <span class="order-info-value" style="color: var(--success); font-weight: 600;">${formatPrice(product.discountPrice)} د.ع</span>
-                    </div>
-                    ` : ''}
-                    <div class="order-info-item">
-                        <span class="order-info-label">تاريخ الطلب:</span>
-                        <span class="order-info-value">${new Date(order.createdAt).toLocaleDateString('ar')}</span>
-                    </div>
-                </div>
-                ${quickActions ? `
-                <div class="quick-actions">
-                    <strong style="display: block; margin-bottom: var(--space-2); color: var(--text);">إجراء سريع:</strong>
-                    ${quickActions}
-                </div>
-                ` : ''}
-                <form class="order-form" onsubmit="updateOrder(event, '${order.id}')">
-                    <div class="form-row">
-                        <div class="form-group">
-                            <label class="form-label" for="status-${order.id}">حالة الطلب</label>
-                            <select id="status-${order.id}" name="status" class="form-input" required>
-                                <option value="assigned" ${order.status === 'assigned' ? 'selected' : ''}>مُسند</option>
-                                <option value="preparing" ${order.status === 'preparing' ? 'selected' : ''}>قيد التحضير</option>
-                                <option value="in_transit" ${order.status === 'in_transit' ? 'selected' : ''}>قيد التوصيل</option>
-                                <option value="delivered" ${order.status === 'delivered' ? 'selected' : ''}>تم التوصيل</option>
-                            </select>
-                        </div>
-                        <div class="form-group">
-                            <label class="form-label" for="shippingPrice-${order.id}">سعر التوصيل (د.ع)</label>
-                            <input type="number" id="shippingPrice-${order.id}" name="shippingPrice" class="form-input"
-                                   value="${order.shippingPrice || ''}" step="0.01" min="0" placeholder="0.00">
-                        </div>
-                        <div class="form-group">
-                            <label class="form-label" for="paymentReceived-${order.id}">المبلغ المستلم (د.ع)</label>
-                            <input type="number" id="paymentReceived-${order.id}" name="paymentReceived" class="form-input"
-                                   value="${order.paymentReceived || ''}" step="0.01" min="0" placeholder="0.00">
-                        </div>
-                    </div>
-                    <button type="submit" class="btn btn-primary" style="width: 100%;">💾 تحديث الطلب</button>
-                </form>
-            </div>
-        `;
-    }).join('');
+        const viewBtn = document.createElement('button');
+        viewBtn.className = 'btn btn-info btn-sm';
+        viewBtn.style.cssText = 'margin: 0 2px;';
+        viewBtn.textContent = '👁️';
+        viewBtn.onclick = () => openDeliveryOrderDetailModal(order);
+        actionsCell.appendChild(viewBtn);
+        
+        row.appendChild(orderNumCell);
+        row.appendChild(customerCell);
+        row.appendChild(phoneCell);
+        row.appendChild(productCell);
+        row.appendChild(statusCell);
+        row.appendChild(actionsCell);
+        
+        tbody.appendChild(row);
+    });
+    
+    table.appendChild(tbody);
+    container.innerHTML = '';
+    container.appendChild(table);
 }
 
 // Quick status update
@@ -347,8 +374,168 @@ async function updateOrder(e, orderId) {
     }
 }
 
+// Open delivery order detail modal
+function openDeliveryOrderDetailModal(order) {
+    const product = order.product || {};
+    const statusBadgeClass = getStatusBadgeClass(order.status);
+    const orderNumber = order.orderNumber || order.id;
+    const displayOrderNumber = orderNumber.startsWith('ORD-') ? orderNumber : `#${orderNumber.substring(0, 8)}`;
+    
+    // Create modal if it doesn't exist
+    let modal = document.getElementById('deliveryOrderDetailModal');
+    if (!modal) {
+        modal = document.createElement('div');
+        modal.id = 'deliveryOrderDetailModal';
+        modal.className = 'modal';
+        modal.innerHTML = `
+            <div class="modal-content" style="max-width: 700px; max-height: 90vh; overflow-y: auto;">
+                <div class="modal-header">
+                    <h2>تفاصيل الطلب</h2>
+                    <button class="modal-close" onclick="closeDeliveryOrderDetailModal()">✕</button>
+                </div>
+                <div class="modal-body" id="deliveryOrderDetailContent">
+                    <!-- Content will be populated here -->
+                </div>
+                <div class="modal-footer" style="padding: var(--space-4); border-top: 1px solid var(--border-light);">
+                    <button class="btn btn-secondary" onclick="closeDeliveryOrderDetailModal()">إغلاق</button>
+                </div>
+            </div>
+        `;
+        document.body.appendChild(modal);
+    }
+    
+    const content = document.getElementById('deliveryOrderDetailContent');
+    
+    let html = `
+        <div style="display: grid; gap: var(--space-4);">
+            <div style="background: var(--light); padding: var(--space-4); border-radius: var(--radius-lg);">
+                <h3 style="margin-bottom: var(--space-3); color: var(--primary);">معلومات الطلب</h3>
+                <div style="display: grid; gap: var(--space-2);">
+                    <div style="display: flex; justify-content: space-between;">
+                        <span style="font-weight: 600;">رقم الطلب:</span>
+                        <span>${displayOrderNumber}</span>
+                    </div>
+                    <div style="display: flex; justify-content: space-between;">
+                        <span style="font-weight: 600;">الحالة:</span>
+                        <span class="${statusBadgeClass}">${getStatusLabel(order.status)}</span>
+                    </div>
+                    <div style="display: flex; justify-content: space-between;">
+                        <span style="font-weight: 600;">تاريخ الإنشاء:</span>
+                        <span>${new Date(order.createdAt).toLocaleString('ar-EG')}</span>
+                    </div>
+                </div>
+            </div>
+            
+            <div style="background: var(--light); padding: var(--space-4); border-radius: var(--radius-lg);">
+                <h3 style="margin-bottom: var(--space-3); color: var(--primary);">معلومات العميل</h3>
+                <div style="display: grid; gap: var(--space-2);">
+                    <div style="display: flex; justify-content: space-between;">
+                        <span style="font-weight: 600;">الاسم:</span>
+                        <span>${escapeHtml(order.customerName)}</span>
+                    </div>
+                    <div style="display: flex; justify-content: space-between;">
+                        <span style="font-weight: 600;">الهاتف:</span>
+                        <a href="tel:${order.customerPhone}" style="color: var(--primary);">${order.customerPhone} 📞</a>
+                    </div>
+                    <div style="display: flex; justify-content: space-between; align-items: flex-start;">
+                        <span style="font-weight: 600;">العنوان:</span>
+                        <span style="text-align: left; max-width: 60%; word-break: break-word;">${escapeHtml(order.customerAddress)}</span>
+                    </div>
+                </div>
+            </div>
+            
+            <div style="background: var(--light); padding: var(--space-4); border-radius: var(--radius-lg);">
+                <h3 style="margin-bottom: var(--space-3); color: var(--primary);">معلومات المنتج</h3>
+                <div style="display: grid; gap: var(--space-2);">
+                    <div style="display: flex; justify-content: space-between;">
+                        <span style="font-weight: 600;">المنتج:</span>
+                        <span>${escapeHtml(product.name || 'غير معروف')}</span>
+                    </div>
+                    <div style="display: flex; justify-content: space-between;">
+                        <span style="font-weight: 600;">الكمية:</span>
+                        <span>${order.quantity || 1}</span>
+                    </div>
+                    ${product.price ? `
+                    <div style="display: flex; justify-content: space-between;">
+                        <span style="font-weight: 600;">السعر:</span>
+                        <span>${formatPrice(product.price)} د.ع</span>
+                    </div>
+                    ${product.discountPrice ? `
+                    <div style="display: flex; justify-content: space-between;">
+                        <span style="font-weight: 600;">السعر بعد الخصم:</span>
+                        <span style="color: var(--success); font-weight: 600;">${formatPrice(product.discountPrice)} د.ع</span>
+                    </div>
+                    ` : ''}
+                    ` : ''}
+                </div>
+            </div>
+            
+            ${order.shippingPrice || order.paymentReceived ? `
+            <div style="background: var(--light); padding: var(--space-4); border-radius: var(--radius-lg);">
+                <h3 style="margin-bottom: var(--space-3); color: var(--primary);">المعلومات المالية</h3>
+                <div style="display: grid; gap: var(--space-2);">
+                    ${order.shippingPrice ? `
+                    <div style="display: flex; justify-content: space-between;">
+                        <span style="font-weight: 600;">سعر التوصيل:</span>
+                        <span>${formatPrice(order.shippingPrice)} د.ع</span>
+                    </div>
+                    ` : ''}
+                    ${order.paymentReceived ? `
+                    <div style="display: flex; justify-content: space-between;">
+                        <span style="font-weight: 600;">المبلغ المستلم:</span>
+                        <span style="color: var(--success); font-weight: 600;">${formatPrice(order.paymentReceived)} د.ع</span>
+                    </div>
+                    ` : ''}
+                </div>
+            </div>
+            ` : ''}
+            
+            <div style="background: var(--light); padding: var(--space-4); border-radius: var(--radius-lg);">
+                <h3 style="margin-bottom: var(--space-3); color: var(--primary);">تحديث الطلب</h3>
+                <form onsubmit="updateOrder(event, '${order.id}'); closeDeliveryOrderDetailModal(); return false;">
+                    <div style="display: grid; gap: var(--space-3);">
+                        <div>
+                            <label class="form-label" for="delivery-status-${order.id}">حالة الطلب</label>
+                            <select id="delivery-status-${order.id}" name="status" class="form-input" required style="width: 100%;">
+                                <option value="preparing" ${order.status === 'preparing' ? 'selected' : ''}>قيد التحضير</option>
+                                <option value="in_transit" ${order.status === 'in_transit' ? 'selected' : ''}>قيد التوصيل</option>
+                                <option value="delivered" ${order.status === 'delivered' ? 'selected' : ''}>تم التوصيل</option>
+                                <option value="returned" ${order.status === 'returned' ? 'selected' : ''}>استرجاع</option>
+                                <option value="cancelled" ${order.status === 'cancelled' ? 'selected' : ''}>ملغية</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label class="form-label" for="delivery-shippingPrice-${order.id}">سعر التوصيل (د.ع)</label>
+                            <input type="number" id="delivery-shippingPrice-${order.id}" name="shippingPrice" class="form-input"
+                                   value="${order.shippingPrice || ''}" step="0.01" min="0" placeholder="0.00" style="width: 100%;">
+                        </div>
+                        <div>
+                            <label class="form-label" for="delivery-paymentReceived-${order.id}">المبلغ المستلم (د.ع)</label>
+                            <input type="number" id="delivery-paymentReceived-${order.id}" name="paymentReceived" class="form-input"
+                                   value="${order.paymentReceived || ''}" step="0.01" min="0" placeholder="0.00" style="width: 100%;">
+                        </div>
+                        <button type="submit" class="btn btn-primary" style="width: 100%;">💾 تحديث الطلب</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    `;
+    
+    content.innerHTML = html;
+    modal.classList.add('active');
+}
+
+// Close delivery order detail modal
+function closeDeliveryOrderDetailModal() {
+    const modal = document.getElementById('deliveryOrderDetailModal');
+    if (modal) {
+        modal.classList.remove('active');
+    }
+}
+
 // Escape HTML
 function escapeHtml(text) {
+    if (!text) return '';
     const div = document.createElement('div');
     div.textContent = text;
     return div.innerHTML;

@@ -100,19 +100,24 @@ module.exports = async (req, res) => {
     console.log('URL:', req.url);
     console.log('Full URL check:', req.url?.includes('delivery/list') ? 'YES - CONTAINS delivery/list' : 'NO');
     console.log('Query:', JSON.stringify(req.query));
+    console.log('Query["...path"]:', req.query?.['...path']);
     console.log('Query.path:', req.query?.path);
-    console.log('Query.path type:', typeof req.query?.path);
-    console.log('Query.path isArray:', Array.isArray(req.query?.path));
-    if (req.query?.path) {
-        console.log('Query.path length:', Array.isArray(req.query?.path) ? req.query?.path.length : 'N/A');
-        console.log('Query.path values:', Array.isArray(req.query?.path) ? req.query?.path : req.query?.path);
+    console.log('Query["...path"] type:', typeof req.query?.['...path']);
+    console.log('Query["...path"] isArray:', Array.isArray(req.query?.['...path']));
+    const actualQueryPath = req.query?.['...path'] || req.query?.path;
+    if (actualQueryPath) {
+        console.log('Query path length:', Array.isArray(actualQueryPath) ? actualQueryPath.length : 'N/A');
+        console.log('Query path values:', actualQueryPath);
     }
     console.log('Headers:', JSON.stringify(req.headers));
 
     // IMMEDIATE CHECK: Handle delivery/list endpoint directly if detected
-    const queryPath = req.query?.path;
+    // Vercel uses "...path" as the query key for catch-all routes
+    const queryPath = req.query?.['...path'] || req.query?.path;
     const rawUrlForCheck = String(req.url || '').toLowerCase();
     console.log('Immediate check - queryPath:', queryPath);
+    console.log('Immediate check - req.query["...path"]:', req.query?.['...path']);
+    console.log('Immediate check - req.query.path:', req.query?.path);
     console.log('Immediate check - isArray:', Array.isArray(queryPath));
     console.log('Immediate check - length:', Array.isArray(queryPath) ? queryPath.length : 'N/A');
     console.log('Immediate check - rawUrl:', rawUrlForCheck);
@@ -212,14 +217,18 @@ module.exports = async (req, res) => {
     let isDeliveryEndpoint = false;
     let deliverySubEndpoint = '';
     
-    // PRIORITY CHECK: Direct query.path array check (most reliable for Vercel)
-    if (queryPath && Array.isArray(queryPath) && queryPath.length >= 2) {
-        const first = String(queryPath[0] || '').toLowerCase().trim();
-        const second = String(queryPath[1] || '').toLowerCase().trim();
+    // PRIORITY CHECK: Direct query["...path"] array check (most reliable for Vercel)
+    // Vercel uses "...path" as the query parameter name
+    const priorityQueryPath = req.query?.['...path'] || req.query?.path;
+    if (priorityQueryPath && Array.isArray(priorityQueryPath) && priorityQueryPath.length >= 2) {
+        const first = String(priorityQueryPath[0] || '').toLowerCase().trim();
+        const second = String(priorityQueryPath[1] || '').toLowerCase().trim();
+        console.log('PRIORITY CHECK - first:', first, 'second:', second);
         if (first === 'delivery') {
             if (second === 'list' && req.method === 'GET') {
                 isDeliveryEndpoint = true;
                 deliverySubEndpoint = 'list';
+                console.log('✅ PRIORITY CHECK MATCHED: delivery/list');
             } else if (second === 'auth' && req.method === 'POST') {
                 isDeliveryEndpoint = true;
                 deliverySubEndpoint = 'auth';
@@ -321,14 +330,15 @@ module.exports = async (req, res) => {
     // - req.url might be '/api/delivery/list' or '/delivery/list'
     let pathParts = [];
     
-    // Method 1: Try req.query.path (Vercel's catch-all format) - PRIORITY
-    if (req.query && req.query.path !== undefined && req.query.path !== null) {
-        const pathArray = req.query.path;
-        if (Array.isArray(pathArray)) {
+    // Method 1: Try req.query["...path"] (Vercel's catch-all format) - PRIORITY
+    // Vercel uses "...path" as the query parameter name for catch-all routes
+    const queryPathArray = req.query?.['...path'] || req.query?.path;
+    if (queryPathArray !== undefined && queryPathArray !== null) {
+        if (Array.isArray(queryPathArray)) {
             // Filter and map, but preserve all parts
-            pathParts = pathArray.map(p => String(p || '').trim()).filter(p => p.length > 0);
-        } else if (typeof pathArray === 'string' && pathArray.trim().length > 0) {
-            pathParts = pathArray.split('/').map(p => p.trim()).filter(p => p.length > 0);
+            pathParts = queryPathArray.map(p => String(p || '').trim()).filter(p => p.length > 0);
+        } else if (typeof queryPathArray === 'string' && queryPathArray.trim().length > 0) {
+            pathParts = queryPathArray.split('/').map(p => p.trim()).filter(p => p.length > 0);
         }
     }
     

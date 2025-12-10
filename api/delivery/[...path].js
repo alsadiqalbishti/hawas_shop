@@ -288,23 +288,35 @@ module.exports = async (req, res) => {
                 
                 // Check if transition is valid
                 if (newStatus !== currentStatus) {
-                    // Allow transitions for delivery men:
-                    // - From assigned/preparing/in_transit to preparing/in_transit/delivered (forward flow)
-                    // - From delivered to returned (customer return)
-                    // - From any status to cancelled (if customer doesn't want it)
-                    const validFromStatuses = ['assigned', 'preparing', 'in_transit', 'delivered'];
-                    if (!validFromStatuses.includes(currentStatus)) {
+                    // Terminal statuses - cannot be changed
+                    const terminalStatuses = ['completed', 'refunded'];
+                    if (terminalStatuses.includes(currentStatus)) {
                         return res.status(400).json({ 
-                            error: `Cannot update order from status: ${getStatusLabel(currentStatus)}`
+                            error: `Cannot update order from terminal status: ${getStatusLabel(currentStatus)}`
                         });
                     }
                     
-                    // Allow forward transitions
+                    // If already cancelled, can't change (unless admin)
+                    if (currentStatus === 'cancelled') {
+                        return res.status(400).json({ 
+                            error: `Cannot update cancelled order`
+                        });
+                    }
+                    
+                    // Allow forward transitions: assigned -> preparing -> in_transit -> delivered
                     if (['preparing', 'in_transit', 'delivered'].includes(newStatus)) {
                         const statusOrder = ['assigned', 'preparing', 'in_transit', 'delivered'];
                         const currentIndex = statusOrder.indexOf(currentStatus);
                         const newIndex = statusOrder.indexOf(newStatus);
-                        if (newIndex <= currentIndex) {
+                        
+                        // If current status is not in the flow, allow setting to preparing (first step)
+                        if (currentIndex === -1) {
+                            if (newStatus !== 'preparing') {
+                                return res.status(400).json({ 
+                                    error: `Can only set status to 'preparing' from current status: ${getStatusLabel(currentStatus)}`
+                                });
+                            }
+                        } else if (newIndex <= currentIndex) {
                             return res.status(400).json({ 
                                 error: `Cannot go backwards from ${getStatusLabel(currentStatus)} to ${getStatusLabel(newStatus)}`
                             });
@@ -318,8 +330,10 @@ module.exports = async (req, res) => {
                         });
                     }
                     
-                    // Allow cancelled from any status (customer doesn't want it)
-                    // No restrictions for cancelled
+                    // Allow cancelled from any non-terminal status (customer doesn't want it)
+                    if (newStatus === 'cancelled') {
+                        // Already checked terminal statuses above, so this is allowed
+                    }
                 }
 
                 const updatedOrder = {

@@ -90,6 +90,7 @@ module.exports = async (req, res) => {
     console.log('=== API REQUEST DEBUG START ===');
     console.log('Method:', req.method);
     console.log('URL:', req.url);
+    console.log('Full URL check:', req.url?.includes('delivery/list') ? 'YES - CONTAINS delivery/list' : 'NO');
     console.log('Query:', JSON.stringify(req.query));
     console.log('Query.path:', req.query?.path);
     console.log('Query.path type:', typeof req.query?.path);
@@ -116,6 +117,9 @@ module.exports = async (req, res) => {
         rawUrlForCheck.endsWith('/delivery/list')
     );
     
+    console.log('🔍 DELIVERY/LIST CHECK - isDeliveryListRequest (URL):', isDeliveryListRequest);
+    console.log('🔍 DELIVERY/LIST CHECK - rawUrlForCheck:', rawUrlForCheck);
+    
     // Also check queryPath
     if (!isDeliveryListRequest && queryPath && Array.isArray(queryPath) && queryPath.length >= 2) {
         const first = String(queryPath[0] || '').toLowerCase().trim();
@@ -123,12 +127,12 @@ module.exports = async (req, res) => {
         console.log('Immediate check - first:', first, 'second:', second);
         if (first === 'delivery' && second === 'list' && req.method === 'GET') {
             isDeliveryListRequest = true;
-            console.log('IMMEDIATE HANDLER TRIGGERED for delivery/list (queryPath match)');
+            console.log('✅ IMMEDIATE HANDLER TRIGGERED for delivery/list (queryPath match)');
         }
     }
     
     if (isDeliveryListRequest) {
-        console.log('IMMEDIATE HANDLER TRIGGERED for delivery/list');
+        console.log('🚀🚀🚀 IMMEDIATE HANDLER TRIGGERED for delivery/list 🚀🚀🚀');
         // Directly handle delivery/list endpoint
         if (!requireAuth(req, res)) return;
             try {

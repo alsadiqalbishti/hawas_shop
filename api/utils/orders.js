@@ -87,12 +87,24 @@ function canTransitionStatus(currentStatus, newStatus, userRole = 'admin') {
 
     // Delivery man can only transition through delivery workflow
     if (userRole === 'delivery') {
+        // Allow forward transitions: assigned -> preparing -> in_transit -> delivered
         const deliveryTransitions = ['assigned', 'preparing', 'in_transit', 'delivered'];
         if (deliveryTransitions.includes(newStatus) && deliveryTransitions.includes(currentStatus)) {
             const currentIndex = deliveryTransitions.indexOf(currentStatus);
             const newIndex = deliveryTransitions.indexOf(newStatus);
             return newIndex === currentIndex + 1; // Only forward transitions
         }
+        
+        // Allow returned from delivered (customer return)
+        if (newStatus === 'returned' && currentStatus === 'delivered') {
+            return true;
+        }
+        
+        // Allow cancelled from any status (customer doesn't want it)
+        if (newStatus === 'cancelled') {
+            return true;
+        }
+        
         return false;
     }
 

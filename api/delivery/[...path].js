@@ -278,15 +278,48 @@ module.exports = async (req, res) => {
                 const currentStatus = order.status;
                 const newStatus = status || currentStatus;
                 
-                if (newStatus !== currentStatus && !canTransitionStatus(currentStatus, newStatus, 'delivery')) {
+                // Delivery men can only set these 5 statuses: preparing, in_transit, delivered, returned, cancelled
+                const allowedStatusesForDelivery = ['preparing', 'in_transit', 'delivered', 'returned', 'cancelled'];
+                if (newStatus && !allowedStatusesForDelivery.includes(newStatus)) {
                     return res.status(400).json({ 
-                        error: `Invalid status transition from ${getStatusLabel(currentStatus)} to ${getStatusLabel(newStatus)}`
+                        error: `Delivery men can only set status to: ${allowedStatusesForDelivery.map(s => getStatusLabel(s)).join(', ')}`
                     });
                 }
-
-                const validStatuses = ['assigned', 'preparing', 'in_transit', 'delivered'];
-                if (newStatus && !validStatuses.includes(newStatus)) {
-                    return res.status(400).json({ error: 'Invalid status for delivery man' });
+                
+                // Check if transition is valid
+                if (newStatus !== currentStatus) {
+                    // Allow transitions for delivery men:
+                    // - From assigned/preparing/in_transit to preparing/in_transit/delivered (forward flow)
+                    // - From delivered to returned (customer return)
+                    // - From any status to cancelled (if customer doesn't want it)
+                    const validFromStatuses = ['assigned', 'preparing', 'in_transit', 'delivered'];
+                    if (!validFromStatuses.includes(currentStatus)) {
+                        return res.status(400).json({ 
+                            error: `Cannot update order from status: ${getStatusLabel(currentStatus)}`
+                        });
+                    }
+                    
+                    // Allow forward transitions
+                    if (['preparing', 'in_transit', 'delivered'].includes(newStatus)) {
+                        const statusOrder = ['assigned', 'preparing', 'in_transit', 'delivered'];
+                        const currentIndex = statusOrder.indexOf(currentStatus);
+                        const newIndex = statusOrder.indexOf(newStatus);
+                        if (newIndex <= currentIndex) {
+                            return res.status(400).json({ 
+                                error: `Cannot go backwards from ${getStatusLabel(currentStatus)} to ${getStatusLabel(newStatus)}`
+                            });
+                        }
+                    }
+                    
+                    // Allow returned only from delivered
+                    if (newStatus === 'returned' && currentStatus !== 'delivered') {
+                        return res.status(400).json({ 
+                            error: `Can only mark as returned from delivered status`
+                        });
+                    }
+                    
+                    // Allow cancelled from any status (customer doesn't want it)
+                    // No restrictions for cancelled
                 }
 
                 const updatedOrder = {

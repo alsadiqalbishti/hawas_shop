@@ -94,6 +94,30 @@ module.exports = async (req, res) => {
     let isDeliveryEndpoint = false;
     let deliverySubEndpoint = '';
     
+    // PRIORITY CHECK: Direct query.path array check (most reliable for Vercel)
+    if (queryPath && Array.isArray(queryPath) && queryPath.length >= 2) {
+        const first = String(queryPath[0] || '').toLowerCase().trim();
+        const second = String(queryPath[1] || '').toLowerCase().trim();
+        if (first === 'delivery') {
+            if (second === 'list' && req.method === 'GET') {
+                isDeliveryEndpoint = true;
+                deliverySubEndpoint = 'list';
+            } else if (second === 'auth' && req.method === 'POST') {
+                isDeliveryEndpoint = true;
+                deliverySubEndpoint = 'auth';
+            } else if (second === 'orders') {
+                isDeliveryEndpoint = true;
+                deliverySubEndpoint = 'orders';
+            } else if (second === 'info' && req.method === 'GET') {
+                isDeliveryEndpoint = true;
+                deliverySubEndpoint = 'info';
+            } else if (second) {
+                isDeliveryEndpoint = true;
+                deliverySubEndpoint = second;
+            }
+        }
+    }
+    
     // Method 1: Check raw URL (handle both /api/delivery/list and /delivery/list formats)
     const normalizedRawUrl = rawUrl.replace(/^\/api\//, '/').replace(/^\/+/, '/');
     if (normalizedRawUrl.includes('/delivery/list') && req.method === 'GET') {
@@ -125,25 +149,50 @@ module.exports = async (req, res) => {
     
     // Method 2: Check query.path (Vercel's catch-all format)
     if (!isDeliveryEndpoint && queryPath) {
-        const pathStr = Array.isArray(queryPath) ? queryPath.join('/') : String(queryPath);
-        const pathLower = pathStr.toLowerCase();
-        if (pathLower.includes('delivery/list') && req.method === 'GET') {
-            isDeliveryEndpoint = true;
-            deliverySubEndpoint = 'list';
-        } else if (pathLower.includes('delivery/auth') && req.method === 'POST') {
-            isDeliveryEndpoint = true;
-            deliverySubEndpoint = 'auth';
-        } else if (pathLower.includes('delivery/orders')) {
-            isDeliveryEndpoint = true;
-            deliverySubEndpoint = 'orders';
-        } else if (pathLower.includes('delivery/info') && req.method === 'GET') {
-            isDeliveryEndpoint = true;
-            deliverySubEndpoint = 'info';
-        } else if (pathLower.startsWith('delivery/')) {
-            const match = pathLower.match(/delivery\/([^\/]+)/);
-            if (match) {
+        // Check array format first (most common in Vercel)
+        if (Array.isArray(queryPath) && queryPath.length >= 2) {
+            const first = String(queryPath[0] || '').toLowerCase().trim();
+            const second = String(queryPath[1] || '').toLowerCase().trim();
+            if (first === 'delivery') {
+                if (second === 'list' && req.method === 'GET') {
+                    isDeliveryEndpoint = true;
+                    deliverySubEndpoint = 'list';
+                } else if (second === 'auth' && req.method === 'POST') {
+                    isDeliveryEndpoint = true;
+                    deliverySubEndpoint = 'auth';
+                } else if (second === 'orders') {
+                    isDeliveryEndpoint = true;
+                    deliverySubEndpoint = 'orders';
+                } else if (second === 'info' && req.method === 'GET') {
+                    isDeliveryEndpoint = true;
+                    deliverySubEndpoint = 'info';
+                } else if (second) {
+                    isDeliveryEndpoint = true;
+                    deliverySubEndpoint = second;
+                }
+            }
+        } else {
+            // String format fallback
+            const pathStr = String(queryPath);
+            const pathLower = pathStr.toLowerCase();
+            if (pathLower.includes('delivery/list') && req.method === 'GET') {
                 isDeliveryEndpoint = true;
-                deliverySubEndpoint = match[1];
+                deliverySubEndpoint = 'list';
+            } else if (pathLower.includes('delivery/auth') && req.method === 'POST') {
+                isDeliveryEndpoint = true;
+                deliverySubEndpoint = 'auth';
+            } else if (pathLower.includes('delivery/orders')) {
+                isDeliveryEndpoint = true;
+                deliverySubEndpoint = 'orders';
+            } else if (pathLower.includes('delivery/info') && req.method === 'GET') {
+                isDeliveryEndpoint = true;
+                deliverySubEndpoint = 'info';
+            } else if (pathLower.startsWith('delivery/')) {
+                const match = pathLower.match(/delivery\/([^\/]+)/);
+                if (match) {
+                    isDeliveryEndpoint = true;
+                    deliverySubEndpoint = match[1];
+                }
             }
         }
     }

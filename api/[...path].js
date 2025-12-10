@@ -86,12 +86,32 @@ module.exports = async (req, res) => {
         return res.status(200).end();
     }
 
+    // COMPREHENSIVE DEBUG LOGGING
+    console.log('=== API REQUEST DEBUG START ===');
+    console.log('Method:', req.method);
+    console.log('URL:', req.url);
+    console.log('Query:', JSON.stringify(req.query));
+    console.log('Query.path:', req.query?.path);
+    console.log('Query.path type:', typeof req.query?.path);
+    console.log('Query.path isArray:', Array.isArray(req.query?.path));
+    if (req.query?.path) {
+        console.log('Query.path length:', Array.isArray(req.query?.path) ? req.query?.path.length : 'N/A');
+        console.log('Query.path values:', Array.isArray(req.query?.path) ? req.query?.path : req.query?.path);
+    }
+    console.log('Headers:', JSON.stringify(req.headers));
+
     // IMMEDIATE CHECK: Handle delivery/list endpoint directly if detected
     const queryPath = req.query?.path;
+    console.log('Immediate check - queryPath:', queryPath);
+    console.log('Immediate check - isArray:', Array.isArray(queryPath));
+    console.log('Immediate check - length:', Array.isArray(queryPath) ? queryPath.length : 'N/A');
+    
     if (queryPath && Array.isArray(queryPath) && queryPath.length >= 2) {
         const first = String(queryPath[0] || '').toLowerCase().trim();
         const second = String(queryPath[1] || '').toLowerCase().trim();
+        console.log('Immediate check - first:', first, 'second:', second);
         if (first === 'delivery' && second === 'list' && req.method === 'GET') {
+            console.log('IMMEDIATE HANDLER TRIGGERED for delivery/list');
             // Directly handle delivery/list endpoint
             if (!requireAuth(req, res)) return;
             try {
@@ -146,12 +166,17 @@ module.exports = async (req, res) => {
                         index === self.findIndex(d => d.id === dm.id)
                     );
                 }, 'Failed to fetch delivery men', true);
+                console.log('IMMEDIATE HANDLER SUCCESS - returning', deliveryMen?.length || 0, 'delivery men');
                 return res.status(200).json(deliveryMen || []);
             } catch (error) {
-                console.error('Error in GET /api/delivery/list:', error);
+                console.error('IMMEDIATE HANDLER ERROR:', error);
                 return res.status(200).json([]);
             }
+        } else {
+            console.log('Immediate check - conditions not met:', { first, second, method: req.method });
         }
+    } else {
+        console.log('Immediate check - queryPath check failed:', { queryPath, isArray: Array.isArray(queryPath), length: Array.isArray(queryPath) ? queryPath.length : 'N/A' });
     }
 
     // ULTRA-AGGRESSIVE URL MATCHING FOR DELIVERY ENDPOINTS (check FIRST, before anything else)
@@ -375,25 +400,32 @@ module.exports = async (req, res) => {
     }
     
     // FINAL OVERRIDE: If endpoint still not set correctly, do one more aggressive check
+    console.log('FINAL OVERRIDE CHECK - endpoint:', endpoint, 'subEndpoint:', subEndpoint);
     if (endpoint !== 'delivery' || !subEndpoint) {
+        console.log('FINAL OVERRIDE - endpoint not delivery, checking alternatives...');
         // Check pathParts one more time (most reliable)
         if (pathParts.length >= 2 && pathParts[0].toLowerCase() === 'delivery') {
+            console.log('FINAL OVERRIDE - Found in pathParts:', pathParts);
             endpoint = 'delivery';
             subEndpoint = pathParts[1].toLowerCase().trim();
         }
         // Check query.path one more time
         else if (queryPath) {
+            console.log('FINAL OVERRIDE - Checking queryPath:', queryPath);
             if (Array.isArray(queryPath) && queryPath.length >= 2) {
                 const first = String(queryPath[0] || '').toLowerCase().trim();
                 const second = String(queryPath[1] || '').toLowerCase().trim();
+                console.log('FINAL OVERRIDE - queryPath values:', first, second);
                 if (first === 'delivery' && second) {
                     endpoint = 'delivery';
                     subEndpoint = second;
+                    console.log('FINAL OVERRIDE - Set endpoint from queryPath');
                 }
             }
         }
         // Check rawUrl one more time as absolute last resort
         else if (rawUrl.includes('delivery/list') && req.method === 'GET') {
+            console.log('FINAL OVERRIDE - Found in rawUrl');
             endpoint = 'delivery';
             subEndpoint = 'list';
         } else if (rawUrl.includes('delivery/auth') && req.method === 'POST') {
@@ -407,20 +439,22 @@ module.exports = async (req, res) => {
             subEndpoint = 'info';
         }
     }
+    console.log('FINAL OVERRIDE RESULT - endpoint:', endpoint, 'subEndpoint:', subEndpoint);
     
     // Debug logging
-    console.log('API Request Debug:', {
-        method: req.method,
-        url: req.url,
-        query: req.query,
-        queryPath: req.query?.path,
-        pathParts: pathParts,
-        endpoint: endpoint,
-        subEndpoint: subEndpoint,
-        isDeliveryEndpoint: isDeliveryEndpoint,
-        deliverySubEndpoint: deliverySubEndpoint,
-        urlLower: (req.url || '').toLowerCase()
-    });
+    console.log('=== ENDPOINT DETECTION RESULT ===');
+    console.log('Method:', req.method);
+    console.log('URL:', req.url);
+    console.log('Query:', JSON.stringify(req.query));
+    console.log('Query.path:', req.query?.path);
+    console.log('PathParts:', pathParts);
+    console.log('Endpoint:', endpoint);
+    console.log('SubEndpoint:', subEndpoint);
+    console.log('isDeliveryEndpoint:', isDeliveryEndpoint);
+    console.log('deliverySubEndpoint:', deliverySubEndpoint);
+    console.log('rawUrl:', rawUrl);
+    console.log('urlLower:', urlLower);
+    console.log('urlPath:', urlPath);
 
     try {
         
@@ -1153,9 +1187,17 @@ module.exports = async (req, res) => {
         // ============================================
         // DELIVERY ENDPOINTS
         // ============================================
+        console.log('=== CHECKING DELIVERY ENDPOINT ===');
+        console.log('endpoint === "delivery":', endpoint === 'delivery');
+        console.log('endpoint value:', endpoint);
+        console.log('subEndpoint value:', subEndpoint);
+        console.log('req.method:', req.method);
+        
         if (endpoint === 'delivery') {
+            console.log('DELIVERY ENDPOINT MATCHED! Checking subEndpoint:', subEndpoint);
             // Delivery auth
             if (subEndpoint === 'auth' && req.method === 'POST') {
+                console.log('Handling delivery/auth');
                 const { name, phone, password, action } = req.body;
                 if (!phone || !password) {
                     return res.status(400).json({ error: 'رقم الهاتف وكلمة المرور مطلوبة' });
@@ -1304,7 +1346,12 @@ module.exports = async (req, res) => {
 
             // Delivery list
             if (subEndpoint === 'list' && req.method === 'GET') {
-                if (!requireAuth(req, res)) return;
+                console.log('DELIVERY/LIST HANDLER REACHED!');
+                if (!requireAuth(req, res)) {
+                    console.log('DELIVERY/LIST - Auth failed');
+                    return;
+                }
+                console.log('DELIVERY/LIST - Auth passed, fetching delivery men...');
 
                 try {
                     const deliveryMen = await safeRedisOperation(async (client) => {
@@ -1365,12 +1412,16 @@ module.exports = async (req, res) => {
                         );
                     }, 'Failed to fetch delivery men', true);
 
+                    console.log('DELIVERY/LIST - Success! Returning', deliveryMen?.length || 0, 'delivery men');
                     return res.status(200).json(deliveryMen || []);
                 } catch (error) {
-                    console.error('Error in GET /api/delivery/list:', error);
+                    console.error('DELIVERY/LIST - Error:', error);
+                    console.error('DELIVERY/LIST - Error stack:', error.stack);
                     // Return empty array instead of 500
                     return res.status(200).json([]);
                 }
+            } else {
+                console.log('DELIVERY/LIST - Handler not matched. subEndpoint:', subEndpoint, 'method:', req.method);
             }
 
             // Delivery info
@@ -1505,18 +1556,34 @@ module.exports = async (req, res) => {
         // ============================================
         // 404 - Endpoint not found
         // ============================================
-        console.log('404 - Endpoint not found:', {
-            endpoint,
-            subEndpoint,
-            pathParts,
-            url: req.url,
-            method: req.method
-        });
+        console.log('=== 404 ERROR - ENDPOINT NOT FOUND ===');
+        console.log('Endpoint:', endpoint);
+        console.log('SubEndpoint:', subEndpoint);
+        console.log('PathParts:', pathParts);
+        console.log('URL:', req.url);
+        console.log('Method:', req.method);
+        console.log('Query:', JSON.stringify(req.query));
+        console.log('Query.path:', req.query?.path);
+        console.log('isDeliveryEndpoint:', isDeliveryEndpoint);
+        console.log('deliverySubEndpoint:', deliverySubEndpoint);
+        console.log('rawUrl:', rawUrl);
+        console.log('urlLower:', urlLower);
+        console.log('urlPath:', urlPath);
+        console.log('=== END 404 DEBUG ===');
         return res.status(404).json({ 
             error: 'Endpoint not found', 
             endpoint: endpoint,
+            subEndpoint: subEndpoint,
             pathParts: pathParts,
-            url: req.url
+            url: req.url,
+            query: req.query,
+            debug: {
+                isDeliveryEndpoint,
+                deliverySubEndpoint,
+                rawUrl,
+                urlLower,
+                urlPath
+            }
         });
 
     } catch (error) {

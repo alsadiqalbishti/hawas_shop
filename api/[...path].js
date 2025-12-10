@@ -80,6 +80,14 @@ function setCORS(res) {
 }
 
 module.exports = async (req, res) => {
+    // LOG EVERY REQUEST IMMEDIATELY - BEFORE ANYTHING ELSE
+    console.log('📥📥📥 INCOMING REQUEST 📥📥📥');
+    console.log('Method:', req.method);
+    console.log('URL:', req.url);
+    console.log('Full URL string:', String(req.url || ''));
+    console.log('Contains delivery:', String(req.url || '').includes('delivery') ? 'YES' : 'NO');
+    console.log('Contains delivery/list:', String(req.url || '').includes('delivery/list') ? 'YES' : 'NO');
+    
     setCORS(res);
     
     if (req.method === 'OPTIONS') {

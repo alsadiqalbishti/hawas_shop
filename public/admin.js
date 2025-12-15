@@ -1033,6 +1033,14 @@ function renderOrdersTable() {
                     <span class="mobile-card-label">التاريخ:</span>
                     <span class="mobile-card-value">${new Date(order.createdAt).toLocaleDateString('ar-EG')}</span>
                 </div>
+                ${order.paymentMethod ? `
+                <div class="mobile-card-row">
+                    <span class="mobile-card-label">طريقة الدفع:</span>
+                    <span class="mobile-card-value" style="color: var(--primary); font-weight: 600;">
+                        ${order.paymentMethod === 'cash' ? '💵 نقداً' : '💳 بطاقة'}
+                    </span>
+                </div>
+                ` : ''}
             `;
             
             const actions = document.createElement('div');
@@ -2137,10 +2145,18 @@ function openOrderDetailModal(order) {
                 </div>
             </div>
             
-            ${order.shippingPrice || order.paymentReceived ? `
+            ${order.shippingPrice || order.paymentReceived || order.paymentMethod ? `
             <div style="background: var(--light); padding: var(--space-4); border-radius: var(--radius-lg);">
                 <h3 style="margin-bottom: var(--space-3); color: var(--primary);">المعلومات المالية</h3>
                 <div style="display: grid; gap: var(--space-2);">
+                    ${order.paymentMethod ? `
+                    <div style="display: flex; justify-content: space-between;">
+                        <span style="font-weight: 600;">طريقة الدفع:</span>
+                        <span style="color: var(--primary); font-weight: 600;">
+                            ${order.paymentMethod === 'cash' ? '💵 نقداً عند الاستلام' : '💳 بطاقة'}
+                        </span>
+                    </div>
+                    ` : ''}
                     ${order.shippingPrice ? `
                     <div style="display: flex; justify-content: space-between;">
                         <span style="font-weight: 600;">سعر التوصيل:</span>

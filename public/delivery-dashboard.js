@@ -228,6 +228,14 @@ function renderOrders(orders) {
                     <span class="mobile-card-label">المنتج:</span>
                     <span class="mobile-card-value">${escapeHtml(product.name || 'غير معروف')}</span>
                 </div>
+                ${order.paymentMethod ? `
+                <div class="mobile-card-row">
+                    <span class="mobile-card-label">طريقة الدفع:</span>
+                    <span class="mobile-card-value" style="color: ${order.paymentMethod === 'cash' ? 'var(--warning)' : 'var(--info)'}; font-weight: 600;">
+                        ${order.paymentMethod === 'cash' ? '💵 نقداً عند الاستلام' : '💳 بطاقة'}
+                    </span>
+                </div>
+                ` : ''}
             `;
             
             const actions = document.createElement('div');
@@ -587,10 +595,18 @@ function openDeliveryOrderDetailModal(order) {
                 </div>
             </div>
             
-            ${order.shippingPrice || order.paymentReceived ? `
+            ${order.shippingPrice || order.paymentReceived || order.paymentMethod ? `
             <div style="background: var(--light); padding: var(--space-4); border-radius: var(--radius-lg);">
                 <h3 style="margin-bottom: var(--space-3); color: var(--primary);">المعلومات المالية</h3>
                 <div style="display: grid; gap: var(--space-2);">
+                    ${order.paymentMethod ? `
+                    <div style="display: flex; justify-content: space-between; align-items: center; padding: var(--space-2); background: var(--white); border-radius: var(--radius-md); border: 2px solid ${order.paymentMethod === 'cash' ? 'var(--warning)' : 'var(--info)'};">
+                        <span style="font-weight: 600;">طريقة الدفع:</span>
+                        <span style="color: ${order.paymentMethod === 'cash' ? 'var(--warning)' : 'var(--info)'}; font-weight: 600; font-size: var(--font-size-lg);">
+                            ${order.paymentMethod === 'cash' ? '💵 نقداً عند الاستلام' : '💳 بطاقة'}
+                        </span>
+                    </div>
+                    ` : ''}
                     ${order.shippingPrice ? `
                     <div style="display: flex; justify-content: space-between;">
                         <span style="font-weight: 600;">سعر التوصيل:</span>

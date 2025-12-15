@@ -1400,6 +1400,9 @@ function openProductModal(productId = null) {
     const modal = document.getElementById('productModal');
     const form = document.getElementById('productForm');
     const title = document.getElementById('modalTitle');
+    
+    // Lock body scroll on mobile
+    document.body.classList.add('modal-open');
 
     form.reset();
     document.getElementById('currentMedia').innerHTML = '';
@@ -1461,13 +1464,31 @@ function openProductModal(productId = null) {
     }
 
     modal.classList.add('active');
+    // Lock body scroll on mobile
+    document.body.classList.add('modal-open');
 }
 
 // Close product modal
 function closeProductModal() {
-    document.getElementById('productModal').classList.remove('active');
+    const modal = document.getElementById('productModal');
+    modal.classList.remove('active');
     editingProductId = null;
+    
+    // Unlock body scroll
+    document.body.classList.remove('modal-open');
 }
+
+// Close modal when clicking backdrop
+document.addEventListener('DOMContentLoaded', function() {
+    const productModal = document.getElementById('productModal');
+    if (productModal) {
+        productModal.addEventListener('click', function(e) {
+            if (e.target === productModal) {
+                closeProductModal();
+            }
+        });
+    }
+});
 
 // Product form submit
 document.getElementById('productForm')?.addEventListener('submit', async (e) => {

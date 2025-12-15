@@ -1552,6 +1552,45 @@
     </div>
 
     <script src="/product.js"></script>
+    <script>
+        // Prevent navigation to admin panel from product page
+        (function() {
+            // Block direct navigation to admin.html
+            if (window.location.pathname.includes('admin.html')) {
+                window.location.href = '/';
+                return;
+            }
+            
+            // Intercept any clicks or navigation attempts to admin
+            document.addEventListener('click', function(e) {
+                const target = e.target.closest('a');
+                if (target && target.href && target.href.includes('admin.html')) {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    return false;
+                }
+            }, true);
+            
+            // Block programmatic navigation to admin
+            const originalPushState = history.pushState;
+            history.pushState = function() {
+                if (arguments[2] && arguments[2].includes('admin.html')) {
+                    console.warn('Admin panel access blocked from product page');
+                    return;
+                }
+                return originalPushState.apply(history, arguments);
+            };
+            
+            const originalReplaceState = history.replaceState;
+            history.replaceState = function() {
+                if (arguments[2] && arguments[2].includes('admin.html')) {
+                    console.warn('Admin panel access blocked from product page');
+                    return;
+                }
+                return originalReplaceState.apply(history, arguments);
+            };
+        })();
+    </script>
 </body>
 
 </html>

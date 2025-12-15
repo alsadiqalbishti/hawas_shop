@@ -240,24 +240,11 @@ body {
   gap: var(--space-3);
 }
 
-  .admin-content {
-    padding: var(--space-2);
-  }
-  
-  .card {
-    padding: var(--space-3);
-  }
-  
-  .card-header {
-    flex-direction: column;
-    gap: var(--space-3);
-    align-items: stretch;
-  }
-  
-  .card-header .btn {
-    width: 100%;
-    justify-content: center;
-  }
+.admin-content {
+  padding: var(--space-4);
+  /* Add scroll padding to account for sticky header */
+  scroll-padding-top: 80px;
+}
 
 /* Mobile Sidebar Toggle */
 .sidebar-toggle {
@@ -1444,6 +1431,12 @@ tbody tr:last-child td {
     box-shadow: var(--shadow-sm);
   }
   
+  /* Ensure content is not hidden under sticky header */
+  .admin-content {
+    padding-top: calc(var(--space-3) + 100px); /* Account for header height */
+    scroll-padding-top: 100px;
+  }
+  
   .header-title {
     font-size: var(--font-size-lg);
   }
@@ -1653,11 +1646,24 @@ tbody tr:last-child td {
     gap: var(--space-3);
     align-items: stretch;
     z-index: var(--z-sticky); /* Keep header sticky but below sidebar when open */
+    /* Ensure header doesn't block content when scrolling */
+    min-height: auto;
   }
   
   .admin-header > div:first-child {
     width: 100%;
     justify-content: space-between;
+  }
+  
+  /* Ensure content is visible when scrolling */
+  .admin-content {
+    padding-top: calc(var(--space-3) + 120px); /* Account for taller mobile header */
+    scroll-padding-top: 120px;
+  }
+  
+  /* Add spacing to first card to prevent overlap */
+  .admin-content > .tab-content > .card:first-child {
+    margin-top: var(--space-2);
   }
   
   /* When sidebar is open, ensure it's above everything */

@@ -297,19 +297,16 @@ body {
     top: 0;
     height: 100vh;
     width: 280px;
-    z-index: 1040; /* Higher than header (1020) to appear above it */
+    z-index: 1060; /* Higher than header (1050) to appear above it */
     transition: right 0.3s ease;
     overflow-y: auto;
     padding-top: 0; /* Will add padding to content instead */
+    box-shadow: -2px 0 10px rgba(0, 0, 0, 0.1);
   }
   
   .admin-sidebar.active {
     right: 0;
-  }
-  
-  /* Ensure sidebar appears above header with shadow */
-  .admin-sidebar {
-    box-shadow: -2px 0 10px rgba(0, 0, 0, 0.1);
+    z-index: 1060; /* Ensure active sidebar is above header */
   }
   
   .admin-main {
@@ -336,7 +333,7 @@ body {
     right: 0;
     bottom: 0;
     background: rgba(0, 0, 0, 0.5);
-    z-index: 1039; /* Just below sidebar */
+    z-index: 1059; /* Just below sidebar (1060) but above header (1050) */
   }
   
   .sidebar-overlay.active {
@@ -1780,7 +1777,11 @@ tbody tr:last-child td {
   /* Admin Sidebar Mobile - Already defined at 1024px, just ensure consistency */
   .admin-sidebar {
     width: 280px;
-    z-index: 1040; /* Ensure it's above header on mobile */
+    z-index: 1060; /* Ensure it's above header (1050) on mobile */
+  }
+  
+  .admin-sidebar.active {
+    z-index: 1060; /* Ensure active sidebar is above header */
   }
   
   .header-actions {
@@ -1817,7 +1818,7 @@ tbody tr:last-child td {
   
   /* When sidebar is open, ensure it's above everything */
   .admin-sidebar.active {
-    z-index: 1040;
+    z-index: 1060; /* Higher than header (1050) */
   }
 
   /* Mobile Menu Toggle */

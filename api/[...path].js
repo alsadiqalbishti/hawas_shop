@@ -779,18 +779,24 @@ module.exports = async (req, res) => {
                 try {
                     const orders = await safeRedisOperation(async (client) => {
                         const orderIds = await client.smembers('orders');
+                        console.log(`Found ${orderIds.length} order IDs in set:`, orderIds);
                         const ordersList = [];
                         for (const orderId of orderIds) {
                             try {
                                 const orderData = await client.get(`order:${orderId}`);
                                 if (orderData) {
-                                    ordersList.push(JSON.parse(orderData));
+                                    const order = JSON.parse(orderData);
+                                    ordersList.push(order);
+                                } else {
+                                    console.warn(`Order ${orderId} not found in Redis, removing from set`);
+                                    await client.srem('orders', orderId);
                                 }
                             } catch (error) {
                                 console.error(`Error fetching order ${orderId}:`, error);
                                 // Continue with other orders
                             }
                         }
+                        console.log(`Returning ${ordersList.length} orders`);
                         ordersList.sort((a, b) => {
                             try {
                                 return new Date(b.createdAt || 0) - new Date(a.createdAt || 0);
@@ -856,7 +862,8 @@ module.exports = async (req, res) => {
 
                         addStatusHistory(order, 'pending', 'system', 'Order created');
                         await client.set(`order:${order.id}`, JSON.stringify(order));
-                        await client.sadd('orders', order.id);
+                        const added = await client.sadd('orders', order.id);
+                        console.log(`Order ${order.id} saved. Added to set: ${added}`);
                         return order;
                     });
                     return res.status(201).json(newOrder);

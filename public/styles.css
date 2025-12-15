@@ -1775,7 +1775,7 @@ tbody tr:last-child td {
   
   /* Content padding - header scrolls with content */
   .admin-content {
-    padding-top: var(--space-3);
+    padding: var(--space-3) var(--space-1); /* Reduced horizontal padding */
     scroll-padding-top: 0;
   }
   

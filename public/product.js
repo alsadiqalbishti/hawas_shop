@@ -519,6 +519,26 @@ function updateLightboxImage() {
     if (lightboxImage && lightboxImages[currentLightboxIndex]) {
         lightboxImage.src = lightboxImages[currentLightboxIndex];
         lightboxCounter.textContent = `${currentLightboxIndex + 1} / ${lightboxImages.length}`;
+        
+        // Add click handler to navigate on image click
+        lightboxImage.onclick = (e) => {
+            const rect = lightboxImage.getBoundingClientRect();
+            const clickX = e.clientX - rect.left;
+            const imageWidth = rect.width;
+            const clickPercent = clickX / imageWidth;
+            
+            // In RTL: clicking on right side (0-50%) goes to previous, left side (50-100%) goes to next
+            if (clickPercent < 0.5) {
+                // Clicked on right side - go to previous
+                lightboxPrev();
+            } else {
+                // Clicked on left side - go to next
+                lightboxNext();
+            }
+        };
+        
+        // Add cursor style to indicate clickable
+        lightboxImage.style.cursor = 'pointer';
     }
 }
 

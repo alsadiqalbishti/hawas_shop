@@ -200,6 +200,13 @@ function validateOrder(data) {
         errors.push('Quantity must be between 1 and 1000');
     }
     
+    // Payment method validation
+    if (!data.paymentMethod || typeof data.paymentMethod !== 'string') {
+        errors.push('Payment method is required');
+    } else if (data.paymentMethod !== 'cash' && data.paymentMethod !== 'card') {
+        errors.push('Payment method must be either "cash" or "card"');
+    }
+    
     // Notes validation (optional)
     if (data.notes && data.notes.length > 1000) {
         errors.push('Notes are too long (max 1000 characters)');
@@ -212,8 +219,10 @@ function validateOrder(data) {
             productId: data.productId.trim(),
             customerName: sanitizeString(data.customerName.trim()),
             customerPhone: data.customerPhone.trim(),
+            paymentMethod: data.paymentMethod || 'cash',
             customerAddress: sanitizeString(data.customerAddress.trim()),
             quantity: quantity,
+            paymentMethod: data.paymentMethod || 'cash',
             notes: data.notes ? sanitizeString(data.notes.trim()) : ''
         }
     };

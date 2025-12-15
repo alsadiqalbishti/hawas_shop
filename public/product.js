@@ -336,6 +336,7 @@ document.getElementById('orderForm')?.addEventListener('submit', async (e) => {
     const customerPhone = document.getElementById('customerPhone').value.trim();
     const customerAddress = document.getElementById('customerAddress').value.trim();
     const quantity = parseInt(document.getElementById('quantity').value);
+    const paymentMethod = document.querySelector('input[name="paymentMethod"]:checked')?.value;
 
     // Client-side validation
     if (!customerName) {
@@ -370,6 +371,14 @@ document.getElementById('orderForm')?.addEventListener('submit', async (e) => {
         return;
     }
 
+    if (!paymentMethod || (paymentMethod !== 'cash' && paymentMethod !== 'card')) {
+        errorDiv.textContent = 'الرجاء اختيار طريقة الدفع';
+        errorDiv.classList.remove('hidden');
+        submitButton.disabled = false;
+        submitButton.textContent = '🛒 تأكيد الطلب';
+        return;
+    }
+
     // Check stock availability
     if (currentProduct && currentProduct.stock !== undefined && currentProduct.stock !== null) {
         if (currentProduct.stock === 0) {
@@ -393,7 +402,8 @@ document.getElementById('orderForm')?.addEventListener('submit', async (e) => {
         customerName: customerName,
         customerPhone: customerPhone,
         customerAddress: customerAddress,
-        quantity: quantity
+        quantity: quantity,
+        paymentMethod: paymentMethod
     };
 
     try {

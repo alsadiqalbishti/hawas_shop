@@ -232,7 +232,7 @@ function renderAnalyticsDashboard(stats) {
     
     // Overview cards
     const cardsHtml = `
-        <div class="analytics-grid" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1rem; margin-bottom: 2rem;">
+        <div class="analytics-grid" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 1rem; margin-bottom: 2rem;">
             <div class="analytics-card" style="background: var(--card-bg); padding: 1.5rem; border-radius: 8px; border: 1px solid var(--border);">
                 <h3 style="color: var(--text-light); font-size: 0.9rem; margin-bottom: 0.5rem;">إجمالي الطلبات</h3>
                 <p style="font-size: 2rem; font-weight: bold; color: var(--primary); margin: 0;">${stats.orders.total}</p>
@@ -254,7 +254,7 @@ function renderAnalyticsDashboard(stats) {
     
     // Charts container
     const chartsHtml = `
-        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(400px, 1fr)); gap: 1.5rem; margin-bottom: 2rem;">
+        <div class="analytics-charts-grid" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 1.5rem; margin-bottom: 2rem;">
             <div style="background: var(--card-bg); padding: 1.5rem; border-radius: 8px; border: 1px solid var(--border);">
                 <h3 style="margin-bottom: 1rem;">توزيع الطلبات حسب الحالة</h3>
                 <canvas id="statusChart" style="max-height: 300px;"></canvas>
@@ -559,10 +559,10 @@ function renderProductsTable() {
                 openProductDetailModal(product);
             };
             
-            let imageHtml = '<div style="width: 60px; height: 60px; display: flex; align-items: center; justify-content: center; background: var(--light); border-radius: var(--radius-md); font-size: 1.5rem;">📦</div>';
+            let imageHtml = '<div style="width: 80px; height: 80px; display: flex; align-items: center; justify-content: center; background: var(--light); border-radius: var(--radius-md); font-size: 2rem;">📦</div>';
             if (mediaUrls.length > 0) {
                 const firstMedia = mediaUrls[0];
-                imageHtml = `<img src="${firstMedia}" alt="${escapeHtml(product.name)}" style="width: 60px; height: 60px; object-fit: cover; border-radius: var(--radius-md);">`;
+                imageHtml = `<img src="${firstMedia}" alt="${escapeHtml(product.name)}" style="width: 80px; height: 80px; object-fit: cover; border-radius: var(--radius-md); border: 2px solid var(--border-light);">`;
             }
             
             let priceHtml = `<span style="color: var(--success); font-weight: 600;">${product.price} د.ع</span>`;

@@ -109,6 +109,8 @@ body {
   overflow-x: hidden; /* Prevent horizontal scroll */
   width: 100%;
   max-width: 100vw;
+  /* Responsive font scaling */
+  font-size: clamp(0.875rem, 1.2vw + 0.7rem, 1rem);
 }
 
 /* RTL Support */

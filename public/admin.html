@@ -382,15 +382,20 @@
                         <div class="card">
                             <div class="card-header">
                                 <h2 class="card-title">لوحة الإحصائيات</h2>
-                                <div class="flex gap-2">
-                                    <select id="analyticsPeriod" class="form-input" onchange="loadAnalytics()" style="width: auto;">
-                                        <option value="all">الكل</option>
-                                        <option value="today">اليوم</option>
-                                        <option value="week">آخر 7 أيام</option>
-                                        <option value="month">آخر 30 يوم</option>
-                                    </select>
+                                <div class="flex gap-2" style="flex-wrap: wrap; align-items: center;">
+                                    <div class="flex gap-2" style="align-items: center;">
+                                        <label class="form-label" style="margin: 0; white-space: nowrap;">من تاريخ:</label>
+                                        <input type="date" id="analyticsDateFrom" class="form-input" style="width: auto;">
+                                    </div>
+                                    <div class="flex gap-2" style="align-items: center;">
+                                        <label class="form-label" style="margin: 0; white-space: nowrap;">إلى تاريخ:</label>
+                                        <input type="date" id="analyticsDateTo" class="form-input" style="width: auto;">
+                                    </div>
                                     <button onclick="loadAnalytics()" class="btn btn-success btn-sm">
                                         🔄 تحديث
+                                    </button>
+                                    <button onclick="clearAnalyticsDates()" class="btn btn-secondary btn-sm">
+                                        🗑️ مسح
                                     </button>
                                 </div>
                             </div>

@@ -199,12 +199,25 @@ function renderStorageUsage(storage) {
 // Load analytics dashboard
 async function loadAnalytics() {
     const container = document.getElementById('analyticsContainer');
-    const period = document.getElementById('analyticsPeriod')?.value || 'all';
+    const dateFrom = document.getElementById('analyticsDateFrom')?.value || '';
+    const dateTo = document.getElementById('analyticsDateTo')?.value || '';
     
     try {
         container.innerHTML = '<div class="spinner"></div>';
         
-        const response = await fetch(`/api/analytics?period=${period}`, {
+        // Build query parameters
+        let queryParams = '';
+        if (dateFrom || dateTo) {
+            const params = new URLSearchParams();
+            if (dateFrom) params.append('dateFrom', dateFrom);
+            if (dateTo) params.append('dateTo', dateTo);
+            queryParams = '?' + params.toString();
+        } else {
+            // If no dates selected, use 'all' period
+            queryParams = '?period=all';
+        }
+        
+        const response = await fetch(`/api/analytics${queryParams}`, {
             headers: {
                 'Authorization': `Bearer ${authToken}`
             }
@@ -213,7 +226,7 @@ async function loadAnalytics() {
         if (!response.ok) {
             if (response.status === 401) {
                 logout();
-            return;
+                return;
             }
             throw new Error(`HTTP error! status: ${response.status}`);
         }
@@ -224,6 +237,13 @@ async function loadAnalytics() {
         console.error('Error loading analytics:', error);
         container.innerHTML = `<div class="alert alert-error">حدث خطأ في تحميل الإحصائيات: ${error.message}</div>`;
     }
+}
+
+// Clear analytics date filters
+function clearAnalyticsDates() {
+    document.getElementById('analyticsDateFrom').value = '';
+    document.getElementById('analyticsDateTo').value = '';
+    loadAnalytics();
 }
 
 // Render analytics dashboard

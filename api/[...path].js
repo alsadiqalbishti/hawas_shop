@@ -998,11 +998,23 @@ module.exports = async (req, res) => {
             if (!requireAuth(req, res)) return;
 
             try {
-                const { period = 'all' } = req.query;
+                const { period = 'all', dateFrom: dateFromParam, dateTo: dateToParam } = req.query;
                 let dateFrom = null;
                 let dateTo = null;
                 
-                if (period === 'today') {
+                // If dateFrom and dateTo are provided, use them
+                if (dateFromParam || dateToParam) {
+                    if (dateFromParam) {
+                        const fromDate = new Date(dateFromParam);
+                        fromDate.setHours(0, 0, 0, 0);
+                        dateFrom = fromDate.toISOString();
+                    }
+                    if (dateToParam) {
+                        const toDate = new Date(dateToParam);
+                        toDate.setHours(23, 59, 59, 999); // End of day
+                        dateTo = toDate.toISOString();
+                    }
+                } else if (period === 'today') {
                     const today = new Date();
                     today.setHours(0, 0, 0, 0);
                     dateFrom = today.toISOString();

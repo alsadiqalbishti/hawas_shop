@@ -1082,7 +1082,6 @@
         
         /* Print Styles */
         @media print {
-            .product-header-top button,
             .order-section,
             .related-products-section,
             .bundle-deals-section,
@@ -1352,11 +1351,8 @@
                 <!-- Product Info Card -->
                 <div class="product-info-card">
                     <div class="product-header">
-                        <div class="product-header-top" style="display: flex; justify-content: space-between; align-items: center;">
-                            <span class="product-badge">✨ منتج مميز</span>
-                            <button onclick="printProductPage()" class="btn btn-secondary btn-sm" style="display: flex; align-items: center; gap: 4px; padding: 6px 12px; border: 1px solid var(--border); border-radius: var(--radius-md); background: var(--white); cursor: pointer; transition: all 0.3s;">
-                                🖨️ طباعة
-                            </button>
+                        <div class="product-header-top" style="display: flex; justify-content: flex-start; align-items: center;">
+                            <span id="productBadge" class="product-badge hidden">✨ منتج مميز</span>
                         </div>
                         <h1 class="product-title" id="productName"></h1>
                         <div class="product-meta">

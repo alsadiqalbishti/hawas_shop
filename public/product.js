@@ -210,6 +210,16 @@ async function loadProduct() {
 
         // Display product info (safe - already sanitized by backend)
         document.getElementById('productName').textContent = product.name;
+        
+        // Show/hide featured badge
+        const productBadge = document.getElementById('productBadge');
+        if (productBadge) {
+            if (product.isFeatured || product.featured) {
+                productBadge.classList.remove('hidden');
+            } else {
+                productBadge.classList.add('hidden');
+            }
+        }
 
         // Display description with line breaks preserved (safe - already sanitized)
         const descElement = document.getElementById('productDescription');
@@ -662,66 +672,6 @@ function createBundleProductCard(product, isMain = false) {
     return card;
 }
 
-// Print Product Page
-function printProductPage() {
-    const printWindow = window.open('', '_blank');
-    const productName = currentProduct ? escapeHtml(currentProduct.name) : 'المنتج';
-    const productPrice = currentProduct ? formatPrice(currentProduct.discountPrice && currentProduct.discountPrice < currentProduct.price ? currentProduct.discountPrice : currentProduct.price) : '';
-    const productDescription = currentProduct ? escapeHtml(currentProduct.description || '') : '';
-    const productId = currentProduct ? currentProduct.id : '';
-    
-    const mediaUrls = currentProduct && currentProduct.mediaUrls ? currentProduct.mediaUrls : [];
-    const firstImage = mediaUrls.length > 0 ? mediaUrls[0] : (currentProduct && currentProduct.mediaUrl ? currentProduct.mediaUrl : '');
-    
-    printWindow.document.write(`
-        <!DOCTYPE html>
-        <html lang="ar" dir="rtl">
-        <head>
-            <meta charset="UTF-8">
-            <title>${productName} - طباعة</title>
-            <style>
-                body { font-family: Arial, sans-serif; padding: 20px; }
-                .print-header { text-align: center; margin-bottom: 30px; border-bottom: 2px solid #000; padding-bottom: 20px; }
-                .print-content { display: grid; grid-template-columns: 1fr 1fr; gap: 30px; }
-                .print-image { max-width: 100%; height: auto; border: 1px solid #ddd; }
-                .print-info h1 { margin: 0 0 20px 0; }
-                .print-price { font-size: 24px; font-weight: bold; color: #6366f1; margin: 20px 0; }
-                .print-description { margin-top: 20px; line-height: 1.8; }
-                .print-footer { margin-top: 40px; padding-top: 20px; border-top: 1px solid #ddd; text-align: center; font-size: 12px; color: #666; }
-                @media print {
-                    body { padding: 0; }
-                    .print-header { page-break-after: avoid; }
-                }
-            </style>
-        </head>
-        <body>
-            <div class="print-header">
-                <h1>${productName}</h1>
-                <p>رقم المنتج: ${productId}</p>
-            </div>
-            <div class="print-content">
-                <div>
-                    ${firstImage ? `<img src="${firstImage}" alt="${productName}" class="print-image">` : ''}
-                </div>
-                <div class="print-info">
-                    <h1>${productName}</h1>
-                    <div class="print-price">${productPrice} د.ل</div>
-                    <div class="print-description">${productDescription}</div>
-                </div>
-            </div>
-            <div class="print-footer">
-                <p>تم الطباعة من: ${window.location.href}</p>
-                <p>تاريخ الطباعة: ${new Date().toLocaleString('ar-EG')}</p>
-            </div>
-        </body>
-        </html>
-    `);
-    printWindow.document.close();
-    printWindow.focus();
-    setTimeout(() => {
-        printWindow.print();
-    }, 250);
-}
 
 // Related Products
 async function loadRelatedProducts(currentProduct) {

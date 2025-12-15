@@ -861,11 +861,35 @@ module.exports = async (req, res) => {
                         }
 
                         addStatusHistory(order, 'pending', 'system', 'Order created');
+                        
+                        // Save order
                         await client.set(`order:${order.id}`, JSON.stringify(order));
+                        
+                        // Add to orders set
                         const added = await client.sadd('orders', order.id);
                         console.log(`Order ${order.id} saved. Added to set: ${added}`);
+                        
+                        // Verify order was saved
+                        const verifyOrder = await client.get(`order:${order.id}`);
+                        if (!verifyOrder) {
+                            throw new Error('Failed to save order - verification failed');
+                        }
+                        
+                        // Verify order is in set
+                        const inSet = await client.sismember('orders', order.id);
+                        if (!inSet) {
+                            console.warn(`Order ${order.id} not found in orders set, re-adding...`);
+                            await client.sadd('orders', order.id);
+                        }
+                        
                         return order;
                     });
+                    
+                    if (!newOrder || !newOrder.id) {
+                        throw new Error('Order creation failed - no order returned');
+                    }
+                    
+                    console.log(`Order created successfully: ${newOrder.id}`);
                     return res.status(201).json(newOrder);
                 } catch (error) {
                     if (error.message === 'Product not found') {

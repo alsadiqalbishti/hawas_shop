@@ -2415,7 +2415,7 @@ async function loadSettings() {
 // Save Settings
 async function saveSettings(event) {
     // Get button from event or find it
-    const submitButton = event ? event.target : document.querySelector('#settingsTab button[onclick*="saveSettings"]');
+    const submitButton = event && event.target ? event.target : document.querySelector('#settingsTab button[onclick*="saveSettings"]');
     if (submitButton) {
         submitButton.disabled = true;
         submitButton.textContent = '💾 جاري الحفظ...';

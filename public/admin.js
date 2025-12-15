@@ -2413,10 +2413,13 @@ async function loadSettings() {
 }
 
 // Save Settings
-async function saveSettings() {
-    const submitButton = event.target;
-    submitButton.disabled = true;
-    submitButton.textContent = '💾 جاري الحفظ...';
+async function saveSettings(event) {
+    // Get button from event or find it
+    const submitButton = event ? event.target : document.querySelector('#settingsTab button[onclick*="saveSettings"]');
+    if (submitButton) {
+        submitButton.disabled = true;
+        submitButton.textContent = '💾 جاري الحفظ...';
+    }
 
     try {
         const settings = {
@@ -2463,7 +2466,9 @@ async function saveSettings() {
         console.error('Error saving settings:', error);
         showNotification('حدث خطأ في حفظ الإعدادات', 'error');
     } finally {
-        submitButton.disabled = false;
-        submitButton.textContent = '💾 حفظ الإعدادات';
+        if (submitButton) {
+            submitButton.disabled = false;
+            submitButton.textContent = '💾 حفظ الإعدادات';
+        }
     }
 }

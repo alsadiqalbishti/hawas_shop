@@ -240,9 +240,24 @@ body {
   gap: var(--space-3);
 }
 
-.admin-content {
-  padding: var(--space-4);
-}
+  .admin-content {
+    padding: var(--space-2);
+  }
+  
+  .card {
+    padding: var(--space-3);
+  }
+  
+  .card-header {
+    flex-direction: column;
+    gap: var(--space-3);
+    align-items: stretch;
+  }
+  
+  .card-header .btn {
+    width: 100%;
+    justify-content: center;
+  }
 
 /* Mobile Sidebar Toggle */
 .sidebar-toggle {
@@ -257,11 +272,18 @@ body {
 
 @media (max-width: 1024px) {
   .admin-sidebar {
-    transform: translateX(100%);
+    position: fixed;
+    right: -100%;
+    top: 0;
+    height: 100vh;
+    width: 280px;
+    z-index: 1000;
+    transition: right 0.3s ease;
+    overflow-y: auto;
   }
   
-  .admin-sidebar.open {
-    transform: translateX(0);
+  .admin-sidebar.active {
+    right: 0;
   }
   
   .admin-main {
@@ -270,6 +292,34 @@ body {
   
   .sidebar-toggle {
     display: block;
+    min-width: 44px;
+    min-height: 44px;
+  }
+  
+  .sidebar-overlay {
+    display: none;
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0, 0, 0, 0.5);
+    z-index: 999;
+  }
+  
+  .sidebar-overlay.active {
+    display: block;
+  }
+  
+  .header-actions {
+    flex-wrap: wrap;
+    gap: var(--space-2);
+  }
+  
+  .header-actions .btn {
+    font-size: var(--font-size-sm);
+    padding: var(--space-2) var(--space-3);
+    min-height: 44px;
   }
 }
 
@@ -1322,6 +1372,24 @@ tbody tr:last-child td {
   .card-title {
     font-size: var(--font-size-xl);
   }
+  
+  /* Login screen mobile */
+  #loginScreen {
+    padding: var(--space-2);
+  }
+  
+  .login-card {
+    padding: var(--space-4);
+    max-width: 100%;
+  }
+  
+  .login-title {
+    font-size: var(--font-size-2xl);
+  }
+  
+  .login-icon {
+    font-size: 3rem;
+  }
 
   .tabs {
     overflow-x: auto;
@@ -1344,17 +1412,36 @@ tbody tr:last-child td {
   .filter-row {
     flex-direction: column;
   }
-
+  
   .filter-group {
     width: 100%;
+    min-width: 100%;
+  }
+  
+  .filter-panel {
+    padding: var(--space-3);
   }
 
   .admin-header {
     padding: var(--space-3);
+    position: sticky;
+    top: 0;
+    z-index: var(--z-sticky);
+    background: var(--white);
+    box-shadow: var(--shadow-sm);
   }
-
+  
   .header-title {
     font-size: var(--font-size-lg);
+  }
+  
+  .storage-badge {
+    font-size: var(--font-size-xs);
+    padding: var(--space-1) var(--space-2);
+  }
+  
+  .storage-bar {
+    width: 40px;
   }
 
   /* Mobile Table Styles - Convert to Cards */
@@ -1471,39 +1558,31 @@ tbody tr:last-child td {
     min-height: 44px;
   }
 
-  /* Admin Sidebar Mobile */
+  /* Admin Sidebar Mobile - Already defined at 1024px, just ensure consistency */
   .admin-sidebar {
-    position: fixed;
-    right: -100%;
-    top: 0;
-    height: 100vh;
     width: 280px;
-    z-index: 1000;
-    transition: right 0.3s ease;
-    overflow-y: auto;
   }
-
-  .admin-sidebar.active {
-    right: 0;
+  
+  .header-actions {
+    flex-direction: column;
+    align-items: stretch;
+    width: 100%;
   }
-
-  .admin-main {
-    margin-right: 0;
+  
+  .header-actions .btn {
+    width: 100%;
+    justify-content: center;
   }
-
-  .sidebar-overlay {
-    display: none;
-    position: fixed;
-    top: 0;
-    left: 0;
-    right: 0;
-    bottom: 0;
-    background: rgba(0, 0, 0, 0.5);
-    z-index: 999;
+  
+  .admin-header {
+    flex-direction: column;
+    gap: var(--space-3);
+    align-items: stretch;
   }
-
-  .sidebar-overlay.active {
-    display: block;
+  
+  .admin-header > div:first-child {
+    width: 100%;
+    justify-content: space-between;
   }
 
   /* Mobile Menu Toggle */
@@ -1530,12 +1609,32 @@ tbody tr:last-child td {
     padding: var(--space-2) var(--space-3);
     font-size: var(--font-size-sm);
     min-height: 44px; /* Minimum touch target */
+    width: 100%;
   }
 
   .btn-sm {
-    min-height: 36px;
-    padding: var(--space-1) var(--space-2);
-    font-size: var(--font-size-xs);
+    min-height: 44px; /* Increased for better touch targets */
+    padding: var(--space-2) var(--space-3);
+    font-size: var(--font-size-sm);
+  }
+  
+  .card-header {
+    flex-direction: column;
+    align-items: stretch;
+  }
+  
+  .card-header .btn {
+    width: 100%;
+    margin-top: var(--space-2);
+  }
+  
+  .filter-panel {
+    padding: var(--space-2);
+  }
+  
+  .table-container {
+    margin: var(--space-2) 0;
+    border-radius: var(--radius-md);
   }
 
   .modal-content {
@@ -1556,6 +1655,24 @@ tbody tr:last-child td {
     font-size: 16px; /* Prevents zoom on iOS */
     min-height: 44px;
     padding: var(--space-2) var(--space-3);
+    width: 100%;
+    -webkit-appearance: none;
+    -moz-appearance: none;
+    appearance: none;
+  }
+  
+  /* Better touch targets for checkboxes and radio buttons */
+  .form-checkbox {
+    width: 20px;
+    height: 20px;
+    min-width: 20px;
+    min-height: 20px;
+  }
+  
+  /* Improve tap targets */
+  .nav-item {
+    min-height: 48px;
+    padding: var(--space-3) var(--space-4);
   }
 
   /* Table headers hidden on mobile */
@@ -1568,6 +1685,23 @@ tbody tr:last-child td {
   .mobile-card-row {
     min-height: 44px;
     align-items: center;
+    padding: var(--space-2) 0;
+  }
+  
+  /* Better spacing for mobile cards */
+  .mobile-order-card,
+  .mobile-product-card {
+    margin-bottom: var(--space-4);
+  }
+  
+  /* Improve button spacing in mobile cards */
+  .mobile-card-actions {
+    flex-direction: column;
+    gap: var(--space-2);
+  }
+  
+  .mobile-card-actions .btn {
+    width: 100%;
   }
 
   /* Delivery dashboard mobile */

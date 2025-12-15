@@ -3,7 +3,8 @@
 
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0, user-scalable=yes">
+    <meta name="format-detection" content="telephone=no">
     <title>لوحة التحكم - إدارة المتجر</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -29,6 +30,24 @@
             box-shadow: var(--shadow-xl);
             position: relative;
             overflow: hidden;
+        }
+        
+        @media (max-width: 480px) {
+            #loginScreen {
+                padding: var(--space-2);
+            }
+            
+            .login-card {
+                padding: var(--space-4);
+            }
+            
+            .login-title {
+                font-size: var(--font-size-2xl);
+            }
+            
+            .login-icon {
+                font-size: 3rem;
+            }
         }
 
         .login-card::before {
@@ -77,6 +96,23 @@
             cursor: help;
             position: relative;
             overflow: visible;
+            flex-wrap: wrap;
+            min-height: 44px;
+        }
+        
+        @media (max-width: 768px) {
+            .storage-badge {
+                font-size: var(--font-size-xs);
+                padding: var(--space-1) var(--space-2);
+                flex-direction: column;
+                align-items: flex-start;
+                gap: var(--space-1);
+            }
+            
+            .storage-bar {
+                width: 100%;
+                max-width: 100px;
+            }
         }
 
         .storage-bar {

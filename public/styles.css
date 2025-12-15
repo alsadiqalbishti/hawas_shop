@@ -1399,11 +1399,11 @@ tbody tr:last-child td {
   }
   
   .container {
-    padding: var(--space-2);
+    padding: var(--space-2) var(--space-1); /* Reduced horizontal padding */
   }
 
   .card {
-    padding: var(--space-3);
+    padding: var(--space-3) var(--space-2); /* Reduced horizontal padding */
   }
 
   .card-title {
@@ -1535,8 +1535,8 @@ tbody tr:last-child td {
   .mobile-product-card {
     background: var(--white);
     border-radius: var(--radius-lg);
-    padding: var(--space-4);
-    margin-bottom: var(--space-4);
+    padding: var(--space-3) var(--space-2); /* Reduced horizontal padding */
+    margin-bottom: var(--space-3);
     box-shadow: var(--shadow-md);
     border: 1px solid var(--border-light);
     transition: transform var(--transition-fast), box-shadow var(--transition-fast);
@@ -2231,7 +2231,7 @@ tbody tr:last-child td {
 
 @media (max-width: 968px) {
   .product-wrapper {
-    padding: var(--space-2);
+    padding: var(--space-2) var(--space-1); /* Reduced horizontal padding */
   }
   
   .product-gallery {
@@ -2306,11 +2306,11 @@ tbody tr:last-child td {
 
 @media (max-width: 480px) {
   .product-wrapper {
-    padding: var(--space-2);
+    padding: var(--space-2) var(--space-1); /* Reduced horizontal padding */
   }
   
   .product-gallery {
-    padding: var(--space-2);
+    padding: var(--space-2) var(--space-1); /* Reduced horizontal padding */
   }
   
   #productMedia {
@@ -2324,7 +2324,7 @@ tbody tr:last-child td {
   }
   
   .product-info-card {
-    padding: var(--space-3);
+    padding: var(--space-3) var(--space-2); /* Reduced horizontal padding */
   }
   
   .product-title {
@@ -2407,8 +2407,9 @@ tbody tr:last-child td {
   }
   
   .auth-container {
-    padding: var(--space-4) !important;
+    padding: var(--space-4) var(--space-3) !important; /* Reduced horizontal padding */
     max-width: 100% !important;
+    margin: 0 var(--space-1) !important;
   }
   
   .auth-icon {
@@ -2466,7 +2467,7 @@ tbody tr:last-child td {
 
 @media (max-width: 768px) {
   .delivery-wrapper {
-    padding: var(--space-2);
+    padding: var(--space-2) var(--space-1); /* Reduced horizontal padding */
   }
   
   .delivery-header {
@@ -2502,7 +2503,7 @@ tbody tr:last-child td {
   }
   
   .orders-container {
-    padding: var(--space-3);
+    padding: var(--space-3) var(--space-2); /* Reduced horizontal padding */
   }
   
   .orders-header {
@@ -2516,7 +2517,7 @@ tbody tr:last-child td {
   }
   
   .order-card {
-    padding: var(--space-3);
+    padding: var(--space-3) var(--space-2); /* Reduced horizontal padding */
   }
   
   .order-header {
@@ -2882,8 +2883,33 @@ tbody tr:last-child td {
   
   /* Container responsive */
   .container {
-    padding: var(--space-2) !important;
+    padding: var(--space-2) var(--space-1) !important; /* Minimal horizontal padding */
     max-width: 100% !important;
+  }
+  
+  /* Reduce all horizontal padding on very small screens */
+  .card,
+  .product-wrapper,
+  .delivery-wrapper,
+  .admin-content,
+  .product-gallery,
+  .product-info-card,
+  .orders-container,
+  .order-card,
+  .mobile-product-card,
+  .mobile-order-card {
+    padding-left: var(--space-1) !important;
+    padding-right: var(--space-1) !important;
+  }
+  
+  /* Ensure cards use full width */
+  .card,
+  .mobile-product-card,
+  .mobile-order-card {
+    margin-left: 0;
+    margin-right: 0;
+    width: 100%;
+    box-sizing: border-box;
   }
   
   /* Spacing adjustments */

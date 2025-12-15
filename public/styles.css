@@ -42,16 +42,16 @@
   --space-5: 2.5rem;   /* 40px */
   --space-6: 3rem;     /* 48px */
   
-  /* Typography */
+  /* Typography - Responsive Base Sizes */
   --font-family: 'Cairo', 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-  --font-size-xs: 0.75rem;   /* 12px */
-  --font-size-sm: 0.875rem;  /* 14px */
-  --font-size-base: 1rem;    /* 16px */
-  --font-size-lg: 1.125rem;   /* 18px */
-  --font-size-xl: 1.25rem;   /* 20px */
-  --font-size-2xl: 1.5rem;   /* 24px */
-  --font-size-3xl: 1.875rem; /* 30px */
-  --font-size-4xl: 2.25rem;  /* 36px */
+  --font-size-xs: clamp(0.7rem, 0.8vw + 0.5rem, 0.75rem);   /* 11-12px responsive */
+  --font-size-sm: clamp(0.8rem, 1vw + 0.6rem, 0.875rem);     /* 13-14px responsive */
+  --font-size-base: clamp(0.9rem, 1.2vw + 0.7rem, 1rem);    /* 15-16px responsive */
+  --font-size-lg: clamp(1rem, 1.4vw + 0.8rem, 1.125rem);    /* 17-18px responsive */
+  --font-size-xl: clamp(1.1rem, 1.6vw + 0.9rem, 1.25rem);  /* 19-20px responsive */
+  --font-size-2xl: clamp(1.25rem, 2vw + 1rem, 1.5rem);      /* 22-24px responsive */
+  --font-size-3xl: clamp(1.5rem, 2.5vw + 1.2rem, 1.875rem); /* 26-30px responsive */
+  --font-size-4xl: clamp(1.75rem, 3vw + 1.5rem, 2.25rem);   /* 30-36px responsive */
   
   --font-weight-normal: 400;
   --font-weight-medium: 600;
@@ -1350,6 +1350,18 @@ tbody tr:last-child td {
    ============================================ */
 
 @media (max-width: 1024px) {
+  /* Responsive Typography - Tablet */
+  :root {
+    --font-size-xs: 0.7rem;   /* 11.2px */
+    --font-size-sm: 0.8rem;   /* 12.8px */
+    --font-size-base: 0.9rem; /* 14.4px */
+    --font-size-lg: 1rem;     /* 16px */
+    --font-size-xl: 1.1rem;   /* 17.6px */
+    --font-size-2xl: 1.3rem;  /* 20.8px */
+    --font-size-3xl: 1.6rem;  /* 25.6px */
+    --font-size-4xl: 2rem;    /* 32px */
+  }
+  
   .admin-sidebar {
     width: 260px;
   }
@@ -1368,6 +1380,23 @@ tbody tr:last-child td {
 }
 
 @media (max-width: 768px) {
+  /* Responsive Typography - Mobile */
+  :root {
+    --font-size-xs: 0.65rem;  /* 10.4px */
+    --font-size-sm: 0.75rem;  /* 12px */
+    --font-size-base: 0.875rem; /* 14px */
+    --font-size-lg: 0.95rem;  /* 15.2px */
+    --font-size-xl: 1.05rem;  /* 16.8px */
+    --font-size-2xl: 1.2rem;   /* 19.2px */
+    --font-size-3xl: 1.4rem;   /* 22.4px */
+    --font-size-4xl: 1.75rem;  /* 28px */
+  }
+  
+  /* Base body font size */
+  body {
+    font-size: var(--font-size-base);
+  }
+  
   .container {
     padding: var(--space-2);
   }
@@ -1378,6 +1407,39 @@ tbody tr:last-child td {
 
   .card-title {
     font-size: var(--font-size-xl);
+  }
+  
+  /* Responsive headings */
+  h1, .header-title {
+    font-size: var(--font-size-2xl) !important;
+  }
+  
+  h2, .card-title, .modal-title {
+    font-size: var(--font-size-xl) !important;
+  }
+  
+  h3 {
+    font-size: var(--font-size-lg) !important;
+  }
+  
+  /* Responsive buttons */
+  .btn {
+    font-size: var(--font-size-base);
+  }
+  
+  .btn-sm {
+    font-size: var(--font-size-sm);
+  }
+  
+  /* Responsive form elements */
+  .form-label {
+    font-size: var(--font-size-sm);
+  }
+  
+  .form-input,
+  .form-select,
+  .form-textarea {
+    font-size: var(--font-size-base);
   }
   
   /* Login screen mobile */
@@ -1741,9 +1803,25 @@ tbody tr:last-child td {
 }
 
 @media (max-width: 480px) {
+  /* Responsive Typography - Small Mobile */
+  :root {
+    --font-size-xs: 0.625rem;  /* 10px */
+    --font-size-sm: 0.7rem;    /* 11.2px */
+    --font-size-base: 0.8125rem; /* 13px */
+    --font-size-lg: 0.875rem;  /* 14px */
+    --font-size-xl: 0.95rem;   /* 15.2px */
+    --font-size-2xl: 1.1rem;   /* 17.6px */
+    --font-size-3xl: 1.3rem;   /* 20.8px */
+    --font-size-4xl: 1.5rem;  /* 24px */
+  }
+  
+  body {
+    font-size: var(--font-size-base);
+  }
+  
   .btn {
     padding: var(--space-2) var(--space-3);
-    font-size: var(--font-size-sm);
+    font-size: var(--font-size-base);
     min-height: 44px; /* Minimum touch target */
     width: 100%;
   }
@@ -1752,6 +1830,35 @@ tbody tr:last-child td {
     min-height: 44px; /* Increased for better touch targets */
     padding: var(--space-2) var(--space-3);
     font-size: var(--font-size-sm);
+  }
+  
+  /* Smaller headings on very small screens */
+  h1, .header-title {
+    font-size: var(--font-size-xl) !important;
+  }
+  
+  h2, .card-title {
+    font-size: var(--font-size-lg) !important;
+  }
+  
+  /* Responsive navigation */
+  .nav-item {
+    font-size: var(--font-size-base);
+  }
+  
+  /* Responsive badges */
+  .badge {
+    font-size: var(--font-size-xs);
+  }
+  
+  /* Responsive table text */
+  table {
+    font-size: var(--font-size-sm);
+  }
+  
+  th, td {
+    font-size: var(--font-size-sm);
+    padding: var(--space-2);
   }
   
   .card-header {
